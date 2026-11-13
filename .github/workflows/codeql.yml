@@ -9,9 +9,8 @@ name: CodeQL
 # nothing to code scanning and keeps the SARIF as a 30-day artifact, so pull
 # requests show no code scanning annotations; pushes after merging upload as
 # usual. The workflow is versioned here rather than
-# enabled as default setup, so generated repositories receive it, it follows
-# the same pinning and permission rules as every other workflow, and
-# Dependabot updates its action.
+# enabled as default setup, so it follows the same pinning and permission
+# rules as every other workflow, and Dependabot updates its action.
 #
 # The push and pull_request branch lists name the default branch, because
 # branch filters cannot refer to it: if the default branch is not main,
