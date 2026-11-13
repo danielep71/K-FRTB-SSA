@@ -1,0 +1,56 @@
+{
+  "record": "repository-settings-journal",
+  "tool": "tools/setup_repository.py",
+  "plan_sha256": "27fa99bd8559391645cd78609d004e66ac247e56c203364d61cd59e988a3a9d2",
+  "repository": "danielep71/K-FRTB-SSA",
+  "configuration_sha256": "78251db8dac125be6c3a41b1f24269ba161790d5725f6da5afc26cf78d976277",
+  "started_at": "2026-11-13T17:26:16Z",
+  "writes": [
+    {
+      "method": "POST",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/rulesets",
+      "status": "done"
+    },
+    {
+      "method": "POST",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/rulesets",
+      "status": "done"
+    },
+    {
+      "method": "POST",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/rulesets",
+      "status": "done"
+    },
+    {
+      "method": "POST",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/rulesets",
+      "status": "done"
+    },
+    {
+      "method": "POST",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/rulesets",
+      "status": "done"
+    },
+    {
+      "method": "PUT",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/private-vulnerability-reporting",
+      "status": "done"
+    },
+    {
+      "method": "PUT",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/vulnerability-alerts",
+      "status": "done"
+    },
+    {
+      "method": "PUT",
+      "endpoint": "repos/danielep71/K-FRTB-SSA/automated-security-fixes",
+      "status": "done"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "repos/danielep71/K-FRTB-SSA",
+      "status": "done"
+    }
+  ],
+  "readback": "DRIFT"
+}
