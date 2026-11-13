@@ -35,6 +35,14 @@
 
 ---
 
+<p align="center">
+  <img width="100%"
+       alt="K-FRTB-SSA: market risk capital under the FRTB simplified standardised approach, the sum of four scaled risk-class requirements"
+       src="docs/assets/social-preview.png">
+</p>
+
+---
+
 </div>
 
 ## ✨ What this repository is

@@ -155,3 +155,14 @@ The license text, with its copyright notice, is included in MIT.txt in this
 directory. Modifications restrict pushes and manual runs to the default
 branch, grant issues: read so the script can read pull requests on a private
 repository, and add local documentation references.
+
+The following file was adapted from danielep71/K-FRTB-ASA
+(https://github.com/danielep71/K-FRTB-ASA) under the MIT License:
+
+docs/assets/social-preview.html
+
+The license text, with its copyright notice, is included in MIT.txt in this
+directory. Modifications replace the project name, the scope and the cards'
+content, which show the scaling factors of the simplified standardised
+approach and the build chain instead of the results of a sample portfolio,
+and move the repeated styles into a style sheet.

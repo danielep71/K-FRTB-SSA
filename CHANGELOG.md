@@ -69,5 +69,10 @@ Use only the categories an entry needs.
   standardised approach, its status, with no calculation and no release yet,
   and what is in place. It no longer holds the steps for setting up a new
   repository or the banner image (#3).
+- The social preview image is this repository's own: the project name and
+  scope, the four scaling factors of the simplified standardised approach
+  and the build chain, with no result figure. The README shows it again,
+  and `docs/assets/README.md` says how to render it from
+  `docs/assets/social-preview.html` (#6).
 
 [Unreleased]: https://github.com/danielep71/K-FRTB-SSA/commits/main
