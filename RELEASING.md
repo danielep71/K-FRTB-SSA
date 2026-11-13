@@ -147,8 +147,7 @@ python tools/check_repository.py --strict --ci --repository OWNER/REPOSITORY \
   --default-branch DEFAULT_BRANCH --template false
 ```
 
-Use `--template true` in the template repository itself. `git status --short`
-must print nothing, `--ci` fails the run if the checks leave a file changed,
+`git status --short` must print nothing, `--ci` fails the run if the checks leave a file changed,
 and `test-results/integrity/report.json` must name
 `FULL_SHA` with `"dirty": false` and `"status": "pass"`; keep it with the
 certification record. Confirm that **Repository

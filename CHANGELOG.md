@@ -81,5 +81,12 @@ Use only the categories an entry needs.
   not in this repository's history, and the *Host behaviour* table of the
   validation plan no longer cites issues that do not exist here. The three
   measured behaviours keep their probe, host, date and result (#5).
+- The guides describe this repository instead of a template: the structure
+  guide states what exists here, with `VERSION` not existing yet; the house
+  style names the `FRTBSSA` prefix; the label and traffic guides and the
+  Dependabot header no longer give steps for a newly created repository; and
+  the setup guide says that its setup is done (#9).
+- The pull request guide no longer says that Codex needs an environment to
+  review: it reviews this repository's pull requests without one (#10).
 
 [Unreleased]: https://github.com/danielep71/K-FRTB-SSA/commits/main

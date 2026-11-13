@@ -129,9 +129,7 @@ raises the count; for the same reason they never raise a
 [traffic alert](#-traffic-alert).
 
 The README shows the three badges for this repository. **Repository integrity**
-fails while a README badge reads another repository's `traffic-history` branch:
-after **Use this template**, point the badges at the new repository, or remove
-them if you do not enable collection.
+fails while a README badge reads another repository's `traffic-history` branch.
 
 ### Merge rules
 

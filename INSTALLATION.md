@@ -489,8 +489,8 @@ also rebuilds the commit in a temporary Git worktree:
 It cannot see Excel: the host record, from the operator to the outcome, is
 the runner's own record. A PASS says the evidence is consistent
 with the commit. It validates a calculation only as far as its accuracy
-contracts and their reference values do; the template's illustrative
-contract validates none.
+contracts and their reference values do; the illustrative contract `ACC-01`
+validates none.
 
 ### A run for another commit
 
