@@ -298,7 +298,7 @@ The check then:
   install the implementation in the **Repository integrity** workflow for the
   comparison to run on every pull request.
 
-With no registry, or no adapter in it, as in the template, the check passes
+With no registry, or no adapter in it, as now, the check passes
 and says that nothing was cross-checked. An adapter and its implementation
 are test tools, never a runtime dependency of the workbook. A match shows that
 the implementation and the expected file agree; what class a value has is
@@ -380,7 +380,7 @@ release may publish as the calculation's accuracy.
 - **Frozen.** A contract may be frozen only with at least `min_holdout_cases`
   holdout cases, and only when every expected value of its quantities in
   them is `published` or `independent`. A contract on an illustrative
-  calculation stays `draft`, as the template's `ACC-01` does.
+  calculation stays `draft`, as the illustrative `ACC-01` does.
 - **Frozen is kept.** Once a release tag holds a frozen contract, it is never
   removed or returned to `draft`, even by deleting the registry. With the
   same `decision`, it may only get stricter: a lower threshold, or added

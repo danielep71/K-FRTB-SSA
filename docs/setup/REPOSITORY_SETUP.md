@@ -21,6 +21,14 @@
 > No workflow applies the baseline: **Detect settings drift** only checks it,
 > with a read-only token. The script never creates or stores credentials.
 
+> [!NOTE]
+> This repository's setup is done. The template cleanup was applied, the
+> initializer and its test were removed, and the baseline was applied and
+> verified, as the [setup record](../repo_governance/SETTINGS_EVIDENCE.md)
+> shows. The steps below remain as the procedure for checking the baseline
+> again or reapplying it, and the tables record what was kept, adapted or
+> removed.
+
 ## 🧭 Before you start
 
 | Prerequisite | Ready when… |

@@ -421,7 +421,7 @@ holds what an Excel run must leave as evidence:
   certification entry point, counts, `log` and `certification_log`,
   `results` when it records results, and `runner` when its runner is not
   `RunSuite`, run in `NORMAL` mode after the example
-  suite; empty in the template, and never a
+  suite; empty for now, and never a
   [volume benchmark](#volume-benchmarks);
 - `modes`: the three modes in run order, the log each one saves and whether
   it must pass (only `NORMAL`);

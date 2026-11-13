@@ -11,11 +11,9 @@ no existing component other than those test modules.
 
 ## Naming and visibility
 
-Replace `<REGIME>` with the project's short name, such as `SACCR` or `LCR`,
-once, in this table. The
-[static checks](#static-checks) read the facade prefix from this table; while
-it is `<REGIME>_`, they accept any project prefix that is not a reserved one
-(`CORE_`, `TEST_`, `EX_`, `M_`).
+The project's short name is `FRTBSSA`. The
+[static checks](#static-checks) read the facade prefix, `FRTBSSA_`, from this
+table; the reserved prefixes are `CORE_`, `TEST_`, `EX_` and `M_`.
 
 | Element | Convention | Example |
 | --- | --- | --- |
