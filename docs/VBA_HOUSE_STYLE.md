@@ -20,7 +20,7 @@ it is `<REGIME>_`, they accept any project prefix that is not a reserved one
 | Element | Convention | Example |
 | --- | --- | --- |
 | Core standard module | `CORE_` plus subject | `CORE_Validation` |
-| Public facade module | `<REGIME>_` plus subject | `<REGIME>_Functions` |
+| Public facade module | `FRTBSSA_` plus subject | `FRTBSSA_Functions` |
 | Host-independent class | `C` plus noun | `CCalculationResult` |
 | Excel adapter module | `M_` plus subject | `M_Run` |
 | Document module | `ThisWorkbook`, or `sh` plus the tab name in PascalCase | `shInputs` |
@@ -30,7 +30,7 @@ it is `<REGIME>_`, they accept any project prefix that is not a reserved one
 | Procedure | PascalCase verb phrase | `ValidateInput` |
 | Parameter or local variable | Descriptive PascalCase | `CalculationCurrency` |
 | Constant, error constant | `UPPER_SNAKE_CASE`, `ERR_` prefix | `ERR_INVALID_INPUT` |
-| Enum and member | `<REGIME>` plus noun; short member prefix | `<REGIME>RunStatus`, `rsFailed` |
+| Enum and member | `FRTBSSA` plus noun; short member prefix | `FRTBSSARunStatus`, `rsFailed` |
 
 - A component's name equals its exported `Attribute VB_Name` and its file
   name stem.
