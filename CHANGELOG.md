@@ -75,4 +75,11 @@ Use only the categories an entry needs.
   and `docs/assets/README.md` says how to render it from
   `docs/assets/social-preview.html` (#6).
 
+### Fixed
+
+- `INSTALLATION.md` no longer lists a tested environment for a commit that is
+  not in this repository's history, and the *Host behaviour* table of the
+  validation plan no longer cites issues that do not exist here. The three
+  measured behaviours keep their probe, host, date and result (#5).
+
 [Unreleased]: https://github.com/danielep71/K-FRTB-SSA/commits/main
