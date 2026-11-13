@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>K-FRTB-SSA social preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=Barlow:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body { margin: 0; }
+.frame {
+  position: relative; width: 1280px; height: 640px; overflow: hidden;
+  background-color: #060D1A;
+  background-image:
+    radial-gradient(ellipse 620px 420px at 900px 300px, rgba(45,227,167,0.16), transparent 70%),
+    radial-gradient(ellipse 520px 380px at 1180px 80px, rgba(59,130,246,0.22), transparent 70%),
+    linear-gradient(rgba(120,170,220,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,170,220,0.06) 1px, transparent 1px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
+  font-family: 'Barlow', sans-serif; color: #EAF2FF;
+}
+.cards {
+  position: absolute; left: 600px; top: 56px; width: 640px; height: 530px;
+  transform: perspective(1400px) rotateY(-14deg) rotateX(4deg); transform-origin: left center;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; gap: 14px;
+}
+.card {
+  display: flex; flex-direction: column; background: rgba(13,27,48,0.92);
+  border: 1px solid rgba(110,160,230,0.28); border-radius: 12px;
+}
+.card-main { grid-row: span 2; gap: 14px; padding: 20px 22px; box-shadow: 0 0 40px rgba(45,227,167,0.14); }
+.card-side { gap: 12px; padding: 18px 20px; }
+.card-wide { grid-column: span 2; gap: 8px; padding: 16px 20px; }
+.heading { font-size: 14px; color: #9DB1CF; letter-spacing: 0.06em; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.muted { color: #9DB1CF; }
+.faint { color: #6F86A8; }
+.green { color: #2DE3A7; }
+.tag { padding: 3px 9px; border: 1px solid #2DE3A7; border-radius: 999px; color: #2DE3A7; font-size: 12px; }
+.row { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid rgba(110,160,230,0.18); }
+.bar-row { display: grid; grid-template-columns: 112px 1fr 46px; align-items: center; gap: 10px; }
+.bar { height: 12px; border-radius: 6px; background: #0A1424; overflow: hidden; }
+.bar > div { height: 100%; border-radius: 6px; background: #3B82F6; }
+.segments {
+  display: flex; padding: 4px; background: #0A1424; border: 1px solid rgba(110,160,230,0.25);
+  border-radius: 8px; font-size: 14px; font-weight: 600;
+}
+.segments span { flex: 1; text-align: center; padding: 8px 0; color: #9DB1CF; border-radius: 6px; }
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.steps div { display: flex; flex-direction: column; gap: 4px; }
+.fade {
+  position: absolute; left: 0; top: 0; width: 620px; height: 640px;
+  background: linear-gradient(90deg, #060D1A 0%, #060D1A 72%, rgba(6,13,26,0) 100%);
+}
+.brand { position: absolute; left: 72px; top: 56px; width: 540px; display: flex; flex-direction: column; gap: 18px; }
+.condensed { font-family: 'Barlow Condensed', sans-serif; }
+</style>
+</head>
+<body>
+<!-- No figure here is a result: the workbook calculates nothing yet. The four scaling factors are those of the simplified standardised approach. -->
+<div class="frame">
+
+<div class="cards">
+
+<div class="card card-main">
+<div class="heading" style="display: flex; justify-content: space-between; align-items: center">
+<span>CAPITAL REQUIREMENT</span>
+<span class="tag">MAR40</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span class="muted" style="font-size: 14px">Sum of the scaled risk-class requirements</span>
+<span class="mono green" style="font-size: 46px; font-weight: 700; text-shadow: 0 0 22px rgba(45,227,167,0.45)">&Sigma; SF &times; K</span>
+</div>
+<div class="mono" style="display: flex; flex-direction: column; font-size: 15px">
+<div class="row"><span class="muted">Interest rate</span><span>&times; 1.30</span></div>
+<div class="row"><span class="muted">Equity</span><span>&times; 3.50</span></div>
+<div class="row"><span class="muted">Commodity</span><span>&times; 1.90</span></div>
+<div class="row"><span class="muted">Foreign exchange</span><span>&times; 1.20</span></div>
+<div class="row"><span class="muted">Workbook</span><span>in development</span></div>
+</div>
+<span class="faint" style="font-size: 12px">SF: scaling factor &middot; K: risk-class requirement</span>
+</div>
+
+<div class="card card-side">
+<span class="heading">SCALING FACTORS</span>
+<div class="mono" style="display: flex; flex-direction: column; gap: 10px">
+<div class="bar-row"><span class="green" style="font-size: 12px">EQUITY</span><div class="bar"><div style="width: 100.0%; background: #2DE3A7"></div></div><span style="text-align: right; font-size: 13px">3.50</span></div>
+<div class="bar-row"><span class="muted" style="font-size: 12px">COMMODITY</span><div class="bar"><div style="width: 54.3%"></div></div><span style="text-align: right; font-size: 13px">1.90</span></div>
+<div class="bar-row"><span class="muted" style="font-size: 12px">INTEREST RATE</span><div class="bar"><div style="width: 37.1%"></div></div><span style="text-align: right; font-size: 13px">1.30</span></div>
+<div class="bar-row"><span class="muted" style="font-size: 12px">FX</span><div class="bar"><div style="width: 34.3%"></div></div><span style="text-align: right; font-size: 13px">1.20</span></div>
+</div>
+</div>
+
+<div class="card card-side" style="gap: 10px">
+<span class="heading">RISK CLASSES</span>
+<div class="segments">
+<span style="background: #3B82F6; color: #FFFFFF">Rates</span>
+<span>Equity</span>
+<span>Commodity</span>
+<span>FX</span>
+</div>
+<span class="faint" style="font-size: 13px">One requirement per risk class</span>
+</div>
+
+<div class="card card-wide">
+<span class="heading">FROM SOURCE TO RELEASE &middot; EVIDENCE BOUND TO ONE COMMIT</span>
+<div class="steps mono">
+<div><span class="faint" style="font-size: 12px">SOURCE</span><span style="font-size: 15px; white-space: nowrap">Exported VBA</span></div>
+<div><span class="faint" style="font-size: 12px">CHECK</span><span style="font-size: 15px; white-space: nowrap">Integrity</span></div>
+<div><span class="faint" style="font-size: 12px">BUILD</span><span style="font-size: 15px; white-space: nowrap">One commit</span></div>
+<div><span class="faint" style="font-size: 12px">RUN</span><span style="font-size: 15px; white-space: nowrap">In Excel</span></div>
+<div><span class="faint" style="font-size: 12px">RELEASE</span><span style="font-size: 15px; white-space: nowrap">Attested</span></div>
+</div>
+</div>
+
+</div>
+
+<div class="fade"></div>
+
+<div class="brand">
+<div style="display: flex; align-items: center; gap: 22px">
+<div style="width: 84px; height: 84px; box-sizing: border-box; border: 3px solid #2DE3A7; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 0 24px rgba(45,227,167,0.35)">
+<span class="condensed" style="font-weight: 700; font-size: 30px; line-height: 1; color: #FFFFFF">VBA</span>
+<span class="mono green" style="font-weight: 700; font-size: 22px; line-height: 1">{ }</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 9px">
+<div style="width: 70px; height: 4px; border-radius: 2px; background: #2DE3A7"></div>
+<div style="width: 110px; height: 4px; border-radius: 2px; background: #2DE3A7; opacity: 0.75"></div>
+<div style="width: 86px; height: 4px; border-radius: 2px; background: #3B82F6"></div>
+</div>
+</div>
+<h1 class="condensed" style="margin: 6px 0 0 0; font-weight: 800; font-size: 112px; line-height: 0.9; letter-spacing: -0.01em; white-space: nowrap; color: #FFFFFF">K-FRTB-SSA</h1>
+<div class="condensed green" style="font-weight: 700; font-size: 36px; line-height: 1.05; letter-spacing: 0.02em">MARKET RISK CAPITAL<br><span style="color: #FFFFFF">FRTB SIMPLIFIED<br>STANDARDISED APPROACH</span></div>
+<div style="font-size: 21px; color: #B9C8DE">Interest rate &middot; Equity &middot; Commodity &middot; FX</div>
+<div style="display: flex; align-items: center; gap: 18px; margin-top: 8px">
+<span class="condensed green" style="padding: 10px 18px; border: 2px solid #2DE3A7; border-radius: 10px; font-weight: 700; font-size: 20px; letter-spacing: 0.08em">IN DEVELOPMENT</span>
+<span class="muted" style="font-size: 18px">FRTB-SSA &middot; Excel / VBA workbook</span>
+</div>
+</div>
+
+</div>
+</body>
+</html>

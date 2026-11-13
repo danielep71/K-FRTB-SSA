@@ -115,6 +115,15 @@
       "files": [
         ".github/workflows/pr-milestones.yml"
       ]
+    },
+    {
+      "repository": "https://github.com/danielep71/K-FRTB-ASA",
+      "license": "MIT",
+      "revision": "231991cd9857fb4e8405dc73cd1b2a5c4276830f",
+      "revision_note": "The main branch as inspected when the file was adapted, from docs/assets/FRTB_social_preview.html",
+      "files": [
+        "docs/assets/social-preview.html"
+      ]
     }
   ]
 }
