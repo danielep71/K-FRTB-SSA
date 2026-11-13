@@ -1,12 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/social-preview.png" alt="K-TEMPLATE: the starting point for regulatory risk calculation workbooks in Excel VBA, for SA-CCR, SFT, FRTB, LCR and NSFR" width="100%">
+# 📊 K-FRTB-SSA
 
-# 🧰 K-TEMPLATE
+### An Excel VBA workbook for the FRTB simplified standardised approach
 
-### The starting point for regulatory risk calculation workbooks in Excel VBA
-
-**SA-CCR · SFT · FRTB · LCR · NSFR · Exported VBA source · Reproducible builds · Excel-run evidence · Governed releases**
+**Market risk capital · Exported VBA source · Reproducible builds · Excel-run evidence · Governed releases**
 
 <br>
 
@@ -23,135 +21,65 @@
 
 **Text-first and reviewable: exported VBA, JSON contracts and Markdown evidence, every change through a pull request**
 
-[What it is](#-what-this-template-is)
+[What it is](#-what-this-repository-is)
 &nbsp;·&nbsp;
-[What you get](#-what-you-get)
+[Status](#-status)
 &nbsp;·&nbsp;
-[Quick start](#-start-a-new-repository)
+[What is in place](#-what-is-in-place)
 &nbsp;·&nbsp;
 [Lifecycle](#-from-source-to-release)
 &nbsp;·&nbsp;
 [Quality gates](#-quality-gates)
 &nbsp;·&nbsp;
 [Documentation](#-documentation)
-&nbsp;·&nbsp;
-[Status](#-status)
-&nbsp;·&nbsp;
-[Template wiki](https://github.com/danielep71/K-TEMPLATE/wiki)
 
 ---
 
 </div>
 
-## ✨ What this template is
+## ✨ What this repository is
 
-I use this template to start repositories for regulatory risk calculation
-workbooks, such as SA-CCR, SFT, FRTB, LCR and NSFR. A workbook built from it
-is not stored as a macro-enabled file: it is built from exported VBA source and
-an optional macro-free template, so every line of calculation code is
-reviewable in a pull request, and every Excel run leaves evidence that a check
-binds to one commit.
+I use this repository to build an Excel workbook that calculates the market
+risk capital requirement under the simplified standardised approach of the
+Fundamental Review of the Trading Book (FRTB). The workbook is not stored as
+a macro-enabled file: it is built from exported VBA source and an optional
+macro-free template, so every line of calculation code is reviewable in a
+pull request, and every Excel run leaves evidence that a check binds to one
+commit.
 
-The template holds no calculation of its own. It provides the repository around
-one: the source layout and house style, the methodology guides to fill in, the
-test harness and its evidence, the release process, and the GitHub governance
-that keeps them honest.
+## 📌 Status
 
-## 🎯 What you get
+No version has been released, and the repository holds no calculation yet:
 
-| Area | What the template provides |
+| Area | State |
+| --- | --- |
+| Calculation | Not started. There is no VBA source under `src/` and no workbook to install |
+| Methodology | The [guides](docs/methodology/README.md) are in place with illustrative rows. The FRTB sources, the data contract and the calculation contracts are still to be written |
+| Test cases | The format, its checks and illustrative cases are in place. No FRTB test case exists yet |
+| Tooling and governance | In use: every change goes through a pull request that **Repository integrity** checks |
+
+The release state is recorded in one place: the
+[*Current status*](RELEASING.md#current-status) of `RELEASING.md`, which
+**Repository integrity** checks against [`CHANGELOG.md`](CHANGELOG.md).
+Changes reach `main` through task branches and pull requests; only a release
+is versioned and tagged.
+
+## 🎯 What is in place
+
+| Area | What the repository holds |
 | --- | --- |
 | Source control for Excel | Editing and Git policies for workbooks, exported VBA source and byte-preserved regulatory source copies |
 | VBA quality | Static checks of exported VBA (layout, names, `#If` structure, jump targets, visibility, dependency direction, identifiers, `Err` copies, native declarations, calls) and a layout formatter, run on every change |
-| Reproducible builds | A macro-enabled workbook built from the source of one commit, without *Trust access to the VBA project object model*, with the export bound to the workbook it came from |
-| Testing and evidence | A VBA test harness with a certification entry point, numerical test cases and accuracy contracts, and an offline check that the evidence of an Excel run matches one commit |
+| Reproducible builds | Tools that build a macro-enabled workbook from the source of one commit, without *Trust access to the VBA project object model*, and bind an export to the workbook it came from |
+| Testing and evidence | A VBA test harness with a certification entry point, the numerical test-case and accuracy-contract formats, and an offline check that the evidence of an Excel run matches one commit |
 | Methodology | Guides for the sources, the data contract, the calculation and workbook contracts and the validation plan, with a traceability table from each rule to its tests |
 | Python quality gates | Ruff, strict mypy and actionlint, plus tests that hold the workflows to pinned actions, explicit permissions and the required check |
 | Links | Relative links, anchors and HTTPS on every change; external links weekly |
 | Issues and pull requests | Issue labels, issue forms, triage automation, a pull request template with a final-head review, and a workflow that keeps milestones on issues only |
-| GitHub settings | A documented settings baseline (general settings, security features, rulesets, Actions settings) that a script previews, applies and verifies, writing a dated evidence record |
+| GitHub settings | A documented settings baseline (general settings, security features, rulesets, Actions settings) that a script previews, applies and verifies; the [setup record](docs/repo_governance/SETTINGS_EVIDENCE.md) shows the last verified state |
 | Security | A security policy, a review to record before distribution, CodeQL scanning of the Python, JavaScript and workflow code, an OpenSSF Scorecard measure, and Dependabot updates for the pinned Actions and the hash-locked Python dependencies |
 | Releases | A release process with a changelog, a certification record, a milestone closeout and a reproducible, attested source bundle |
-| Traffic | Optional daily collection of clones and visitors, with the badges above |
-
-## 🚀 Start a new repository
-
-GitHub copies files from a template, not its settings. In order:
-
-1. Create the repository with **Use this template**.
-2. Adapt the files to the new repository, in a clean clone of it. The first
-   command lists the changes and writes nothing; `--apply` makes them. Neither
-   changes anything on GitHub. `PREFIX` is the project's short name, such as
-   `LCR`:
-
-   ```sh
-   python tools/initialize_repository.py --repository OWNER/NEW-REPO --regime PREFIX
-   python tools/initialize_repository.py --repository OWNER/NEW-REPO --regime PREFIX --apply
-   ```
-
-   Add `--release-branch BRANCH` to point Dependabot at an existing release
-   branch, and `--remove-traffic-badges` to remove the badges. Review the diff
-   and commit it.
-
-   <details>
-   <summary><b>What the initializer changes, and what Repository integrity checks</b></summary>
-
-   <br>
-
-   It deletes the template-only section of `AGENTS.md`, with its markers,
-   points the two contact links in `.github/ISSUE_TEMPLATE/config.yml` and
-   the traffic badges at the top of this README to the new repository,
-   removes `target-branch` from `.github/dependabot.yml`, replaces the
-   entries and the link references of `CHANGELOG.md` with an empty
-   `[Unreleased]` section of the new repository and restores the
-   introduction's "No version has been released" sentence if it is missing,
-   deletes `VERSION` if the template has one (it exists once a template
-   release is prepared) and sets the release rows of *Current status* in
-   `RELEASING.md` to say that nothing is released yet, since both describe
-   the template's releases, and replaces `<REGIME>` in the naming table of
-   `docs/VBA_HOUSE_STYLE.md`. You can then delete
-   `tools/initialize_repository.py` and `tests/test_initialize_repository.py`:
-   nothing else uses them. Without the initializer, make the same edits by
-   hand.
-
-   **Repository integrity** fails while the `AGENTS.md` section remains, a
-   contact link or traffic badge names another repository, `target-branch`
-   names a branch that does not exist, or a link reference of `CHANGELOG.md`
-   points to another repository. Once the changelog holds no dated release,
-   it also fails while `VERSION` exists, the introduction lacks the "No
-   version has been released" sentence, or *Current status* does not say that
-   no version is released and that `VERSION` does not exist. It does not
-   check the changelog's entries or `<REGIME>`: replace them by hand, or let
-   the initializer do it.
-
-   </details>
-
-3. Enable Actions and let **Repository integrity** pass on the default branch.
-4. Apply and verify the settings baseline, as the
-   [repository setup guide](docs/setup/REPOSITORY_SETUP.md) describes. It
-   needs Python 3.11+ and GitHub CLI authentication; applying needs
-   administrator access, the `PLAN SHA-256` that the preview prints and a new
-   journal path. Set the Actions settings it reports, which it never
-   writes, in **Settings → Actions → General**:
-
-   ```sh
-   python tools/setup_repository.py --repo OWNER/NEW-REPO
-   python tools/setup_repository.py --repo OWNER/NEW-REPO --apply \
-     --approve-plan PLAN_SHA256 --journal docs/repo_governance/settings-journal-YYYY-MM-DD.json
-   python tools/setup_repository.py --repo OWNER/NEW-REPO --check \
-     --report docs/repo_governance/SETTINGS_EVIDENCE.md \
-     --evidence docs/repo_governance/settings-evidence-{date}.json
-   ```
-
-5. Run **Sync issue labels** and create milestones with due dates
-   ([issue labels](docs/repo_governance/ISSUE_LABELS.md)).
-6. Optionally, enable traffic collection
-   ([traffic history](docs/repo_governance/TRAFFIC.md)).
-7. If Codex reviews your pull requests, create its environment for the new
-   repository ([pull request review](docs/repo_governance/PULL_REQUESTS.md)).
-
-The [settings reference](docs/repo_governance/SETTINGS.md) and its
-[JSON configuration](docs/setup/repository-settings.json) describe the baseline.
+| Traffic | Daily collection of clones and visitors, with the badges above |
 
 ## 🔄 From source to release
 
@@ -188,7 +116,7 @@ flowchart LR
 | **Issue triage** | Issue and milestone events | Assignee, one priority, an open milestone, a target end date and a dependency section on every open issue |
 | **Keep milestones issue-only** | Pull request events and daily | Removes any milestone set on a pull request, and lists each removal |
 | **Release** | A pushed `vX.Y.Z` tag | Verifies the tag, builds a reproducible source bundle, attests it where the repository allows it and drafts the release |
-| **Traffic history** | Daily, optional | Collects clones and visitors for the badges above |
+| **Traffic history** | Daily | Collects clones and visitors for the badges above |
 
 ## 🧩 VBA development
 
@@ -207,8 +135,8 @@ flowchart LR
 .github/   workflows, issue forms, labels, Dependabot and the Excel evidence policy
 docs/      methodology, release records, governance, setup, house style, licenses
 tests/     VBA harness and example suite, test cases, accuracy contracts, Python tests
-tools/     static checks, workbook build and Excel run, release, setup and initializer
-src/       the workbook's VBA source and macro-free template (reserved: added by a project)
+tools/     static checks, workbook build and Excel run, release and settings setup
+src/       the workbook's VBA source and macro-free template (reserved: not added yet)
 ```
 
 The full layout and its rules are in
@@ -223,22 +151,13 @@ The full layout and its rules are in
 | [`docs/REPOSITORY_STRUCTURE.md`](docs/REPOSITORY_STRUCTURE.md) | Source layout, reserved paths, dependency direction |
 | [`docs/VBA_HOUSE_STYLE.md`](docs/VBA_HOUSE_STYLE.md) | VBA naming, contracts, errors, cleanup and static checks |
 | [`docs/repo_governance/`](docs/repo_governance/README.md) | Settings, issue labels, pull requests, traffic, distribution |
-| [`docs/setup/REPOSITORY_SETUP.md`](docs/setup/REPOSITORY_SETUP.md) | Setting up a new repository and what to keep, adapt or remove |
+| [`docs/setup/REPOSITORY_SETUP.md`](docs/setup/REPOSITORY_SETUP.md) | Previewing, applying and verifying the GitHub settings baseline, and what to keep, adapt or remove |
 | [`RELEASING.md`](RELEASING.md) | How a version is prepared, certified and published, and the current status |
 | [`docs/release/`](docs/release/CLOSEOUT.md) | The milestone [closeout](docs/release/CLOSEOUT.md) and the [release certification](docs/release/RELEASE_CERTIFICATION.md) records, and the [maintenance audit](docs/release/MAINTENANCE_AUDIT.md) done before each release |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Workflow, checks, rules of evidence and pull requests |
 | [`SECURITY.md`](SECURITY.md) | Private vulnerability reporting, runtime risk surface and data handling |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Participant behaviour and conduct reporting |
 | [`CHANGELOG.md`](CHANGELOG.md) | Change history |
-| [Template wiki](https://github.com/danielep71/K-TEMPLATE/wiki) | A guided tour of the template, page by page; the documents above govern where it differs |
-
-## 📌 Status
-
-The release state is recorded in one place: the
-[*Current status*](RELEASING.md#current-status) of `RELEASING.md`, which
-**Repository integrity** checks against [`CHANGELOG.md`](CHANGELOG.md).
-Development continues on the active release branch through task branches and
-pull requests; only a release is versioned and tagged.
 
 ## 🔐 Data and security
 
@@ -259,7 +178,6 @@ To take part, read the [contributing guide](CONTRIBUTING.md) and the
 
 ## 📄 License
 
-Repositories created from this template default to the [Mozilla Public License 2.0](LICENSE).
-If you choose a different license for a new repository, replace `LICENSE` and keep
-[`docs/licenses/`](docs/licenses/THIRD_PARTY_NOTICES.txt): the files listed there keep
-the license the notice states for them, MPL-2.0 or MIT.
+This repository is licensed under the [Mozilla Public License 2.0](LICENSE).
+The files listed in [`docs/licenses/`](docs/licenses/THIRD_PARTY_NOTICES.txt)
+keep the license the notice states for them, MPL-2.0 or MIT.
