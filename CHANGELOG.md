@@ -63,4 +63,11 @@ Use only the categories an entry needs.
 
 ## [Unreleased]
 
+### Changed
+
+- The README describes this repository: a workbook for the FRTB simplified
+  standardised approach, its status, with no calculation and no release yet,
+  and what is in place. It no longer holds the steps for setting up a new
+  repository or the banner image (#3).
+
 [Unreleased]: https://github.com/danielep71/K-FRTB-SSA/commits/main
