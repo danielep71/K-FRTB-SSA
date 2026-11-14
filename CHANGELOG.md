@@ -63,8 +63,23 @@ Use only the categories an entry needs.
 
 ## [Unreleased]
 
+### Added
+
+- A prototype of the calculation: the VBA source of a MAR40 engine for
+  interest rate, equity, commodity, and FX and gold risk; the command macros
+  `RunSSA` and `ClearOutputs`; four worksheet functions; a test module; and
+  a macro-free template of 18 sheets with synthetic sample data.
+  `tools/devbuild/build_workbook.py` builds the workbook from them and
+  stamps it with its commit. The prototype has not been compiled or run in
+  Excel and is not validated: no evidence of an Excel run exists (#16).
+
 ### Changed
 
+- The workbook contract describes the prototype's sheets, defined names,
+  areas and operations instead of illustrative ones. It also records where
+  the prototype does not yet follow the contract's defaults: a failed or
+  outdated run is not marked on the sheets (#25), and no sheet is protected
+  (#26).
 - The README describes this repository: a workbook for the FRTB simplified
   standardised approach, its status, with no calculation and no release yet,
   and what is in place. It no longer holds the steps for setting up a new

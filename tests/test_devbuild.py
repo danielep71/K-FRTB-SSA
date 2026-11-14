@@ -318,20 +318,20 @@ class Layout(unittest.TestCase):
         base = self.layout
         layout = build_workbook.Layout(
             base.workbook_code_name,
-            (*base.sheets, build_workbook.Sheet("Checks", "shChecks", "Test")),
-            (*base.names, build_workbook.DefinedName("Checks_Results", "shChecks", "A3", "")),
+            (*base.sheets, build_workbook.Sheet("SelfTest", "shSelfTest", "Test")),
+            (*base.names, build_workbook.DefinedName("SelfTest_Results", "shSelfTest", "A3", "")),
             base.stamp, base.configurations)
         self.assertEqual(build_workbook.layout_problems(layout), [])
         development = build_workbook.for_configuration(layout, "development")
         production = build_workbook.for_configuration(layout, "production")
-        self.assertIn("shChecks", [sheet.code_name for sheet in development.sheets])
+        self.assertIn("shSelfTest", [sheet.code_name for sheet in development.sheets])
         self.assertEqual(production.sheets, base.sheets)
         self.assertEqual(production.names, base.names)
         package = build_workbook.package(
             production, build_workbook.Build("0" * 40, "t", True, "production", ()), b"")
         with zipfile.ZipFile(io.BytesIO(package)) as archive:
             book = archive.read("xl/workbook.xml").decode()
-        self.assertNotIn("Checks", book)
+        self.assertNotIn("SelfTest", book)
 
 
 @contextlib.contextmanager
@@ -417,9 +417,10 @@ class Workbook(unittest.TestCase):
             book = package.read("xl/workbook.xml").decode()
             self.assertIn(f'codeName="{self.layout.workbook_code_name}"', book)
             for index, sheet in enumerate(self.layout.sheets, 1):
-                self.assertIn(f'<sheet name="{sheet.tab}" sheetId="{index}"', book)
-                self.assertIn(f'<sheetPr codeName="{sheet.code_name}"/>',
-                              package.read(f"xl/worksheets/sheet{index}.xml").decode())
+                # The template's own attributes and child elements are kept.
+                self.assertRegex(book, rf'<sheet [^>]*name="{sheet.tab}" sheetId="{index}"')
+                self.assertRegex(package.read(f"xl/worksheets/sheet{index}.xml").decode(),
+                                 rf'<sheetPr codeName="{sheet.code_name}"[ />]')
             for item in self.layout.names:
                 self.assertRegex(book, rf'<definedName name="{item.name}">[^<]*'
                                        rf'!\$[A-Z]+\$[0-9]+</definedName>')

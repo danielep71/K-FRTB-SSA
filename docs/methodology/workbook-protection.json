@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "sheets": {
+    "shHome": {
+      "protection": {}
+    },
+    "shParams": {
+      "protection": {}
+    },
+    "shIRPositions": {
+      "protection": {}
+    },
+    "shEQPositions": {
+      "protection": {}
+    },
+    "shCOPositions": {
+      "protection": {}
+    },
+    "shFXPositions": {
+      "protection": {}
+    },
+    "shOptionCharges": {
+      "protection": {}
+    },
+    "shResults": {
+      "protection": {}
+    },
+    "shIRZones": {
+      "protection": {}
+    },
+    "shIRLadder": {
+      "protection": {}
+    },
+    "shBuckets": {
+      "protection": {}
+    },
+    "shIRCalc": {
+      "protection": {}
+    },
+    "shEQCalc": {
+      "protection": {}
+    },
+    "shCOCalc": {
+      "protection": {}
+    },
+    "shFXCalc": {
+      "protection": {}
+    },
+    "shChecks": {
+      "protection": {}
+    },
+    "shTestCatalogue": {
+      "protection": {}
+    },
+    "shREADME": {
+      "protection": {}
+    }
+  }
+}

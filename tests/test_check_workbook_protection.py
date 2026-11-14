@@ -74,17 +74,21 @@ class ProtectionCheckTest(unittest.TestCase):
         self.assertEqual(check_workbook_protection.check(ROOT)[0], [])
 
     def test_the_contracts_example_matrix_fits_the_built_layout(self) -> None:
-        # The example in WORKBOOK_CONTRACT.md: each setting's value cell is an
-        # input, and its label and each table anchor are locked outputs.
+        # The example in WORKBOOK_CONTRACT.md shows entries of the repository's
+        # matrix. Where an entry declares ranges, a table's first header cell
+        # is a locked output.
         text = (ROOT / "docs/methodology/WORKBOOK_CONTRACT.md").read_text(encoding="utf-8")
         section = text.split("## Protection\n", 1)[1]
         example = json.loads(section.split("```json\n", 1)[1].split("```", 1)[0])
+        matrix = json.loads((ROOT / check_workbook_protection.MATRIX).read_text(encoding="utf-8"))
+        self.assertEqual(example["schema_version"], matrix["schema_version"])
         layout = build_workbook.load_layout(ROOT)
         roles = {sheet.code_name: sheet.role for sheet in layout.sheets}
         entries = {}
         for code, item in example["sheets"].items():
             entry, problems = check_workbook_protection.entry_problems(code, item, roles)
             self.assertEqual(problems, [], code)
+            self.assertEqual(item, matrix["sheets"].get(code), code)
             assert entry is not None
             entries[code] = entry
 
@@ -93,13 +97,13 @@ class ProtectionCheckTest(unittest.TestCase):
                     if area.top <= row <= area.bottom and area.left <= column <= area.right}
 
         for name in layout.names:
+            if not name.name.endswith("_Header"):
+                continue
+            if name.sheet not in entries or not entries[name.sheet].areas:
+                continue
             row, column = build_workbook.cell_position(name.cell)
             with self.subTest(name=name.name):
-                if name.name.startswith("cfg_"):
-                    self.assertEqual(kinds(name.sheet, row, column), {"input"})
-                # A name's label, or a table anchor's own header cell, is never typed in.
-                cell = (row, column - 1) if name.label else (row, column)
-                self.assertEqual(kinds(name.sheet, *cell), {"output"})
+                self.assertEqual(kinds(name.sheet, row, column), {"output"})
 
     def test_without_a_template_or_a_matrix_the_check_is_inactive(self) -> None:
         self.assertEqual(run(None, None), ([], "inactive: no src/workbook/Template.xlsx and no "
