@@ -72,6 +72,11 @@ Use only the categories an entry needs.
   `tools/devbuild/build_workbook.py` builds the workbook from them and
   stamps it with its commit. The prototype has not been compiled or run in
   Excel and is not validated: no evidence of an Excel run exists (#16).
+- A project website, `index.html`, for GitHub Pages at
+  <https://danielep71.github.io/K-FRTB-SSA/>: what the workbook calculates,
+  how to build it and what has and has not been checked, with the same
+  status as the README. `docs/WEBSITE.md` says how it is published and
+  maintained (#30).
 
 ### Changed
 
