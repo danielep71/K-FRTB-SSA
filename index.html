@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K-FRTB-SSA — Market risk capital, simplified standardised approach</title>
+  <meta name="description" content="K-FRTB-SSA is an open-source Excel/VBA prototype of the FRTB simplified standardised approach (Basel MAR40): interest rate, equity, commodity and FX risk, with every intermediate value on a sheet.">
+  <meta name="theme-color" content="#00338d">
+  <link rel="canonical" href="https://danielep71.github.io/K-FRTB-SSA/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="K-FRTB-SSA — Market risk capital, simplified standardised approach">
+  <meta property="og:description" content="Four risk classes, one scaled requirement. An open-source Excel/VBA prototype of the FRTB simplified standardised approach.">
+  <meta property="og:url" content="https://danielep71.github.io/K-FRTB-SSA/">
+  <meta property="og:image" content="https://danielep71.github.io/K-FRTB-SSA/docs/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="docs/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header>
+  <nav class="wrap" aria-label="Main navigation">
+    <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span> K-FRTB-SSA</a>
+    <div class="navlinks">
+      <a href="#method">The calculation</a>
+      <a href="#workbook">The workbook</a>
+      <a href="#start">Get started</a>
+      <a href="#evidence">Evidence</a>
+      <a href="https://github.com/danielep71/K-FRTB-SSA">GitHub ↗</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Market risk / Basel MAR40</p>
+      <h1>Four risk classes.<br><em>One scaled requirement.</em></h1>
+      <p class="lead">A transparent implementation of the FRTB simplified standardised approach.</p>
+      <p class="hero-copy">Follow positions in interest rates, equities, commodities and foreign exchange through netting, weighting and offsetting to one capital requirement. An open-source Excel/VBA prototype writes every intermediate value to a sheet.</p>
+      <div class="actions">
+        <a class="button primary" href="#start">Explore the prototype ↓</a>
+        <a class="button ghost" href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/methodology/WORKBOOK_CONTRACT.md">Read the workbook contract ↗</a>
+      </div>
+    </div>
+    <a class="hero-art" href="docs/assets/social-preview.png"><img src="docs/assets/social-preview.png" width="1280" height="640" alt="K-FRTB-SSA: the four scaling factors of the simplified standardised approach, 1.30, 3.50, 1.90 and 1.20, and the chain from exported VBA source to a release"></a>
+  </div>
+  <div class="wrap principles">
+    <span>Reviewable VBA source</span>
+    <span>Built from one commit</span>
+    <span>Every intermediate value on a sheet</span>
+    <span>MPL-2.0 licensed</span>
+  </div>
+</section>
+
+<div class="wrap">
+  <aside class="status" aria-label="Prototype status">
+    <p><strong>Prototype — not yet run in Excel.</strong> The VBA engine and a macro-free template are in the repository. I have run them only in LibreOffice's VBA mode: the source is not compiled or run in Excel, no evidence of a run is recorded, and the workbook is not validated for regulatory reporting. <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/README.md#-status">Read the status ↗</a></p>
+  </aside>
+
+  <section id="method">
+    <p class="eyebrow">01 / The calculation</p>
+    <h2>Four charges, scaled and summed.</h2>
+    <p class="intro">The simplified standardised approach keeps one charge per risk class and multiplies each by a scaling factor (MAR40.2). Risk-weighted assets are 12.5 times the requirement (MAR40.1).</p>
+    <p class="formula" aria-label="Requirement equals 1.30 times interest rate, plus 3.50 times equity, plus 1.90 times commodity, plus 1.20 times foreign exchange">K = 1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX</p>
+    <div class="cards four">
+      <article class="card">
+        <span class="category">Interest rate · × 1.30</span>
+        <h3>Specific and general risk</h3>
+        <p>Specific risk on the net position per issue, at the rate of its category, rating grade and residual maturity.</p>
+        <p>General market risk by the maturity method: one ladder of 15 time bands per currency, a 10% vertical disallowance, and horizontal disallowances within and between three zones.</p>
+      </article>
+      <article class="card">
+        <span class="category">Equity · × 3.50</span>
+        <h3>Per stock, per market</h3>
+        <p>Positions in the same stock or index net within a market.</p>
+        <p>Specific risk is 8% of the net position per single name, with a further 2% per index contract. General market risk is 8% of the net position per market.</p>
+      </article>
+      <article class="card">
+        <span class="category">Commodity · × 1.90</span>
+        <h3>Simplified approach</h3>
+        <p>15% of the net position per commodity, plus 3% of the gross position.</p>
+        <p>Positions are valued at spot prices and converted to the reporting currency.</p>
+      </article>
+      <article class="card">
+        <span class="category">FX and gold · × 1.20</span>
+        <h3>Shorthand method</h3>
+        <p>8% of the overall net open position.</p>
+        <p>That is the larger of the net long and the net short currency positions, plus the net gold position. Positions in the reporting currency are excluded.</p>
+      </article>
+    </div>
+    <p class="note">Non-delta option charges are calculated outside the workbook, entered per risk class and added before scaling. Not implemented: the duration method, the commodity maturity ladder, the delta-plus and scenario methods for options, securitisation specific risk and the FX de minimis exemption. The prototype follows Basel MAR40 only; the EU CRR3 provisions are not modelled. The <code>README</code> sheet of the <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/src/workbook/Template.xlsx">template ↗</a> lists every limitation.</p>
+  </section>
+</div>
+
+<section class="tint" id="workbook">
+  <div class="wrap">
+    <p class="eyebrow">02 / Inside the workbook</p>
+    <h2>Every step is written to a sheet.</h2>
+    <ol class="steps">
+      <li>
+        <span class="number">01 / INPUT</span>
+        <h3>Enter parameters and positions</h3>
+        <p>The reporting date, the FX rates and one row per position, on four position sheets. The MAR40 constants are parameters too: a changed constant is flagged as a what-if run.</p>
+      </li>
+      <li>
+        <span class="number">02 / CALCULATE</span>
+        <h3>Run the engine</h3>
+        <p><code>RunSSA</code> reads the sheets, calculates in memory and writes values, not formulas: one row per input row with every intermediate, the maturity ladder and the offsets per currency.</p>
+      </li>
+      <li>
+        <span class="number">03 / CHECK</span>
+        <h3>Read the findings</h3>
+        <p>An invalid row is rejected with its reason and listed; it is never corrected. Fourteen rules report errors and warnings, and a test catalogue compares outputs with the published example of MAR40.61 and with expected values for the sample data.</p>
+      </li>
+    </ol>
+    <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/methodology/WORKBOOK_CONTRACT.md">Open the workbook contract ↗</a>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <p class="eyebrow">03 / Get started</p>
+    <h2>Build from reviewable source.</h2>
+    <div class="split">
+      <div>
+        <h3>1. Clone the repository</h3>
+        <p>The workbook is not stored as a macro-enabled file. The repository holds its exported VBA source and a macro-free template with synthetic sample data.</p>
+        <code class="code">git clone https://github.com/danielep71/K-FRTB-SSA.git
+cd K-FRTB-SSA</code>
+        <h3>2. Build the workbook</h3>
+        <p>The build needs Python 3.11 or later and no Excel. It writes a macro-enabled workbook under <code>test-results/build/</code>, stamped with its commit.</p>
+        <code class="code">python tools/devbuild/build_workbook.py --configuration production</code>
+        <p>Opening and running that workbook in Excel is the project's next step; no such run is recorded yet.</p>
+        <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/INSTALLATION.md#building-a-workbook-from-source">Open the installation guide ↗</a>
+      </div>
+      <div>
+        <h3>Choose your starting point</h3>
+        <p class="resource"><a href="https://github.com/danielep71/K-FRTB-SSA/tree/main/src">Review the VBA source ↗</a></p>
+        <p class="resource"><a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/src/workbook/Template.xlsx">Inspect the macro-free template ↗</a></p>
+        <p class="resource"><a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/methodology/README.md">Read the methodology guides ↗</a></p>
+        <p class="resource"><a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/CHANGELOG.md">See what changed ↗</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tint" id="evidence">
+  <div class="wrap">
+    <p class="eyebrow">04 / Evidence and boundaries</p>
+    <h2>Know what has been checked.</h2>
+    <div class="split">
+      <div>
+        <h3>Evidence available</h3>
+        <p>Every change passes static checks of the exported VBA source, a reproducible build from one commit and the repository's own tests, in a pull request with a recorded review. I have run the prototype in LibreOffice's VBA mode only. None of this is an Excel run or regulatory validation.</p>
+        <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/README.md#-quality-gates">Read the quality gates ↗</a>
+      </div>
+      <div>
+        <h3>Work still outstanding</h3>
+        <p>Compiling and running the workbook in Excel, registering the MAR40 sources and the test cases, and fixing the defects found in review are tracked as issues. Consult the issue tracker for current progress.</p>
+        <a href="https://github.com/danielep71/K-FRTB-SSA/issues">View open work ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong>K-FRTB-SSA</strong> · An independent open-source project by Daniele Penza.</p>
+    <p><a href="https://github.com/danielep71/K-FRTB-SSA">Source repository</a> · <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/LICENSE">MPL-2.0 License</a> · <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/licenses/THIRD_PARTY_NOTICES.txt">Third-party notices</a> · <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/CONTRIBUTING.md">Contribute</a></p>
+    <p>Prototype for research, benchmarking and education. Not validated for regulatory reporting.</p>
+  </div>
+</footer>
+</body>
+</html>

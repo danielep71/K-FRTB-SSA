@@ -145,7 +145,7 @@ flowchart LR
 docs/      methodology, release records, governance, setup, house style, licenses
 tests/     VBA harness and example suite, test cases, accuracy contracts, Python tests
 tools/     static checks, workbook build and Excel run, release and settings setup
-src/       the workbook's VBA source and macro-free template (reserved: not added yet)
+src/       the workbook's VBA source and macro-free template
 ```
 
 The full layout and its rules are in
@@ -160,6 +160,7 @@ The full layout and its rules are in
 | [`docs/REPOSITORY_STRUCTURE.md`](docs/REPOSITORY_STRUCTURE.md) | Source layout, reserved paths, dependency direction |
 | [`docs/VBA_HOUSE_STYLE.md`](docs/VBA_HOUSE_STYLE.md) | VBA naming, contracts, errors, cleanup and static checks |
 | [`docs/repo_governance/`](docs/repo_governance/README.md) | Settings, issue labels, pull requests, traffic, distribution |
+| [`docs/WEBSITE.md`](docs/WEBSITE.md) | The [project website](https://danielep71.github.io/K-FRTB-SSA/): its files, publication and maintenance |
 | [`docs/setup/REPOSITORY_SETUP.md`](docs/setup/REPOSITORY_SETUP.md) | Previewing, applying and verifying the GitHub settings baseline, and what to keep, adapt or remove |
 | [`RELEASING.md`](RELEASING.md) | How a version is prepared, certified and published, and the current status |
 | [`docs/release/`](docs/release/CLOSEOUT.md) | The milestone [closeout](docs/release/CLOSEOUT.md) and the [release certification](docs/release/RELEASE_CERTIFICATION.md) records, and the [maintenance audit](docs/release/MAINTENANCE_AUDIT.md) done before each release |
