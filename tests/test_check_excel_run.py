@@ -484,11 +484,17 @@ class BindingTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             source = zipfile.ZipFile(io.BytesIO(workbook_bytes(COMMIT)))
             parts = {name: source.read(name) for name in source.namelist()}
-            sheet = parts["xl/worksheets/sheet1.xml"].decode()
-            inline = f'<c r="B3" t="inlineStr"><is><t xml:space="preserve">{COMMIT}</t></is></c>'
+            # The stamp cell is wherever the build configuration puts build_commit.
+            layout = build_workbook.load_layout(SOURCE)
+            stamp = next(item for item in layout.names if item.name == "build_commit")
+            index = [sheet.code_name for sheet in layout.sheets].index(stamp.sheet) + 1
+            part = f"xl/worksheets/sheet{index}.xml"
+            sheet = parts[part].decode()
+            inline = (f'<c r="{stamp.cell}" t="inlineStr"><is><t xml:space="preserve">'
+                      f'{COMMIT}</t></is></c>')
             self.assertIn(inline, sheet)
-            parts["xl/worksheets/sheet1.xml"] = sheet.replace(
-                inline, '<c r="B3" t="s"><v>0</v></c>').encode()
+            parts[part] = sheet.replace(
+                inline, f'<c r="{stamp.cell}" t="s"><v>0</v></c>').encode()
             parts["xl/sharedStrings.xml"] = (
                 '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
                 f"<si><t>{COMMIT}</t></si></sst>").encode()

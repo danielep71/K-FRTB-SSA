@@ -57,13 +57,14 @@ commit.
 
 ## 📌 Status
 
-No version has been released, and the repository holds no calculation yet:
+No version has been released. The repository holds a prototype of the
+calculation, which has not been compiled or run in Excel:
 
 | Area | State |
 | --- | --- |
-| Calculation | Not started. There is no VBA source under `src/` and no workbook to install |
+| Calculation | Prototype. The VBA source of a MAR40 engine for the four risk classes is under `src/`, with a macro-free template of 18 sheets and synthetic sample data ([workbook contract](docs/methodology/WORKBOOK_CONTRACT.md)). I have run it only in LibreOffice's VBA mode: it is not compiled or run in Excel, no evidence of a run is recorded here, and it is not validated for regulatory reporting |
 | Methodology | The [guides](docs/methodology/README.md) are in place with illustrative rows. The FRTB sources, the data contract and the calculation contracts are still to be written |
-| Test cases | The format, its checks and illustrative cases are in place. No FRTB test case exists yet |
+| Test cases | The format, its checks and illustrative cases are in place. The prototype's test module, `tests/modules/TEST_Suite.bas`, has its own runner and does not use the test harness yet, and no FRTB test case is registered |
 | Tooling and governance | In use: every change goes through a pull request that **Repository integrity** checks |
 
 The release state is recorded in one place: the

@@ -19,17 +19,17 @@ them are already set in `.gitattributes`, `.editorconfig` and `.gitignore`.
 | `docs/` | Governance, setup, structure, style and the API inventory; the templates of the release certification and milestone closeout records and the pre-release maintenance audit (`docs/release/`); and the license texts, the third-party notice and its machine-readable provenance (`docs/licenses/`) | Present |
 | `docs/assets/` | The repository's social preview image, `social-preview.png`, shown in the README, its editable source `social-preview.html`, and the [guide](assets/README.md) to rendering it | Present |
 | `docs/native-declarations.json` | The [register of native declarations](#native-declarations): each export a `Declare` imports, with its library, whether its zero result is ambiguous and, optionally, its ABI | Present, with no declaration |
-| `docs/methodology/` | The [index](methodology/README.md) of the guides: sources, data contract and its machine-readable form `data-contract.json`, calculation contracts, validation plan, test-case format, [workbook contract](methodology/WORKBOOK_CONTRACT.md) and [VBA test harness](methodology/TEST_HARNESS.md) | Present, as guides to fill in, with the illustrative dataset `DS-01` |
+| `docs/methodology/` | The [index](methodology/README.md) of the guides: sources, data contract and its machine-readable form `data-contract.json`, calculation contracts, validation plan, test-case format, [workbook contract](methodology/WORKBOOK_CONTRACT.md) and [VBA test harness](methodology/TEST_HARNESS.md) | Present. The workbook contract describes the prototype; the other guides are still to fill in, with the illustrative dataset `DS-01` |
 | `docs/methodology/sources/` | Byte-preserved copies of regulatory sources | Reserved |
-| `docs/methodology/workbook-protection.json` | The [protection matrix](methodology/WORKBOOK_CONTRACT.md#protection) of `src/workbook/Template.xlsx`, added with the template | Reserved |
+| `docs/methodology/workbook-protection.json` | The [protection matrix](methodology/WORKBOOK_CONTRACT.md#protection) of `src/workbook/Template.xlsx`, added with the template | Present: no sheet of the template is protected yet |
 | `docs/user-manual/` | Optional manual for workbook recipients, one folder per released version (`docs/user-manual/X.Y.Z/MANUAL.md`), built to the PDF attached to the release ([user manual](../RELEASING.md#user-manual)) | Reserved |
-| `src/core/` | Calculations and pure validation, host-independent standard modules | Reserved |
+| `src/core/` | Calculations and pure validation, host-independent standard modules | Present: the MAR40 engine, in the `CORE_` modules |
 | `src/classes/` | Host-independent classes, if the design needs them | Reserved |
-| `src/modules/` | The public facade: the supported entry points | Reserved |
-| `src/workbook/` | Excel adapters, `ThisWorkbook` and sheet document modules, and the optional macro-free `Template.xlsx`, laid out as the [workbook contract](methodology/WORKBOOK_CONTRACT.md) defines | Reserved |
+| `src/modules/` | The public facade: the supported entry points | Present: `FRTBSSA_Formulas`, the worksheet functions |
+| `src/workbook/` | Excel adapters, `ThisWorkbook` and sheet document modules, and the optional macro-free `Template.xlsx`, laid out as the [workbook contract](methodology/WORKBOOK_CONTRACT.md) defines | Present: the adapter `M_Main` and `Template.xlsx`, with no document module |
 | `src/forms/` | UserForms, each `.frm` with its `.frx` | Reserved |
 | `tests/` | Python tests of the repository tooling (`test_*.py`) | Present |
-| `tests/modules/` | VBA test modules: the [test harness](methodology/TEST_HARNESS.md), its example suite, relation tests, case runners and volume benchmarks | Present, with the harness, the example suite and the illustrative relation tests |
+| `tests/modules/` | VBA test modules: the [test harness](methodology/TEST_HARNESS.md), its example suite, relation tests, case runners and volume benchmarks | Present, with the harness, the example suite, the illustrative relation tests and `TEST_Suite`, the prototype's tests, which have their own runner |
 | `tests/fixtures/`, `tests/expected/` | Synthetic inputs and expected results in the [test-case format](methodology/TEST_CASES.md) | Present, with one illustrative case of each form |
 | `tests/derivations/` | Scripts that compute expected values from the documented method ([derivation scripts](methodology/TEST_CASES.md#derivation-scripts)) | Present, with one illustrative script for each case |
 | `tests/accuracy/` | The [accuracy contracts](methodology/TEST_CASES.md#accuracy-contracts) of the calculations | Present, with the illustrative draft contract `ACC-01` |
