@@ -1,9 +1,570 @@
 # Public VBA API inventory.
 # [supported]: the supported API, the public declarations of src/modules/.
 # [project-public]: every other public declaration under src/.
-# No public declarations exist yet in either tier.
 # Format and change policy: docs/REPOSITORY_STRUCTURE.md, "Public API inventory".
 
 [supported]
+FRTBSSA_Formulas	Function	FRTBSSA_TimeBand
+# SIG	FRTBSSA_Formulas	Function	FRTBSSA_TimeBand	Public Function FRTBSSA_TimeBand(ByVal ResidualMaturity As Variant, ByVal Coupon As Variant, Optional ByVal Floating As Boolean = False) As Variant
+FRTBSSA_Formulas	Function	FRTBSSA_LadderCharge
+# SIG	FRTBSSA_Formulas	Function	FRTBSSA_LadderCharge	Public Function FRTBSSA_LadderCharge(ByVal WeightedLong As Variant, ByVal WeightedShort As Variant) As Variant
+FRTBSSA_Formulas	Function	FRTBSSA_FXCharge
+# SIG	FRTBSSA_Formulas	Function	FRTBSSA_FXCharge	Public Function FRTBSSA_FXCharge(ByVal SumNetLong As Variant, ByVal SumNetShort As Variant, Optional ByVal GoldPosition As Variant = 0) As Variant
+FRTBSSA_Formulas	Function	FRTBSSA_CommodityCharge
+# SIG	FRTBSSA_Formulas	Function	FRTBSSA_CommodityCharge	Public Function FRTBSSA_CommodityCharge(ByVal NetPosition As Variant, ByVal GrossPosition As Variant) As Variant
 
 [project-public]
+CORE_Commodity	Sub	CalculateCommodity
+# SIG	CORE_Commodity	Sub	CalculateCommodity	Public Sub CalculateCommodity(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef CommodityOutput() As Variant, ByRef Totals() As Double)
+CORE_Config	Const	PRODUCT_NAME
+# SIG	CORE_Config	Const	PRODUCT_NAME	Public Const PRODUCT_NAME As String = "K-FRTB-SSA"
+CORE_Config	Const	ENGINE_VERSION
+# SIG	CORE_Config	Const	ENGINE_VERSION	Public Const ENGINE_VERSION As String = "0.2.0"
+CORE_Config	Const	SH_PARAMS
+# SIG	CORE_Config	Const	SH_PARAMS	Public Const SH_PARAMS As String = "Params"
+CORE_Config	Const	SH_IR_POS
+# SIG	CORE_Config	Const	SH_IR_POS	Public Const SH_IR_POS As String = "IRPositions"
+CORE_Config	Const	SH_EQ_POS
+# SIG	CORE_Config	Const	SH_EQ_POS	Public Const SH_EQ_POS As String = "EQPositions"
+CORE_Config	Const	SH_CO_POS
+# SIG	CORE_Config	Const	SH_CO_POS	Public Const SH_CO_POS As String = "COPositions"
+CORE_Config	Const	SH_FX_POS
+# SIG	CORE_Config	Const	SH_FX_POS	Public Const SH_FX_POS As String = "FXPositions"
+CORE_Config	Const	SH_OPTIONS
+# SIG	CORE_Config	Const	SH_OPTIONS	Public Const SH_OPTIONS As String = "OptionCharges"
+CORE_Config	Const	SH_RESULTS
+# SIG	CORE_Config	Const	SH_RESULTS	Public Const SH_RESULTS As String = "Results"
+CORE_Config	Const	SH_IR_ZONES
+# SIG	CORE_Config	Const	SH_IR_ZONES	Public Const SH_IR_ZONES As String = "IR_Zones"
+CORE_Config	Const	SH_IR_LADDER
+# SIG	CORE_Config	Const	SH_IR_LADDER	Public Const SH_IR_LADDER As String = "IR_Ladder"
+CORE_Config	Const	SH_BUCKETS
+# SIG	CORE_Config	Const	SH_BUCKETS	Public Const SH_BUCKETS As String = "Buckets"
+CORE_Config	Const	SH_IR_CALC
+# SIG	CORE_Config	Const	SH_IR_CALC	Public Const SH_IR_CALC As String = "IRCalc"
+CORE_Config	Const	SH_EQ_CALC
+# SIG	CORE_Config	Const	SH_EQ_CALC	Public Const SH_EQ_CALC As String = "EQCalc"
+CORE_Config	Const	SH_CO_CALC
+# SIG	CORE_Config	Const	SH_CO_CALC	Public Const SH_CO_CALC As String = "COCalc"
+CORE_Config	Const	SH_FX_CALC
+# SIG	CORE_Config	Const	SH_FX_CALC	Public Const SH_FX_CALC As String = "FXCalc"
+CORE_Config	Const	SH_CHECKS
+# SIG	CORE_Config	Const	SH_CHECKS	Public Const SH_CHECKS As String = "Checks"
+CORE_Config	Const	NM_IR_POS_HEADER
+# SIG	CORE_Config	Const	NM_IR_POS_HEADER	Public Const NM_IR_POS_HEADER As String = "IRPositions_Header"
+CORE_Config	Const	NM_EQ_POS_HEADER
+# SIG	CORE_Config	Const	NM_EQ_POS_HEADER	Public Const NM_EQ_POS_HEADER As String = "EQPositions_Header"
+CORE_Config	Const	NM_CO_POS_HEADER
+# SIG	CORE_Config	Const	NM_CO_POS_HEADER	Public Const NM_CO_POS_HEADER As String = "COPositions_Header"
+CORE_Config	Const	NM_FX_POS_HEADER
+# SIG	CORE_Config	Const	NM_FX_POS_HEADER	Public Const NM_FX_POS_HEADER As String = "FXPositions_Header"
+CORE_Config	Const	NM_IR_CALC_HEADER
+# SIG	CORE_Config	Const	NM_IR_CALC_HEADER	Public Const NM_IR_CALC_HEADER As String = "IRCalc_Header"
+CORE_Config	Const	NM_EQ_CALC_HEADER
+# SIG	CORE_Config	Const	NM_EQ_CALC_HEADER	Public Const NM_EQ_CALC_HEADER As String = "EQCalc_Header"
+CORE_Config	Const	NM_CO_CALC_HEADER
+# SIG	CORE_Config	Const	NM_CO_CALC_HEADER	Public Const NM_CO_CALC_HEADER As String = "COCalc_Header"
+CORE_Config	Const	NM_FX_CALC_HEADER
+# SIG	CORE_Config	Const	NM_FX_CALC_HEADER	Public Const NM_FX_CALC_HEADER As String = "FXCalc_Header"
+CORE_Config	Const	NM_LADDER_HEADER
+# SIG	CORE_Config	Const	NM_LADDER_HEADER	Public Const NM_LADDER_HEADER As String = "IR_Ladder_Header"
+CORE_Config	Const	NM_ZONES_HEADER
+# SIG	CORE_Config	Const	NM_ZONES_HEADER	Public Const NM_ZONES_HEADER As String = "IR_Zones_Header"
+CORE_Config	Const	NM_BK_EQ_HEADER
+# SIG	CORE_Config	Const	NM_BK_EQ_HEADER	Public Const NM_BK_EQ_HEADER As String = "Buckets_EQ_Header"
+CORE_Config	Const	NM_BK_CO_HEADER
+# SIG	CORE_Config	Const	NM_BK_CO_HEADER	Public Const NM_BK_CO_HEADER As String = "Buckets_CO_Header"
+CORE_Config	Const	NM_BK_FX_HEADER
+# SIG	CORE_Config	Const	NM_BK_FX_HEADER	Public Const NM_BK_FX_HEADER As String = "Buckets_FX_Header"
+CORE_Config	Const	NM_RESULTS_HEADER
+# SIG	CORE_Config	Const	NM_RESULTS_HEADER	Public Const NM_RESULTS_HEADER As String = "Results_Header"
+CORE_Config	Const	NM_RESULTS_STATUS
+# SIG	CORE_Config	Const	NM_RESULTS_STATUS	Public Const NM_RESULTS_STATUS As String = "Results_Status"
+CORE_Config	Const	NM_CHECKS_HEADER
+# SIG	CORE_Config	Const	NM_CHECKS_HEADER	Public Const NM_CHECKS_HEADER As String = "Checks_Header"
+CORE_Config	Const	NM_FINDINGS_HEADER
+# SIG	CORE_Config	Const	NM_FINDINGS_HEADER	Public Const NM_FINDINGS_HEADER As String = "Checks_Findings_Header"
+CORE_Config	Const	NM_CHECKS_ERRORS
+# SIG	CORE_Config	Const	NM_CHECKS_ERRORS	Public Const NM_CHECKS_ERRORS As String = "Checks_Errors"
+CORE_Config	Const	NM_CHECKS_WARNINGS
+# SIG	CORE_Config	Const	NM_CHECKS_WARNINGS	Public Const NM_CHECKS_WARNINGS As String = "Checks_Warnings"
+CORE_Config	Const	NM_IR_GMR_TOTAL
+# SIG	CORE_Config	Const	NM_IR_GMR_TOTAL	Public Const NM_IR_GMR_TOTAL As String = "IR_GMR_Total"
+CORE_Config	Const	NM_EQ_GENERAL
+# SIG	CORE_Config	Const	NM_EQ_GENERAL	Public Const NM_EQ_GENERAL As String = "EQ_General"
+CORE_Config	Const	NM_CO_DIRECTIONAL
+# SIG	CORE_Config	Const	NM_CO_DIRECTIONAL	Public Const NM_CO_DIRECTIONAL As String = "CO_Directional"
+CORE_Config	Const	NM_FX_ONOP
+# SIG	CORE_Config	Const	NM_FX_ONOP	Public Const NM_FX_ONOP As String = "FX_ONOP"
+CORE_Config	Const	NM_FX_CHARGE
+# SIG	CORE_Config	Const	NM_FX_CHARGE	Public Const NM_FX_CHARGE As String = "FX_Charge"
+CORE_Config	Const	NM_LADDER_ZONE
+# SIG	CORE_Config	Const	NM_LADDER_ZONE	Public Const NM_LADDER_ZONE As String = "Ladder_Zone"
+CORE_Config	Const	NM_LADDER_UP_HIGH
+# SIG	CORE_Config	Const	NM_LADDER_UP_HIGH	Public Const NM_LADDER_UP_HIGH As String = "Ladder_UpperHigh"
+CORE_Config	Const	NM_LADDER_UP_LOW
+# SIG	CORE_Config	Const	NM_LADDER_UP_LOW	Public Const NM_LADDER_UP_LOW As String = "Ladder_UpperLow"
+CORE_Config	Const	NM_LADDER_LBL_HIGH
+# SIG	CORE_Config	Const	NM_LADDER_LBL_HIGH	Public Const NM_LADDER_LBL_HIGH As String = "Ladder_LabelHigh"
+CORE_Config	Const	NM_LADDER_LBL_LOW
+# SIG	CORE_Config	Const	NM_LADDER_LBL_LOW	Public Const NM_LADDER_LBL_LOW As String = "Ladder_LabelLow"
+CORE_Config	Const	NM_LADDER_RW
+# SIG	CORE_Config	Const	NM_LADDER_RW	Public Const NM_LADDER_RW As String = "Ladder_RW"
+CORE_Config	Const	NM_SR_KEY
+# SIG	CORE_Config	Const	NM_SR_KEY	Public Const NM_SR_KEY As String = "SR_Key"
+CORE_Config	Const	NM_SR_CHARGE
+# SIG	CORE_Config	Const	NM_SR_CHARGE	Public Const NM_SR_CHARGE As String = "SR_Charge"
+CORE_Config	Const	NM_FX_CCY
+# SIG	CORE_Config	Const	NM_FX_CCY	Public Const NM_FX_CCY As String = "FX_Ccy"
+CORE_Config	Const	NM_FX_RATE
+# SIG	CORE_Config	Const	NM_FX_RATE	Public Const NM_FX_RATE As String = "FX_Rate"
+CORE_Config	Const	NM_OPTIONS_PREFIX
+# SIG	CORE_Config	Const	NM_OPTIONS_PREFIX	Public Const NM_OPTIONS_PREFIX As String = "Options"
+CORE_Config	Const	IR_ID
+# SIG	CORE_Config	Const	IR_ID	Public Const IR_ID As Long = 1
+CORE_Config	Const	IR_CCY
+# SIG	CORE_Config	Const	IR_CCY	Public Const IR_CCY As Long = 4
+CORE_Config	Const	IR_DIRECTION
+# SIG	CORE_Config	Const	IR_DIRECTION	Public Const IR_DIRECTION As Long = 5
+CORE_Config	Const	IR_VALUE
+# SIG	CORE_Config	Const	IR_VALUE	Public Const IR_VALUE As Long = 6
+CORE_Config	Const	IR_RATE_TYPE
+# SIG	CORE_Config	Const	IR_RATE_TYPE	Public Const IR_RATE_TYPE As Long = 7
+CORE_Config	Const	IR_COUPON
+# SIG	CORE_Config	Const	IR_COUPON	Public Const IR_COUPON As Long = 8
+CORE_Config	Const	IR_MATURITY
+# SIG	CORE_Config	Const	IR_MATURITY	Public Const IR_MATURITY As Long = 9
+CORE_Config	Const	IR_REPRICING
+# SIG	CORE_Config	Const	IR_REPRICING	Public Const IR_REPRICING As Long = 10
+CORE_Config	Const	IR_CATEGORY
+# SIG	CORE_Config	Const	IR_CATEGORY	Public Const IR_CATEGORY As Long = 11
+CORE_Config	Const	IR_GRADE
+# SIG	CORE_Config	Const	IR_GRADE	Public Const IR_GRADE As Long = 12
+CORE_Config	Const	IR_ISSUE
+# SIG	CORE_Config	Const	IR_ISSUE	Public Const IR_ISSUE As Long = 13
+CORE_Config	Const	IR_INPUT_WIDTH
+# SIG	CORE_Config	Const	IR_INPUT_WIDTH	Public Const IR_INPUT_WIDTH As Long = 14
+CORE_Config	Const	EQ_ID
+# SIG	CORE_Config	Const	EQ_ID	Public Const EQ_ID As Long = 1
+CORE_Config	Const	EQ_MARKET
+# SIG	CORE_Config	Const	EQ_MARKET	Public Const EQ_MARKET As Long = 3
+CORE_Config	Const	EQ_TYPE
+# SIG	CORE_Config	Const	EQ_TYPE	Public Const EQ_TYPE As Long = 4
+CORE_Config	Const	EQ_IDENTIFIER
+# SIG	CORE_Config	Const	EQ_IDENTIFIER	Public Const EQ_IDENTIFIER As Long = 5
+CORE_Config	Const	EQ_CCY
+# SIG	CORE_Config	Const	EQ_CCY	Public Const EQ_CCY As Long = 6
+CORE_Config	Const	EQ_DIRECTION
+# SIG	CORE_Config	Const	EQ_DIRECTION	Public Const EQ_DIRECTION As Long = 7
+CORE_Config	Const	EQ_VALUE
+# SIG	CORE_Config	Const	EQ_VALUE	Public Const EQ_VALUE As Long = 8
+CORE_Config	Const	EQ_INPUT_WIDTH
+# SIG	CORE_Config	Const	EQ_INPUT_WIDTH	Public Const EQ_INPUT_WIDTH As Long = 9
+CORE_Config	Const	CO_ID
+# SIG	CORE_Config	Const	CO_ID	Public Const CO_ID As Long = 1
+CORE_Config	Const	CO_COMMODITY
+# SIG	CORE_Config	Const	CO_COMMODITY	Public Const CO_COMMODITY As Long = 3
+CORE_Config	Const	CO_DIRECTION
+# SIG	CORE_Config	Const	CO_DIRECTION	Public Const CO_DIRECTION As Long = 4
+CORE_Config	Const	CO_QUANTITY
+# SIG	CORE_Config	Const	CO_QUANTITY	Public Const CO_QUANTITY As Long = 5
+CORE_Config	Const	CO_PRICE
+# SIG	CORE_Config	Const	CO_PRICE	Public Const CO_PRICE As Long = 7
+CORE_Config	Const	CO_CCY
+# SIG	CORE_Config	Const	CO_CCY	Public Const CO_CCY As Long = 8
+CORE_Config	Const	CO_INPUT_WIDTH
+# SIG	CORE_Config	Const	CO_INPUT_WIDTH	Public Const CO_INPUT_WIDTH As Long = 10
+CORE_Config	Const	FX_ID
+# SIG	CORE_Config	Const	FX_ID	Public Const FX_ID As Long = 1
+CORE_Config	Const	FX_CCY
+# SIG	CORE_Config	Const	FX_CCY	Public Const FX_CCY As Long = 3
+CORE_Config	Const	FX_DIRECTION
+# SIG	CORE_Config	Const	FX_DIRECTION	Public Const FX_DIRECTION As Long = 4
+CORE_Config	Const	FX_AMOUNT
+# SIG	CORE_Config	Const	FX_AMOUNT	Public Const FX_AMOUNT As Long = 5
+CORE_Config	Const	FX_INPUT_WIDTH
+# SIG	CORE_Config	Const	FX_INPUT_WIDTH	Public Const FX_INPUT_WIDTH As Long = 6
+CORE_Config	Const	IR_CALC_WIDTH
+# SIG	CORE_Config	Const	IR_CALC_WIDTH	Public Const IR_CALC_WIDTH As Long = 22
+CORE_Config	Const	EQ_CALC_WIDTH
+# SIG	CORE_Config	Const	EQ_CALC_WIDTH	Public Const EQ_CALC_WIDTH As Long = 12
+CORE_Config	Const	CO_CALC_WIDTH
+# SIG	CORE_Config	Const	CO_CALC_WIDTH	Public Const CO_CALC_WIDTH As Long = 8
+CORE_Config	Const	FX_CALC_WIDTH
+# SIG	CORE_Config	Const	FX_CALC_WIDTH	Public Const FX_CALC_WIDTH As Long = 7
+CORE_Config	Const	LADDER_WIDTH
+# SIG	CORE_Config	Const	LADDER_WIDTH	Public Const LADDER_WIDTH As Long = 13
+CORE_Config	Const	ZONES_WIDTH
+# SIG	CORE_Config	Const	ZONES_WIDTH	Public Const ZONES_WIDTH As Long = 30
+CORE_Config	Const	BK_EQ_WIDTH
+# SIG	CORE_Config	Const	BK_EQ_WIDTH	Public Const BK_EQ_WIDTH As Long = 10
+CORE_Config	Const	BK_CO_WIDTH
+# SIG	CORE_Config	Const	BK_CO_WIDTH	Public Const BK_CO_WIDTH As Long = 10
+CORE_Config	Const	BK_FX_WIDTH
+# SIG	CORE_Config	Const	BK_FX_WIDTH	Public Const BK_FX_WIDTH As Long = 9
+CORE_Config	Const	RESULTS_WIDTH
+# SIG	CORE_Config	Const	RESULTS_WIDTH	Public Const RESULTS_WIDTH As Long = 11
+CORE_Config	Const	RESULTS_COLUMN
+# SIG	CORE_Config	Const	RESULTS_COLUMN	Public Const RESULTS_COLUMN As Long = 3
+CORE_Config	Const	FINDINGS_WIDTH
+# SIG	CORE_Config	Const	FINDINGS_WIDTH	Public Const FINDINGS_WIDTH As Long = 7
+CORE_Config	Const	TOT_SPECIFIC
+# SIG	CORE_Config	Const	TOT_SPECIFIC	Public Const TOT_SPECIFIC As Long = 1
+CORE_Config	Const	TOT_GENERAL
+# SIG	CORE_Config	Const	TOT_GENERAL	Public Const TOT_GENERAL As Long = 2
+CORE_Config	Const	TOT_OTHER
+# SIG	CORE_Config	Const	TOT_OTHER	Public Const TOT_OTHER As Long = 3
+CORE_Config	Const	TOT_USED
+# SIG	CORE_Config	Const	TOT_USED	Public Const TOT_USED As Long = 4
+CORE_Config	Const	TOT_REJECTED
+# SIG	CORE_Config	Const	TOT_REJECTED	Public Const TOT_REJECTED As Long = 5
+CORE_Config	Const	TOT_EXCLUDED
+# SIG	CORE_Config	Const	TOT_EXCLUDED	Public Const TOT_EXCLUDED As Long = 6
+CORE_Config	Const	TOT_MIXED
+# SIG	CORE_Config	Const	TOT_MIXED	Public Const TOT_MIXED As Long = 7
+CORE_Config	Const	TOT_BUCKETS
+# SIG	CORE_Config	Const	TOT_BUCKETS	Public Const TOT_BUCKETS As Long = 8
+CORE_Config	Const	TOT_LONG
+# SIG	CORE_Config	Const	TOT_LONG	Public Const TOT_LONG As Long = 9
+CORE_Config	Const	TOT_SHORT
+# SIG	CORE_Config	Const	TOT_SHORT	Public Const TOT_SHORT As Long = 10
+CORE_Config	Const	TOT_GOLD
+# SIG	CORE_Config	Const	TOT_GOLD	Public Const TOT_GOLD As Long = 11
+CORE_Config	Const	TOT_ONOP
+# SIG	CORE_Config	Const	TOT_ONOP	Public Const TOT_ONOP As Long = 12
+CORE_Config	Const	TOT_COUNT
+# SIG	CORE_Config	Const	TOT_COUNT	Public Const TOT_COUNT As Long = 12
+CORE_Config	Const	IN_NUMERIC
+# SIG	CORE_Config	Const	IN_NUMERIC	Public Const IN_NUMERIC As Long = 1
+CORE_Config	Const	IN_ASOF
+# SIG	CORE_Config	Const	IN_ASOF	Public Const IN_ASOF As Long = 2
+CORE_Config	Const	IN_REPCCY
+# SIG	CORE_Config	Const	IN_REPCCY	Public Const IN_REPCCY As Long = 3
+CORE_Config	Const	IN_GOLD
+# SIG	CORE_Config	Const	IN_GOLD	Public Const IN_GOLD As Long = 4
+CORE_Config	Const	IN_LADDER
+# SIG	CORE_Config	Const	IN_LADDER	Public Const IN_LADDER As Long = 5
+CORE_Config	Const	IN_LADDER_LABELS
+# SIG	CORE_Config	Const	IN_LADDER_LABELS	Public Const IN_LADDER_LABELS As Long = 6
+CORE_Config	Const	IN_SR_TABLE
+# SIG	CORE_Config	Const	IN_SR_TABLE	Public Const IN_SR_TABLE As Long = 7
+CORE_Config	Const	IN_FX_TABLE
+# SIG	CORE_Config	Const	IN_FX_TABLE	Public Const IN_FX_TABLE As Long = 8
+CORE_Config	Const	IN_OPTIONS
+# SIG	CORE_Config	Const	IN_OPTIONS	Public Const IN_OPTIONS As Long = 9
+CORE_Config	Const	IN_IR_ROWS
+# SIG	CORE_Config	Const	IN_IR_ROWS	Public Const IN_IR_ROWS As Long = 10
+CORE_Config	Const	IN_EQ_ROWS
+# SIG	CORE_Config	Const	IN_EQ_ROWS	Public Const IN_EQ_ROWS As Long = 11
+CORE_Config	Const	IN_CO_ROWS
+# SIG	CORE_Config	Const	IN_CO_ROWS	Public Const IN_CO_ROWS As Long = 12
+CORE_Config	Const	IN_FX_ROWS
+# SIG	CORE_Config	Const	IN_FX_ROWS	Public Const IN_FX_ROWS As Long = 13
+CORE_Config	Const	IN_IR_FIRST_ROW
+# SIG	CORE_Config	Const	IN_IR_FIRST_ROW	Public Const IN_IR_FIRST_ROW As Long = 14
+CORE_Config	Const	IN_EQ_FIRST_ROW
+# SIG	CORE_Config	Const	IN_EQ_FIRST_ROW	Public Const IN_EQ_FIRST_ROW As Long = 15
+CORE_Config	Const	IN_CO_FIRST_ROW
+# SIG	CORE_Config	Const	IN_CO_FIRST_ROW	Public Const IN_CO_FIRST_ROW As Long = 16
+CORE_Config	Const	IN_FX_FIRST_ROW
+# SIG	CORE_Config	Const	IN_FX_FIRST_ROW	Public Const IN_FX_FIRST_ROW As Long = 17
+CORE_Config	Const	IN_EQ_CAPACITY
+# SIG	CORE_Config	Const	IN_EQ_CAPACITY	Public Const IN_EQ_CAPACITY As Long = 18
+CORE_Config	Const	IN_CO_CAPACITY
+# SIG	CORE_Config	Const	IN_CO_CAPACITY	Public Const IN_CO_CAPACITY As Long = 19
+CORE_Config	Const	IN_COUNT
+# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 19
+CORE_Config	Const	OUT_IR_CALC
+# SIG	CORE_Config	Const	OUT_IR_CALC	Public Const OUT_IR_CALC As Long = 1
+CORE_Config	Const	OUT_LADDER
+# SIG	CORE_Config	Const	OUT_LADDER	Public Const OUT_LADDER As Long = 2
+CORE_Config	Const	OUT_ZONES
+# SIG	CORE_Config	Const	OUT_ZONES	Public Const OUT_ZONES As Long = 3
+CORE_Config	Const	OUT_EQ_CALC
+# SIG	CORE_Config	Const	OUT_EQ_CALC	Public Const OUT_EQ_CALC As Long = 4
+CORE_Config	Const	OUT_MARKETS
+# SIG	CORE_Config	Const	OUT_MARKETS	Public Const OUT_MARKETS As Long = 5
+CORE_Config	Const	OUT_CO_CALC
+# SIG	CORE_Config	Const	OUT_CO_CALC	Public Const OUT_CO_CALC As Long = 6
+CORE_Config	Const	OUT_COMMODITIES
+# SIG	CORE_Config	Const	OUT_COMMODITIES	Public Const OUT_COMMODITIES As Long = 7
+CORE_Config	Const	OUT_FX_CALC
+# SIG	CORE_Config	Const	OUT_FX_CALC	Public Const OUT_FX_CALC As Long = 8
+CORE_Config	Const	OUT_CURRENCIES
+# SIG	CORE_Config	Const	OUT_CURRENCIES	Public Const OUT_CURRENCIES As Long = 9
+CORE_Config	Const	OUT_FX_SUMMARY
+# SIG	CORE_Config	Const	OUT_FX_SUMMARY	Public Const OUT_FX_SUMMARY As Long = 10
+CORE_Config	Const	OUT_RESULTS
+# SIG	CORE_Config	Const	OUT_RESULTS	Public Const OUT_RESULTS As Long = 11
+CORE_Config	Const	OUT_RULES
+# SIG	CORE_Config	Const	OUT_RULES	Public Const OUT_RULES As Long = 12
+CORE_Config	Const	OUT_FINDINGS
+# SIG	CORE_Config	Const	OUT_FINDINGS	Public Const OUT_FINDINGS As Long = 13
+CORE_Config	Const	OUT_STATUS
+# SIG	CORE_Config	Const	OUT_STATUS	Public Const OUT_STATUS As Long = 14
+CORE_Config	Const	OUT_STOPPED
+# SIG	CORE_Config	Const	OUT_STOPPED	Public Const OUT_STOPPED As Long = 15
+CORE_Config	Const	OUT_REQUIREMENT
+# SIG	CORE_Config	Const	OUT_REQUIREMENT	Public Const OUT_REQUIREMENT As Long = 16
+CORE_Config	Const	OUT_RWA
+# SIG	CORE_Config	Const	OUT_RWA	Public Const OUT_RWA As Long = 17
+CORE_Config	Const	OUT_ERRORS
+# SIG	CORE_Config	Const	OUT_ERRORS	Public Const OUT_ERRORS As Long = 18
+CORE_Config	Const	OUT_WARNINGS
+# SIG	CORE_Config	Const	OUT_WARNINGS	Public Const OUT_WARNINGS As Long = 19
+CORE_Config	Const	OUT_USED
+# SIG	CORE_Config	Const	OUT_USED	Public Const OUT_USED As Long = 20
+CORE_Config	Const	OUT_COUNT
+# SIG	CORE_Config	Const	OUT_COUNT	Public Const OUT_COUNT As Long = 20
+CORE_Config	Const	RC_IR
+# SIG	CORE_Config	Const	RC_IR	Public Const RC_IR As Long = 1
+CORE_Config	Const	RC_EQ
+# SIG	CORE_Config	Const	RC_EQ	Public Const RC_EQ As Long = 2
+CORE_Config	Const	RC_CO
+# SIG	CORE_Config	Const	RC_CO	Public Const RC_CO As Long = 3
+CORE_Config	Const	RC_FX
+# SIG	CORE_Config	Const	RC_FX	Public Const RC_FX As Long = 4
+CORE_Config	Const	RC_COUNT
+# SIG	CORE_Config	Const	RC_COUNT	Public Const RC_COUNT As Long = 4
+CORE_Config	Const	RC_CODES
+# SIG	CORE_Config	Const	RC_CODES	Public Const RC_CODES As String = "IR|EQ|CO|FX"
+CORE_Config	Const	PRM_ASOF
+# SIG	CORE_Config	Const	PRM_ASOF	Public Const PRM_ASOF As String = "AsOfDate"
+CORE_Config	Const	PRM_REPCCY
+# SIG	CORE_Config	Const	PRM_REPCCY	Public Const PRM_REPCCY As String = "ReportingCcy"
+CORE_Config	Const	PRM_GOLD
+# SIG	CORE_Config	Const	PRM_GOLD	Public Const PRM_GOLD As String = "GoldCode"
+CORE_Config	Const	PI_DAYS_PER_YEAR
+# SIG	CORE_Config	Const	PI_DAYS_PER_YEAR	Public Const PI_DAYS_PER_YEAR As Long = 1
+CORE_Config	Const	PI_COUPON_THRESHOLD
+# SIG	CORE_Config	Const	PI_COUPON_THRESHOLD	Public Const PI_COUPON_THRESHOLD As Long = 2
+CORE_Config	Const	PI_SCALING_IR
+# SIG	CORE_Config	Const	PI_SCALING_IR	Public Const PI_SCALING_IR As Long = 3
+CORE_Config	Const	PI_SCALING_EQ
+# SIG	CORE_Config	Const	PI_SCALING_EQ	Public Const PI_SCALING_EQ As Long = 4
+CORE_Config	Const	PI_SCALING_CO
+# SIG	CORE_Config	Const	PI_SCALING_CO	Public Const PI_SCALING_CO As Long = 5
+CORE_Config	Const	PI_SCALING_FX
+# SIG	CORE_Config	Const	PI_SCALING_FX	Public Const PI_SCALING_FX As Long = 6
+CORE_Config	Const	PI_RWA_MULTIPLIER
+# SIG	CORE_Config	Const	PI_RWA_MULTIPLIER	Public Const PI_RWA_MULTIPLIER As Long = 7
+CORE_Config	Const	PI_VERTICAL
+# SIG	CORE_Config	Const	PI_VERTICAL	Public Const PI_VERTICAL As Long = 8
+CORE_Config	Const	PI_ZONE1
+# SIG	CORE_Config	Const	PI_ZONE1	Public Const PI_ZONE1 As Long = 9
+CORE_Config	Const	PI_ZONE2
+# SIG	CORE_Config	Const	PI_ZONE2	Public Const PI_ZONE2 As Long = 10
+CORE_Config	Const	PI_ZONE3
+# SIG	CORE_Config	Const	PI_ZONE3	Public Const PI_ZONE3 As Long = 11
+CORE_Config	Const	PI_ADJACENT
+# SIG	CORE_Config	Const	PI_ADJACENT	Public Const PI_ADJACENT As Long = 12
+CORE_Config	Const	PI_ZONE13
+# SIG	CORE_Config	Const	PI_ZONE13	Public Const PI_ZONE13 As Long = 13
+CORE_Config	Const	PI_EQ_SPECIFIC
+# SIG	CORE_Config	Const	PI_EQ_SPECIFIC	Public Const PI_EQ_SPECIFIC As Long = 14
+CORE_Config	Const	PI_EQ_INDEX
+# SIG	CORE_Config	Const	PI_EQ_INDEX	Public Const PI_EQ_INDEX As Long = 15
+CORE_Config	Const	PI_EQ_GENERAL
+# SIG	CORE_Config	Const	PI_EQ_GENERAL	Public Const PI_EQ_GENERAL As Long = 16
+CORE_Config	Const	PI_FX_CHARGE
+# SIG	CORE_Config	Const	PI_FX_CHARGE	Public Const PI_FX_CHARGE As Long = 17
+CORE_Config	Const	PI_CO_DIRECTIONAL
+# SIG	CORE_Config	Const	PI_CO_DIRECTIONAL	Public Const PI_CO_DIRECTIONAL As Long = 18
+CORE_Config	Const	PI_CO_GROSS
+# SIG	CORE_Config	Const	PI_CO_GROSS	Public Const PI_CO_GROSS As Long = 19
+CORE_Config	Const	PI_COUNT
+# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 19
+CORE_Config	Const	PRM_NUMERIC_CODES
+# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate"
+CORE_Config	Const	PRM_REFERENCE_VALUES
+# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03"
+CORE_Config	Const	PRM_REFERENCE_GOLD
+# SIG	CORE_Config	Const	PRM_REFERENCE_GOLD	Public Const PRM_REFERENCE_GOLD As String = "XAU"
+CORE_Config	Const	PRM_DOMAINS
+# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRR"
+CORE_Config	Const	BAND_COUNT
+# SIG	CORE_Config	Const	BAND_COUNT	Public Const BAND_COUNT As Long = 15
+CORE_Config	Const	ZONE_COUNT
+# SIG	CORE_Config	Const	ZONE_COUNT	Public Const ZONE_COUNT As Long = 3
+CORE_Config	Const	OPEN_BOUND
+# SIG	CORE_Config	Const	OPEN_BOUND	Public Const OPEN_BOUND As Double = 1E+300
+CORE_Config	Const	LADDER_ZONES
+# SIG	CORE_Config	Const	LADDER_ZONES	Public Const LADDER_ZONES As String = "1|1|1|1|2|2|2|3|3|3|3|3|3|3|3"
+CORE_Config	Const	LADDER_UPPER_HIGH
+# SIG	CORE_Config	Const	LADDER_UPPER_HIGH	Public Const LADDER_UPPER_HIGH As String = "0.0833333333333333|0.25|0.5|1|2|3|4|5|7|10|15|20|||"
+CORE_Config	Const	LADDER_UPPER_LOW
+# SIG	CORE_Config	Const	LADDER_UPPER_LOW	Public Const LADDER_UPPER_LOW As String = "0.0833333333333333|0.25|0.5|1|1.9|2.8|3.6|4.3|5.7|7.3|9.3|10.6|12|20|"
+CORE_Config	Const	LADDER_WEIGHTS
+# SIG	CORE_Config	Const	LADDER_WEIGHTS	Public Const LADDER_WEIGHTS As String = "0|0.002|0.004|0.007|0.0125|0.0175|0.0225|0.0275|0.0325|0.0375|0.045|0.0525|0.06|0.08|0.125"
+CORE_Config	Const	LD_ZONE
+# SIG	CORE_Config	Const	LD_ZONE	Public Const LD_ZONE As Long = 1
+CORE_Config	Const	LD_UPPER_HIGH
+# SIG	CORE_Config	Const	LD_UPPER_HIGH	Public Const LD_UPPER_HIGH As Long = 2
+CORE_Config	Const	LD_UPPER_LOW
+# SIG	CORE_Config	Const	LD_UPPER_LOW	Public Const LD_UPPER_LOW As Long = 3
+CORE_Config	Const	LD_WEIGHT
+# SIG	CORE_Config	Const	LD_WEIGHT	Public Const LD_WEIGHT As Long = 4
+CORE_Config	Const	LD_WIDTH
+# SIG	CORE_Config	Const	LD_WIDTH	Public Const LD_WIDTH As Long = 4
+CORE_Config	Const	ZC_VERTICAL
+# SIG	CORE_Config	Const	ZC_VERTICAL	Public Const ZC_VERTICAL As Long = 1
+CORE_Config	Const	ZC_ZONE_FIRST
+# SIG	CORE_Config	Const	ZC_ZONE_FIRST	Public Const ZC_ZONE_FIRST As Long = 2
+CORE_Config	Const	ZC_MATCHED12
+# SIG	CORE_Config	Const	ZC_MATCHED12	Public Const ZC_MATCHED12 As Long = 17
+CORE_Config	Const	ZC_Z1_AFTER12
+# SIG	CORE_Config	Const	ZC_Z1_AFTER12	Public Const ZC_Z1_AFTER12 As Long = 18
+CORE_Config	Const	ZC_Z2_AFTER12
+# SIG	CORE_Config	Const	ZC_Z2_AFTER12	Public Const ZC_Z2_AFTER12 As Long = 19
+CORE_Config	Const	ZC_MATCHED23
+# SIG	CORE_Config	Const	ZC_MATCHED23	Public Const ZC_MATCHED23 As Long = 20
+CORE_Config	Const	ZC_Z2_AFTER23
+# SIG	CORE_Config	Const	ZC_Z2_AFTER23	Public Const ZC_Z2_AFTER23 As Long = 21
+CORE_Config	Const	ZC_Z3_AFTER23
+# SIG	CORE_Config	Const	ZC_Z3_AFTER23	Public Const ZC_Z3_AFTER23 As Long = 22
+CORE_Config	Const	ZC_MATCHED13
+# SIG	CORE_Config	Const	ZC_MATCHED13	Public Const ZC_MATCHED13 As Long = 23
+CORE_Config	Const	ZC_BETWEEN
+# SIG	CORE_Config	Const	ZC_BETWEEN	Public Const ZC_BETWEEN As Long = 24
+CORE_Config	Const	ZC_NET
+# SIG	CORE_Config	Const	ZC_NET	Public Const ZC_NET As Long = 25
+CORE_Config	Const	ZC_GENERAL
+# SIG	CORE_Config	Const	ZC_GENERAL	Public Const ZC_GENERAL As Long = 26
+CORE_Config	Const	ZC_COUNT
+# SIG	CORE_Config	Const	ZC_COUNT	Public Const ZC_COUNT As Long = 26
+CORE_Config	Const	ST_OK
+# SIG	CORE_Config	Const	ST_OK	Public Const ST_OK As String = "OK"
+CORE_Config	Const	ST_INVALID
+# SIG	CORE_Config	Const	ST_INVALID	Public Const ST_INVALID As String = "INVALID: "
+CORE_Config	Const	ST_EXCLUDED
+# SIG	CORE_Config	Const	ST_EXCLUDED	Public Const ST_EXCLUDED As String = "EXCLUDED: "
+CORE_Config	Const	SEV_ERROR
+# SIG	CORE_Config	Const	SEV_ERROR	Public Const SEV_ERROR As String = "ERROR"
+CORE_Config	Const	SEV_WARNING
+# SIG	CORE_Config	Const	SEV_WARNING	Public Const SEV_WARNING As String = "WARNING"
+CORE_Config	Const	SEV_INFO
+# SIG	CORE_Config	Const	SEV_INFO	Public Const SEV_INFO As String = "INFO"
+CORE_Config	Const	SR_NONE
+# SIG	CORE_Config	Const	SR_NONE	Public Const SR_NONE As String = "NONE"
+CORE_Config	Const	SR_NO_MATCH
+# SIG	CORE_Config	Const	SR_NO_MATCH	Public Const SR_NO_MATCH As String = "NO MATCH"
+CORE_Config	Const	SR_CATEGORIES
+# SIG	CORE_Config	Const	SR_CATEGORIES	Public Const SR_CATEGORIES As String = "|GOV|QUAL|OTHER|NONE|"
+CORE_Config	Const	LBL_MIXED
+# SIG	CORE_Config	Const	LBL_MIXED	Public Const LBL_MIXED As String = "MIXED"
+CORE_Config	Const	LBL_NOT_APPLY
+# SIG	CORE_Config	Const	LBL_NOT_APPLY	Public Const LBL_NOT_APPLY As String = "n/a"
+CORE_Config	Const	FX_REPORTING
+# SIG	CORE_Config	Const	FX_REPORTING	Public Const FX_REPORTING As String = "Reporting ccy"
+CORE_Config	Const	FX_GOLD_LABEL
+# SIG	CORE_Config	Const	FX_GOLD_LABEL	Public Const FX_GOLD_LABEL As String = "Gold"
+CORE_Config	Const	FX_CURRENCY
+# SIG	CORE_Config	Const	FX_CURRENCY	Public Const FX_CURRENCY As String = "Currency"
+CORE_Config	Const	LBL_TOTAL_ZONES
+# SIG	CORE_Config	Const	LBL_TOTAL_ZONES	Public Const LBL_TOTAL_ZONES As String = "Total"
+CORE_Config	Const	LBL_TOTAL_EQ
+# SIG	CORE_Config	Const	LBL_TOTAL_EQ	Public Const LBL_TOTAL_EQ As String = "Total equity"
+CORE_Config	Const	LBL_TOTAL_CO
+# SIG	CORE_Config	Const	LBL_TOTAL_CO	Public Const LBL_TOTAL_CO As String = "Total commodities"
+CORE_Config	Const	LBL_TOTAL_FX
+# SIG	CORE_Config	Const	LBL_TOTAL_FX	Public Const LBL_TOTAL_FX As String = "Totals"
+CORE_Config	Const	RULE_IR_ROWS
+# SIG	CORE_Config	Const	RULE_IR_ROWS	Public Const RULE_IR_ROWS As String = "C01"
+CORE_Config	Const	RULE_EQ_ROWS
+# SIG	CORE_Config	Const	RULE_EQ_ROWS	Public Const RULE_EQ_ROWS As String = "C02"
+CORE_Config	Const	RULE_CO_ROWS
+# SIG	CORE_Config	Const	RULE_CO_ROWS	Public Const RULE_CO_ROWS As String = "C03"
+CORE_Config	Const	RULE_FX_ROWS
+# SIG	CORE_Config	Const	RULE_FX_ROWS	Public Const RULE_FX_ROWS As String = "C04"
+CORE_Config	Const	RULE_FX_REPCCY
+# SIG	CORE_Config	Const	RULE_FX_REPCCY	Public Const RULE_FX_REPCCY As String = "C05"
+CORE_Config	Const	RULE_FX_DUP
+# SIG	CORE_Config	Const	RULE_FX_DUP	Public Const RULE_FX_DUP As String = "C06"
+CORE_Config	Const	RULE_FX_RATE
+# SIG	CORE_Config	Const	RULE_FX_RATE	Public Const RULE_FX_RATE As String = "C07"
+CORE_Config	Const	RULE_CHANGED
+# SIG	CORE_Config	Const	RULE_CHANGED	Public Const RULE_CHANGED As String = "C08"
+CORE_Config	Const	RULE_MIXED
+# SIG	CORE_Config	Const	RULE_MIXED	Public Const RULE_MIXED As String = "C09"
+CORE_Config	Const	RULE_EQ_CAP
+# SIG	CORE_Config	Const	RULE_EQ_CAP	Public Const RULE_EQ_CAP As String = "C10"
+CORE_Config	Const	RULE_CO_CAP
+# SIG	CORE_Config	Const	RULE_CO_CAP	Public Const RULE_CO_CAP As String = "C11"
+CORE_Config	Const	RULE_FX_EXCL
+# SIG	CORE_Config	Const	RULE_FX_EXCL	Public Const RULE_FX_EXCL As String = "C12"
+CORE_Config	Const	RULE_OPTIONS
+# SIG	CORE_Config	Const	RULE_OPTIONS	Public Const RULE_OPTIONS As String = "C13"
+CORE_Config	Const	RULE_PARAMS
+# SIG	CORE_Config	Const	RULE_PARAMS	Public Const RULE_PARAMS As String = "C14"
+CORE_Config	Const	RULE_COUNT
+# SIG	CORE_Config	Const	RULE_COUNT	Public Const RULE_COUNT As Long = 14
+CORE_Config	Const	RULE_SEVERITIES
+# SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR"
+CORE_Config	Const	ERR_LAYOUT
+# SIG	CORE_Config	Const	ERR_LAYOUT	Public Const ERR_LAYOUT As Long = vbObjectError + 2049
+CORE_Config	Const	ERR_ARGUMENT
+# SIG	CORE_Config	Const	ERR_ARGUMENT	Public Const ERR_ARGUMENT As Long = vbObjectError + 2050
+CORE_Config	Const	ERR_CLEANUP_FAILED
+# SIG	CORE_Config	Const	ERR_CLEANUP_FAILED	Public Const ERR_CLEANUP_FAILED As Long = vbObjectError + 2051
+CORE_Engine	Sub	Calculate
+# SIG	CORE_Engine	Sub	Calculate	Public Sub Calculate(ByRef Inputs() As Variant, ByRef Outputs() As Variant)
+CORE_Equity	Sub	CalculateEquity
+# SIG	CORE_Equity	Sub	CalculateEquity	Public Sub CalculateEquity(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef MarketOutput() As Variant, ByRef Totals() As Double)
+CORE_ForeignExchange	Sub	CalculateForeignExchange
+# SIG	CORE_ForeignExchange	Sub	CalculateForeignExchange	Public Sub CalculateForeignExchange(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal ReportingCcy As String, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef CurrencyOutput() As Variant, ByRef Totals() As Double)
+CORE_ForeignExchange	Function	NetOpenPositionCharge
+# SIG	CORE_ForeignExchange	Function	NetOpenPositionCharge	Public Function NetOpenPositionCharge(ByVal SumNetLong As Double, ByVal SumNetShort As Double, ByVal GoldPosition As Double, ByVal ChargeRate As Double, ByRef OverallNetOpen As Double) As Double
+CORE_InterestRate	Sub	CalculateInterestRate
+# SIG	CORE_InterestRate	Sub	CalculateInterestRate	Public Sub CalculateInterestRate(ByRef InputRows() As Variant, ByVal AsOfDate As Double, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal GoldCode As String, ByRef SrKeys() As String, ByRef SrCharges() As Double, ByRef Ladder() As Double, ByRef LadderLabels() As String, ByRef RowOutput() As Variant, ByRef LadderOutput() As Variant, ByRef ZoneOutput() As Variant, ByRef Totals() As Double)
+CORE_InterestRate	Function	TimeBand
+# SIG	CORE_InterestRate	Function	TimeBand	Public Function TimeBand(ByVal ResidualMaturity As Double, ByVal HighCoupon As Boolean, ByRef Ladder() As Double) As Long
+CORE_InterestRate	Sub	LadderCharges
+# SIG	CORE_InterestRate	Sub	LadderCharges	Public Sub LadderCharges(ByRef WeightedLong() As Double, ByRef WeightedShort() As Double, ByRef Ladder() As Double, ByRef Parameters() As Double, ByRef Components() As Double)
+CORE_Parameters	Function	BuildParameters
+# SIG	CORE_Parameters	Function	BuildParameters	Public Function BuildParameters(ByRef RawNumeric() As Variant, ByVal RawAsOfDate As Variant, ByVal RawReportingCcy As Variant, ByVal RawGoldCode As Variant, ByRef Parameters() As Double, ByRef AsOfDate As Double, ByRef ReportingCcy As String, ByRef GoldCode As String, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Function	ChangedParameterCount
+# SIG	CORE_Parameters	Function	ChangedParameterCount	Public Function ChangedParameterCount(ByRef Parameters() As Double, ByVal GoldCode As String) As Long
+CORE_Parameters	Sub	ReferenceParameters
+# SIG	CORE_Parameters	Sub	ReferenceParameters	Public Sub ReferenceParameters(ByRef Parameters() As Double)
+CORE_Parameters	Function	BuildLadder
+# SIG	CORE_Parameters	Function	BuildLadder	Public Function BuildLadder(ByRef RawLadder() As Variant, ByRef Ladder() As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Sub	ReferenceLadder
+# SIG	CORE_Parameters	Sub	ReferenceLadder	Public Sub ReferenceLadder(ByRef Ladder() As Double)
+CORE_Parameters	Function	BuildSpecificRiskTable
+# SIG	CORE_Parameters	Function	BuildSpecificRiskTable	Public Function BuildSpecificRiskTable(ByRef RawTable() As Variant, ByRef Keys() As String, ByRef Charges() As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Function	BuildFxTable
+# SIG	CORE_Parameters	Function	BuildFxTable	Public Function BuildFxTable(ByRef RawTable() As Variant, ByVal ReportingCcy As String, ByRef Codes() As String, ByRef Rates() As Double, ByRef ReportingErrors As Long, ByRef DuplicateErrors As Long, ByRef RateErrors As Long, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Function	BuildOptionCharges
+# SIG	CORE_Parameters	Function	BuildOptionCharges	Public Function BuildOptionCharges(ByRef RawCharges() As Variant, ByRef Charges() As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Util	Function	IsNumberValue
+# SIG	CORE_Util	Function	IsNumberValue	Public Function IsNumberValue(ByVal Value As Variant) As Boolean
+CORE_Util	Function	NumberValue
+# SIG	CORE_Util	Function	NumberValue	Public Function NumberValue(ByVal Value As Variant) As Double
+CORE_Util	Function	PlainText
+# SIG	CORE_Util	Function	PlainText	Public Function PlainText(ByVal Value As Variant) As String
+CORE_Util	Function	CodeText
+# SIG	CORE_Util	Function	CodeText	Public Function CodeText(ByVal Value As Variant) As String
+CORE_Util	Function	DirectionSign
+# SIG	CORE_Util	Function	DirectionSign	Public Function DirectionSign(ByVal Value As Variant) As Double
+CORE_Util	Function	IsInvalidStatus
+# SIG	CORE_Util	Function	IsInvalidStatus	Public Function IsInvalidStatus(ByVal Status As String) As Boolean
+CORE_Util	Function	FindCode
+# SIG	CORE_Util	Function	FindCode	Public Function FindCode(ByRef Codes() As String, ByVal Code As String) As Long
+CORE_Util	Function	KeyPosition
+# SIG	CORE_Util	Function	KeyPosition	Public Function KeyPosition(ByRef Keys() As String, ByRef KeyCount As Long, ByVal Key As String, ByVal AddMissing As Boolean) As Long
+CORE_Util	Sub	ParseList
+# SIG	CORE_Util	Sub	ParseList	Public Sub ParseList(ByVal ListText As String, ByVal ExpectedCount As Long, ByVal BlankValue As Double, ByRef Values() As Double)
+CORE_Util	Function	ListItem
+# SIG	CORE_Util	Function	ListItem	Public Function ListItem(ByVal ListText As String, ByVal Position As Long) As String
+CORE_Util	Sub	AddFinding
+# SIG	CORE_Util	Sub	AddFinding	Public Sub AddFinding(ByRef Findings() As String, ByRef FindingCount As Long, ByVal SheetName As String, ByVal Item As String, ByVal RowText As String, ByVal Reason As String)
+CORE_Util	Sub	WriteTotalRow
+# SIG	CORE_Util	Sub	WriteTotalRow	Public Sub WriteTotalRow(ByRef BucketOutput() As Variant, ByVal BucketCount As Long, ByVal Label As String)
+M_Main	Sub	RunSSA
+# SIG	M_Main	Sub	RunSSA	Public Sub RunSSA()
+M_Main	Function	RunSSA_Silent
+# SIG	M_Main	Function	RunSSA_Silent	Public Function RunSSA_Silent() As String
+M_Main	Sub	ClearOutputs
+# SIG	M_Main	Sub	ClearOutputs	Public Sub ClearOutputs()
+M_Main	Function	ClearOutputs_Silent
+# SIG	M_Main	Function	ClearOutputs_Silent	Public Function ClearOutputs_Silent() As String
