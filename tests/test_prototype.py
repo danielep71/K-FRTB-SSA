@@ -228,6 +228,37 @@ class Generator(NeedsOpenpyxl):
                 # A criteria function would read "*" or "?" in a PositionID as a pattern.
                 self.assertNotIn("COUNTIF($C$5:$C$504,$C5)", status)
 
+    def test_rows_are_grouped_by_typed_keys_as_text_not_as_patterns(self) -> None:
+        assert openpyxl is not None
+        book = openpyxl.load_workbook(self.formula)
+        # A criteria function may only test a constant, and MATCH may only look
+        # up a row number: either would read a typed key as a pattern.
+        criteria = re.compile(r'\b(COUNTIFS?|SUMIFS?|AVERAGEIFS?|MAXIFS|MINIFS)\((?![^,()]+,"[^"]*"[,)])')
+        lookup = re.compile(r"\bMATCH\((?!\d+,|\$C\d+,(?:EQ|CO)Calc!)|\b[VHX]?LOOKUP\(")
+        formulas = 0
+        for sheet in book:
+            for row in sheet.iter_rows():
+                for cell in row:
+                    value = cell.value
+                    if isinstance(value, str) and value.startswith("="):
+                        formulas += 1
+                        self.assertNotRegex(value, criteria, f"{sheet.title}!{cell.coordinate}")
+                        self.assertNotRegex(value, lookup, f"{sheet.title}!{cell.coordinate}")
+        self.assertGreater(formulas, 10000)
+        calc = book["IRCalc"]
+        # The rows of an issue: the same key shown, and both with an Issue ID
+        # or both without, so that an entered "POS:R1" is not the position R1.
+        issue = ('(UPPER($S$5:$S$504)=UPPER($S5))'
+                 '*((TRIM(IRPositions!$O$5:$O$504)="")=(TRIM(IRPositions!$O5)=""))')
+        self.assertEqual(calc["T5"].value, f'=IF($S5="","",SUMPRODUCT({issue}*1,$G$5:$G$504))')
+        self.assertIn("SUMPRODUCT((UPPER($S$5:$S5)=UPPER($S5))", str(calc["U5"].value))
+        # A blank currency is not one of FX_Table, whose unused rows are blank.
+        self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(FX_Ccy)=UPPER($E5))*1)=0),'
+                      '"INVALID: currency not in FX_Table"', str(calc["D5"].value))
+        self.assertEqual(book["IR_Ladder"]["I6"].value,
+                         '=IF($C6="",0,SUMPRODUCT((UPPER(IRCalc!$E$5:$E$504)=UPPER($C6))'
+                         '*(IRCalc!$K$5:$K$504=$D6)*(IRCalc!$G$5:$G$504>0)*1,IRCalc!$G$5:$G$504))')
+
     def test_no_other_repository_is_named_in_the_workbook(self) -> None:
         assert openpyxl is not None
         for sheet in openpyxl.load_workbook(TEMPLATE):
@@ -347,10 +378,19 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 10)]
+        added = [positions.cell(row, 3).value for row in range(first, first + 18)]
         self.assertEqual(added, ["IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
-                                 "IR-DATE", "R1", "IR-R1", "IR-*"])
-        self.assertIsNone(positions.cell(first + 10, 3).value)
+                                 "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
+                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3"])
+        self.assertIsNone(positions.cell(first + 18, 3).value)
+        # Keys that a criteria function would read as patterns or comparisons.
+        self.assertEqual([positions.cell(first + offset, 15).value for offset in range(10, 15)],
+                         ["ISS-?", "ISS-A", "ISS-*", "<>ISS-A", "POS:R1"])
+        codes = verify.first_cell(book, "FX_Ccy")
+        self.assertEqual(codes.offset(len(ssa_reference.FX) - 1).value, ssa_reference.FX[-1][0])
+        self.assertEqual(codes.offset(len(ssa_reference.FX)).value, verify.WILD_CURRENCY)
+        self.assertEqual(verify.first_cell(book, "FX_Rate").offset(len(ssa_reference.FX)).value,
+                         0.5)
         # The maturity that is not a date, and the Issue ID equal to a PositionID.
         # openpyxl reads a number above the date range in a date cell as an
         # error, so the number is looked for in the sheet itself.

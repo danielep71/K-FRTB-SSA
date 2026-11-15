@@ -116,6 +116,15 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- The formula workbook that `tools/prototype/build_prototype.py` writes
+  groups, counts and looks up rows by typed keys as text, as the engine
+  does. Before, a `*`, `?` or `~` in an Issue ID, a stock, a market, a
+  commodity or a currency was read as a pattern, a leading `<`, `>` or `=` as
+  a comparison, and an Issue ID entered as `POS:` and a PositionID netted
+  with the position of that PositionID, so the comparison reported
+  differences that were not the engine's. `tools/prototype/verify.py` now
+  includes such keys in its scenario of invalid rows. The engine, the
+  template and the sample data's result do not change (#39).
 - The workbook built from source runs in LibreOffice again. The engine's
   three error numbers are literals equal to `vbObjectError + 2049` to
   `+ 2051`: LibreOffice cannot evaluate `vbObjectError` in a constant
