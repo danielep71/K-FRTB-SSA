@@ -234,24 +234,30 @@ def origin_has_branch(root: Path, branch: str) -> bool:
     return any(line.split("\t")[-1] == ref for line in asked.stdout.splitlines())
 
 
-def codeql_default_branch(context: Context) -> list[Finding]:
-    """codeql.yml lists the default branch, which branch filters cannot name."""
-    path = ".github/workflows/codeql.yml"
-    if not (context.root / path).is_file():
+# Workflows whose branch filters list the default branch by name.
+BRANCH_FILTERED_WORKFLOWS = (".github/workflows/codeql.yml",
+                             ".github/workflows/repository-integrity.yml")
+
+
+def workflow_default_branch(context: Context) -> list[Finding]:
+    """The workflows with branch filters list the default branch, which a filter cannot name."""
+    present = [path for path in BRANCH_FILTERED_WORKFLOWS if (context.root / path).is_file()]
+    if not present:
         return []
     sys.path.insert(0, str(context.root / "tests"))
     try:
         strict_yaml: Any = importlib.import_module("strict_yaml")
     finally:
         sys.path.pop(0)
-    document = strict_yaml.load((context.root / path).read_text(encoding="utf-8")) or {}
-    triggers = document.get("on", document.get(True)) or {}
     findings = []
-    for event in ("push", "pull_request"):
-        branches = (triggers.get(event) or {}).get("branches")
-        if branches is not None and context.default_branch not in branches:
-            findings.append((path, f"{event} branches {branches} omit the default branch "
-                                   f"{context.default_branch}; add it."))
+    for path in present:
+        document = strict_yaml.load((context.root / path).read_text(encoding="utf-8")) or {}
+        triggers = document.get("on", document.get(True)) or {}
+        for event in ("push", "pull_request"):
+            branches = (triggers.get(event) or {}).get("branches")
+            if branches is not None and context.default_branch not in branches:
+                findings.append((path, f"{event} branches {branches} omit the default branch "
+                                       f"{context.default_branch}; add it."))
     return findings
 
 
@@ -303,8 +309,8 @@ def checks(context: Context) -> list[Check]:
     node = shutil.which("node")
     node_missing = None if node else "node is not on PATH"
     no_repository = None if context.repository else "the repository is unknown (--repository)"
-    # The CodeQL check reads its workflow through tests/strict_yaml.py, which needs PyYAML.
-    codeql_missing = "; ".join(reason for found, reason in (
+    # The branch-filter check reads workflows through tests/strict_yaml.py, which needs PyYAML.
+    filters_missing = "; ".join(reason for found, reason in (
         (context.default_branch, "the default branch is unknown (--default-branch)"),
         (importlib.util.find_spec("yaml"), "PyYAML is not installed (.github/requirements.txt)"),
     ) if not found) or None
@@ -345,7 +351,8 @@ def checks(context: Context) -> list[Check]:
         Check("markdown-links", [python, "tools/check_links.py"]),
         Check("documented-commands", [python, "tools/check_doc_commands.py"]),
         Check("dependabot-target-branches", function=dependabot_branches),
-        Check("codeql-default-branch", function=codeql_default_branch, missing=codeql_missing),
+        Check("workflow-default-branch", function=workflow_default_branch,
+              missing=filters_missing),
         Check("required-documents", function=required_documents),
     ]
     listed += [Check(name, command) for name, command in whitespace_commands(context.root)]

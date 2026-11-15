@@ -294,13 +294,24 @@ class WorkflowControlTests(unittest.TestCase):
                     self.assertEqual(writes(job.get('permissions')),
                                      WRITE_PERMISSIONS.get((name, job_id), set()))
 
-    def test_required_check_runs_unconditionally_on_every_branch(self):
+    def test_required_check_runs_on_every_pull_request_and_where_pushes_land(self):
         name, job_id = REQUIRED_JOB
         document = workflows()[name]
-        for event in ('pull_request', 'push'):
-            with self.subTest(event=event):
-                self.assertIn(event, document['on'])
-                self.assertFalse(document['on'][event], f'{event} must have no branch or path filters')
+        triggers = document['on']
+        # A pull request to any base gets the required check.
+        self.assertIn('pull_request', triggers)
+        self.assertFalse(triggers['pull_request'],
+                         'pull_request must have no branch or path filters')
+        # A push to a task branch would repeat the pull_request run of its head,
+        # so pushes run where they land. The default branch is listed by name
+        # and may be renamed; Repository integrity checks that it is present
+        # (workflow-default-branch). A path filter would leave commits unchecked.
+        self.assertEqual(set(triggers['push']), {'branches'})
+        self.assertIn('release/**', triggers['push']['branches'])
+        self.assertEqual(len(triggers['push']['branches']), 2)
+        # A branch without a pull request is run by hand.
+        self.assertIn('workflow_dispatch', triggers)
+        # A skipped run of the required check on a commit would count as passing.
         job = document['jobs'][job_id]
         self.assertNotIn('if', job)
         self.assertNotIn('strategy', job)
@@ -450,7 +461,7 @@ class WorkflowControlTests(unittest.TestCase):
     def test_code_scanning_covers_each_language_and_skips_when_unavailable(self):
         document = workflows()['codeql.yml']
         # The default branch is listed by name and may be renamed; Repository
-        # integrity checks that it is present (see the next test).
+        # integrity checks that it is present (workflow-default-branch).
         self.assertEqual(document['on']['push'], document['on']['pull_request'])
         self.assertEqual(set(document['on']['push']), {'branches'})
         self.assertIn('release/**', document['on']['push']['branches'])

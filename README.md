@@ -118,7 +118,7 @@ flowchart LR
 
 | Workflow | When it runs | What it checks |
 | --- | --- | --- |
-| **Repository integrity** | Every push and pull request; the required check | Python, VBA, workflow, link, changelog, test-case and governance checks, with the unit tests; also on the minimum supported Python |
+| **Repository integrity** | Every pull request, and pushes to the default branch and release branches; the required check | Python, VBA, workflow, link, changelog, test-case and governance checks, with the unit tests; also on the minimum supported Python |
 | **CodeQL** | Pushes, pull requests and weekly | Code scanning of the Python, JavaScript and workflow code |
 | **OpenSSF Scorecard** | Pushes to the default branch and weekly | The repository's supply-chain posture |
 | **Link check** | Weekly | External links |

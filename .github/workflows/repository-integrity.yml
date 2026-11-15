@@ -1,8 +1,16 @@
 name: Repository integrity
 
 on:
+  # Unfiltered: a pull request to any base gets the required check.
   pull_request:
+  # Only where a push lands. A push to a task branch would repeat the
+  # pull_request run of the same head; run a branch without a pull request by
+  # hand. The default branch is listed by name and may be renamed: the
+  # workflow-default-branch check fails while it is missing here.
   push:
+    branches:
+      - main
+      - "release/**"
   workflow_dispatch:
 
 permissions:

@@ -145,15 +145,21 @@ class FileCheckTest(RepositoryTest):
                            "exist; set it to the active release branch or remove it.")])
 
     @NEEDS_YAML
-    def test_codeql_default_branch(self) -> None:
+    def test_workflow_default_branch(self) -> None:
         self.write({"tests/strict_yaml.py": (ROOT / "tests/strict_yaml.py").read_text("utf-8"),
                     ".github/workflows/codeql.yml":
                     "on:\n  push:\n    branches: [main]\n  pull_request:\n"
-                    "    branches: [main, 'release/**']\n"})
-        self.assertEqual(check_repository.codeql_default_branch(self.context()), [])
-        findings = check_repository.codeql_default_branch(self.context(default_branch="trunk"))
-        self.assertEqual(len(findings), 2)
-        self.assertIn("omit the default branch trunk", findings[0][1])
+                    "    branches: [main, 'release/**']\n",
+                    # An event without a filter, such as pull_request here, omits nothing.
+                    ".github/workflows/repository-integrity.yml":
+                    "on:\n  pull_request:\n  push:\n    branches: [main, 'release/**']\n"})
+        self.assertEqual(check_repository.workflow_default_branch(self.context()), [])
+        findings = check_repository.workflow_default_branch(self.context(default_branch="trunk"))
+        self.assertEqual([path for path, _ in findings],
+                         [".github/workflows/codeql.yml"] * 2
+                         + [".github/workflows/repository-integrity.yml"])
+        for _, message in findings:
+            self.assertIn("omit the default branch trunk", message)
 
     def test_secret_files(self) -> None:
         failing = {".env": ".env", "config/.env.local": ".env.*", ".ENV.production": ".env.*",
@@ -297,16 +303,16 @@ class RunTest(RepositoryTest):
     def test_a_check_that_raises_fails_and_the_run_continues(self) -> None:
         self.commit({"tests/strict_yaml.py": (ROOT / "tests/strict_yaml.py").read_text("utf-8"),
                      ".github/workflows/codeql.yml": "on:\n  push: {}\n  push: {}\n"})
-        listed = [Check("codeql-default-branch", function=check_repository.codeql_default_branch),
+        listed = [Check("workflow-default-branch", function=check_repository.workflow_default_branch),
                   Check("after", [sys.executable, "-c", "print('ran')"])]
         code, printed, report = self.run_checks(listed)
         self.assertEqual(code, 1)
         statuses = {check["name"]: check["status"]
                     for check in report["checks"]}
-        self.assertEqual(statuses, {"codeql-default-branch": "fail", "after": "pass"})
-        log = (self.root / "test-results/integrity/codeql-default-branch.log").read_text("utf-8")
+        self.assertEqual(statuses, {"workflow-default-branch": "fail", "after": "pass"})
+        log = (self.root / "test-results/integrity/workflow-default-branch.log").read_text("utf-8")
         self.assertIn("duplicate key", log)
-        self.assertIn("codeql-default-branch: FAIL (raised an error)", printed)
+        self.assertIn("workflow-default-branch: FAIL (raised an error)", printed)
 
     def test_every_check_that_runs_node_is_skipped_without_it(self) -> None:
         # check_issues.py --check-config validates the catalogue with the label script.
@@ -346,7 +352,7 @@ class RunTest(RepositoryTest):
         self.assertEqual(code, 1, printed)
         self.assertEqual(report["checks"][0]["status"], "fail")
 
-    def test_codeql_default_branch_without_pyyaml_is_skipped_unless_strict(self) -> None:
+    def test_workflow_default_branch_without_pyyaml_is_skipped_unless_strict(self) -> None:
         self.commit({"tests/strict_yaml.py": (ROOT / "tests/strict_yaml.py").read_text("utf-8"),
                      ".github/workflows/codeql.yml": "on:\n  push:\n    branches: [main]\n"})
         reason = "PyYAML is not installed (.github/requirements.txt)"
@@ -354,17 +360,17 @@ class RunTest(RepositoryTest):
         with mock.patch.dict(sys.modules, {"yaml": None}):
             sys.modules.pop("strict_yaml", None)
             listed = [check for check in check_repository.checks(self.context())
-                      if check.name == "codeql-default-branch"]
+                      if check.name == "workflow-default-branch"]
             code, printed, report = self.run_checks(listed)
             self.assertEqual(code, 0, printed)
-            self.assertIn(f"codeql-default-branch: SKIP ({reason})", printed)
+            self.assertIn(f"workflow-default-branch: SKIP ({reason})", printed)
             self.assertEqual(report["checks"][0]["status"], "skip")
             code, printed, report = self.run_checks(listed, strict=True)
             self.assertEqual(code, 1, printed)
             self.assertEqual(report["checks"][0]["status"], "fail")
             unknown = {check.name: check.missing
                        for check in check_repository.checks(self.context(default_branch=None))}
-            self.assertEqual(unknown["codeql-default-branch"],
+            self.assertEqual(unknown["workflow-default-branch"],
                              f"the default branch is unknown (--default-branch); {reason}")
 
     def test_ci_fails_a_working_tree_that_differs_from_the_commit(self) -> None:
@@ -497,7 +503,7 @@ class RunTest(RepositoryTest):
                          "vba-format", "vba-errors", "vba-calls", "data-contract", "test-cases",
                          "derivations", "independent-implementations", "workbook-protection",
                          "changelog", "generated-docs", "markdown-links", "documented-commands",
-                         "codeql-default-branch", "whitespace-committed"):
+                         "workflow-default-branch", "whitespace-committed"):
             self.assertIn(expected, names)
         advisory = {check.name for check in check_repository.checks(self.context())
                     if check.advisory}
@@ -510,7 +516,7 @@ class RunTest(RepositoryTest):
                                                        default_branch=None))
         missing = {check.name for check in without if check.missing}
         self.assertTrue({"issue-contact-links", "readme-traffic-badges", "template-only-content",
-                         "codeql-default-branch"} <= missing)
+                         "workflow-default-branch"} <= missing)
 
 
 if __name__ == "__main__":

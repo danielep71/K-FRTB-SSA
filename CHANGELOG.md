@@ -80,6 +80,12 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- **Repository integrity** runs on pushes to the default branch and to
+  release branches only, and on every pull request as before. A push to a
+  task branch no longer starts a second run of the commit its pull request
+  already checks; run a branch without a pull request by hand. The check
+  `codeql-default-branch` is now `workflow-default-branch` and also fails
+  while this workflow's filter omits the default branch (#32).
 - The workbook contract describes the prototype's sheets, defined names,
   areas and operations instead of illustrative ones. It also records where
   the prototype does not yet follow the contract's defaults: a failed or
