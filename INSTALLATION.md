@@ -228,14 +228,17 @@ python tools/prototype/build_prototype.py src/workbook/Template.xlsx --template
 It needs openpyxl, which `.github/requirements.txt` pins. **Repository
 integrity** fails while the tracked file is not what the tool writes. Without
 `--template` the tool writes the formula workbook instead: the same sheets,
-with every output as a formula. It is a second implementation of the same
+with every output as a formula, and one more column on `IRCalc`, the key the
+rows of an issue are netted on. It is a second implementation of the same
 rules, to compare the VBA engine with.
 
 **Comparison with the formula workbook (optional).** Where LibreOffice is
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, and runs `TEST_Suite.Test_RunAll`.
+area with the formula workbook's, and runs `TEST_Suite.Test_RunAll`. Error
+values typed as texts are checked on the formula workbook alone: LibreOffice
+gives the engine 0 for a cell that holds one, where Excel gives the error.
 `--uno-python PYTHON` names the Python that provides the UNO bridge, when it
 is not the one that has openpyxl, and `--keep FOLDER` keeps the workbooks of
 the run. It exits 0 when every step passes, 1 at the first that fails, and 2
