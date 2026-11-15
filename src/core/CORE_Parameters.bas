@@ -36,7 +36,7 @@ Attribute VB_Name = "CORE_Parameters"
 '   40.27-40.28 Table 5, 40.43-40.47, 40.60-40.61, 40.72-40.73.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -82,7 +82,8 @@ Public Function BuildParameters( _
 ' INPUTS
 '   RawNumeric       Cell values (1 To PI_COUNT), in the order of
 '                    PRM_NUMERIC_CODES.
-'   RawAsOfDate      Cell value of AsOfDate; must be a date.
+'   RawAsOfDate      Cell value of AsOfDate; must be a date
+'                    (CORE_Util.IsDateSerial).
 '   RawReportingCcy  Cell value of ReportingCcy; must not be blank.
 '   RawGoldCode      Cell value of GoldCode; must not be blank.
 '   Findings         Findings list, appended to (CORE_Util.AddFinding).
@@ -100,7 +101,7 @@ Public Function BuildParameters( _
 '   Domains: PRM_DOMAINS (P: > 0; N: >= 0; R: 0 <= rate <= 1).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '==============================================================================
 '
     Dim ErrorCount  As Long      'Unusable values found
@@ -116,7 +117,7 @@ Public Function BuildParameters( _
         ReDim Parameters(1 To PI_COUNT)
 
         'Scalars of text and date type.
-        If IsNumberValue(RawAsOfDate) Then
+        If IsDateSerial(RawAsOfDate) Then
             AsOfDate = NumberValue(RawAsOfDate)
         Else
             AddError Findings, FindingCount, ErrorCount, PRM_ASOF, "must be a date"

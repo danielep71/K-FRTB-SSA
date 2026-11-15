@@ -26,7 +26,7 @@ Attribute VB_Name = "CORE_Util"
 '   object model.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -106,6 +106,36 @@ Public Function NumberValue( _
             NumberValue = CDbl(Value)
         Else
             NumberValue = 0#
+        End If
+
+End Function
+
+
+Public Function IsDateSerial( _
+    ByVal Value As Variant) _
+    As Boolean
+'
+'==============================================================================
+'                                 IsDateSerial
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Tell whether a cell value is a date: a date, or a number that is the
+'   serial of a date. A date typed as a number such as 20311231 is not.
+'
+' INPUTS
+'   Value   Cell value.
+'
+' RETURNS
+'   True for a number from DATE_SERIAL_MIN to DATE_SERIAL_MAX.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        If IsNumberValue(Value) Then
+            IsDateSerial = (CDbl(Value) >= DATE_SERIAL_MIN And CDbl(Value) <= DATE_SERIAL_MAX)
+        Else
+            IsDateSerial = False
         End If
 
 End Function

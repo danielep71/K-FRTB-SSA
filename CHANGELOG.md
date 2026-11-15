@@ -103,6 +103,14 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- A final maturity or next repricing date typed as a number that is not a
+  date, such as `20311231`, now rejects its interest rate row with a reason,
+  and the run goes on. Before, the row was accepted: LibreOffice slotted it
+  in the last time band with a status of `OK`, and Excel is expected to stop
+  the whole run with an overflow. A reporting date that is not a date is an
+  unusable parameter. A date is a serial from 1 January 1900 to 31 December
+  9999; no shorter limit applies to a maturity. Tested in LibreOffice's VBA
+  mode only, not in Excel (#29).
 - Interest rate specific risk no longer nets a position without an Issue ID
   against an issue whose Issue ID equals that position's PositionID. Such a
   position is an issue of its own, and its *Issue key* on `IRCalc` reads
