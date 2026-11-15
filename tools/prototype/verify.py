@@ -14,7 +14,8 @@ It needs LibreOffice and openpyxl. The steps:
    findings on Checks included. The scenario adds rejected rows, an issue
    that mixes specific-risk keys, a position without an Issue ID whose
    PositionID is another row's Issue ID, a maturity that is not a date, a
-   changed constant and an option charge.
+   PositionID with a wildcard character, a changed constant and an option
+   charge.
 5. Make two Params values unusable: the run stops and lists both.
 6. Run TEST_Suite.Test_RunAll: no assertion fails.
 
@@ -113,6 +114,10 @@ def negative(source: Path, target: Path) -> None:
          "OTHER", "BB+ to BB-", ""],
         ["IR-R1", "T", "Bond", "EUR", "Short", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
          "OTHER", "BB+ to BB-", "R1"],
+        # A PositionID that a criteria function would read as a pattern
+        # matching every other one: it is unique, so the row is used.
+        ["IR-*", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
     ])
     append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
         ["EQ-BAD", "T", "IT", "Basket", "B", "EUR", "Long", 1e6],

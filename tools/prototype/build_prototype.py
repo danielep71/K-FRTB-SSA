@@ -94,7 +94,10 @@ AMBER: dict[str, Any] = dict(font=Font(color="FF9C5700"), fill=PatternFill(bgCol
 
 GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated"'
 # Status test shared by the four calculation sheets; {r} is the row number.
-DUP = 'COUNTIF($C$5:$C$504,$C{r})>1'
+# The PositionIDs are compared as the engine compares them, as text without
+# regard to case. COUNTIF would read "*", "?" and "~" in a PositionID as a
+# pattern, and a leading "<", ">" or "=" as an operator.
+DUP = 'SUMPRODUCT(--(UPPER($C$5:$C$504)=UPPER($C{r})))>1'
 # True when a numeric cell is outside the serials Excel holds as dates.
 NOT_A_DATE = f"OR({{cell}}<1,{{cell}}>{DATE_SERIAL_MAX})"
 

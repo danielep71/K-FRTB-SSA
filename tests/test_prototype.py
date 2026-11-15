@@ -217,6 +217,17 @@ class Generator(NeedsOpenpyxl):
         # A position without an Issue ID is an issue of its own.
         self.assertIn('IF(TRIM(IRPositions!O5)="","POS:"&$C5,', issue_key)
 
+    def test_duplicate_position_ids_are_counted_as_text_not_as_patterns(self) -> None:
+        assert openpyxl is not None
+        book = openpyxl.load_workbook(self.formula)
+        for sheet in ("IRCalc", "EQCalc", "COCalc", "FXCalc"):
+            with self.subTest(sheet=sheet):
+                status = str(book[sheet]["D5"].value)
+                self.assertIn('IF(SUMPRODUCT(--(UPPER($C$5:$C$504)=UPPER($C5)))>1,'
+                              '"INVALID: duplicate PositionID"', status)
+                # A criteria function would read "*" or "?" in a PositionID as a pattern.
+                self.assertNotIn("COUNTIF($C$5:$C$504,$C5)", status)
+
     def test_no_other_repository_is_named_in_the_workbook(self) -> None:
         assert openpyxl is not None
         for sheet in openpyxl.load_workbook(TEMPLATE):
@@ -336,10 +347,10 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 9)]
+        added = [positions.cell(row, 3).value for row in range(first, first + 10)]
         self.assertEqual(added, ["IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
-                                 "IR-DATE", "R1", "IR-R1"])
-        self.assertIsNone(positions.cell(first + 9, 3).value)
+                                 "IR-DATE", "R1", "IR-R1", "IR-*"])
+        self.assertIsNone(positions.cell(first + 10, 3).value)
         # The maturity that is not a date, and the Issue ID equal to a PositionID.
         # openpyxl reads a number above the date range in a date cell as an
         # error, so the number is looked for in the sheet itself.
