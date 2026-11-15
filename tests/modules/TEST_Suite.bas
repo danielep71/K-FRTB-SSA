@@ -3,8 +3,9 @@ Attribute VB_Name = "TEST_Suite"
 ' MODULE: TEST_Suite
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Unit tests of the K-FRTB-SSA core and facade on hand-checked cases, and a
-'   regression test of the whole workbook on the shipped sample data.
+'   Unit tests of the K-FRTB-SSA core and facade on hand-checked cases, and
+'   tests of the whole workbook on the shipped sample data: a regression of
+'   its results, runs that fail and inputs changed after a run.
 '
 ' PUBLIC SURFACE
 '   Test_RunAll (core, facade and workbook), Test_RunCore (no workbook
@@ -17,7 +18,8 @@ Attribute VB_Name = "TEST_Suite"
 '
 ' STATE OWNERSHIP
 '   mPassed, mFailed and mReport accumulate one run's results. The workbook
-'   test runs RunSSA_Silent, which rewrites the output sheets.
+'   tests run RunSSA_Silent, which rewrites the output sheets; two of them
+'   change a cell or a workbook name for one operation and put it back.
 '
 ' ERROR POLICY
 '   An unexpected error inside a test is recorded as a failure of that
@@ -29,7 +31,9 @@ Attribute VB_Name = "TEST_Suite"
 '
 ' REFERENCE
 '   Expected values: hand calculation (stated in each test), MAR40.61
-'   Table 9, and tools/prototype/ssa_reference.py for the sample data.
+'   Table 9, and tools/prototype/ssa_reference.py for the sample data. The
+'   fingerprints of CheckFingerprint were calculated apart from the VBA
+'   code, from the rule its header states.
 '
 ' UPDATED
 '   2026-11-15
@@ -85,6 +89,8 @@ Public Function Test_RunAll() As String
 '
         ResetResults
         RunCoreTests
+        RunTest "FailedRun"
+        RunTest "OutdatedResults"
         RunTest "Workbook"
         Test_RunAll = ResultLine()
         Debug.Print Test_RunAll
@@ -137,6 +143,7 @@ Private Sub RunCoreTests()
         RunTest "DateBounds"
         RunTest "Parameters"
         RunTest "Facade"
+        RunTest "Fingerprint"
 
 End Sub
 
@@ -172,6 +179,9 @@ Private Sub RunTest( _
             Case "DateBounds": CheckDateBounds
             Case "Parameters": CheckParameters
             Case "Facade": CheckFacade
+            Case "Fingerprint": CheckFingerprint
+            Case "FailedRun": CheckFailedRun
+            Case "OutdatedResults": CheckOutdatedResults
             Case "Workbook": CheckWorkbook
         End Select
         Exit Sub
@@ -729,6 +739,161 @@ Private Sub CheckFacade()
 End Sub
 
 
+Private Sub CheckFingerprint()
+'
+'==============================================================================
+'                               CheckFingerprint
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The fingerprint of a vector is the one its rule gives, and a changed
+'   value, or two values that change places, give another one.
+'
+' REFERENCE
+'   Each value enters as its key and code 30: "N" and Str$ of a number,
+'   "S", the length, ":" and the text, "_" for an empty value, "B1" for
+'   True; an array as "A" and its rows, then its values by row. Two hashes
+'   start at 131 and 137 and take each code unit as h = (h * base + code)
+'   modulo 2^31 - 1 (base 131) and 2^31 - 19 (base 137).
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Values(1 To 6)       As Variant   'Vector: scalars, a table and a column
+    Dim Table(1 To 2, 1 To 2) As Variant  'Table; its last cell stays empty
+    Dim Column(1 To 3)       As Variant   'Array of one dimension
+
+        Values(1) = 1.5
+        Values(2) = "EUR"
+        Values(4) = True
+        Table(1, 1) = 1
+        Table(1, 2) = "a"
+        Table(2, 1) = -2
+        Values(5) = Table
+        Column(1) = 2.25
+        Column(2) = "b"
+        Column(3) = 3
+        Values(6) = Column
+        AssertText "Fingerprint of a known vector", Fingerprint(Values), "F1-68BD702560607F96"
+        AssertText "Fingerprint, the same vector again", Fingerprint(Values), "F1-68BD702560607F96"
+        Column(2) = "B"
+        Values(6) = Column
+        AssertText "Fingerprint, a text in another case", Fingerprint(Values), "F1-7833FF864C712519"
+        Column(2) = "b"
+        Values(6) = Column
+        Table(1, 2) = -2
+        Table(2, 1) = "a"
+        Values(5) = Table
+        AssertText "Fingerprint, two values change places", Fingerprint(Values), "F1-4BF78E8A19460933"
+
+End Sub
+
+
+Private Sub CheckFailedRun()
+'
+'==============================================================================
+'                                CheckFailedRun
+'------------------------------------------------------------------------------
+' PURPOSE
+'   A run that raises an error, while it writes or before, leaves no result
+'   of that run or of the one before, and a status line that says FAILED.
+'
+' STATE OWNERSHIP
+'   Rewrites the output sheets. Changes the first rule identifier of Checks
+'   for one run, and the range of the name Ladder_RW for another, and puts
+'   both back.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Target      As Range     'Cell changed to make a run fail
+    Dim Saved       As Variant   'Its value before the test
+    Dim Ladder      As Object    'Workbook name changed to make a run fail
+    Dim SavedRange  As String    'What the name referred to
+    Dim ErrNumber   As Long      'Error number of the failed run
+
+        'While writing: the rules of Checks are written after every result
+        'table, and the first rule is not found under its header.
+        AssertText "Run before the failure while writing", Left$(RunSSA_Silent(), 9), "RESULT=OK"
+        Set Target = ThisWorkbook.Names(NM_CHECKS_HEADER).RefersToRange.Offset(1, 0)
+        Saved = Target.Value
+        Target.Value = "X01"
+        ErrNumber = RunError()
+        Target.Value = Saved
+        AssertNear "Failure while writing: error number", ErrNumber, ERR_LAYOUT
+        AssertNoResult "Failure while writing"
+
+        'Before writing: a column of the maturity ladder is one row short.
+        AssertText "Run before the failure while reading", Left$(RunSSA_Silent(), 9), "RESULT=OK"
+        Set Ladder = ThisWorkbook.Names(NM_LADDER_RW)
+        SavedRange = Ladder.RefersTo
+        Set Target = Ladder.RefersToRange
+        Ladder.RefersTo = "='" & Target.Worksheet.Name & "'!" & _
+                          Target.Resize(Target.Rows.Count - 1, 1).Address
+        ErrNumber = RunError()
+        Ladder.RefersTo = SavedRange
+        AssertNear "Failure while reading: error number", ErrNumber, ERR_LAYOUT
+        AssertNoResult "Failure while reading"
+        AssertText "Run after the failures", Left$(RunSSA_Silent(), 9), "RESULT=OK"
+
+End Sub
+
+
+Private Sub CheckOutdatedResults()
+'
+'==============================================================================
+'                             CheckOutdatedResults
+'------------------------------------------------------------------------------
+' PURPOSE
+'   After a run, a changed parameter or position makes the check mark the
+'   results OUTDATED; the value put back makes it take the mark away.
+'
+' STATE OWNERSHIP
+'   Rewrites the output sheets. Changes the IR scaling factor and the value
+'   of the first interest rate position for one check each, and puts both
+'   back.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Target      As Range     'Input cell changed
+    Dim Saved       As Variant   'Its value before the test
+
+        AssertText "Run before the changes", Left$(RunSSA_Silent(), 9), "RESULT=OK"
+        AssertText "Check after the run", CheckOutcome(), "RESULT=CURRENT; cleanup=PASS"
+        AssertText "Status after the run", Left$(StatusLine(), 4), "OK: "
+
+        'A parameter.
+        Set Target = ThisWorkbook.Names("ScalingIR").RefersToRange
+        Saved = Target.Value
+        Target.Value = Saved + 0.1
+        AssertText "Check after a parameter changed", CheckOutcome(), "RESULT=OUTDATED; cleanup=PASS"
+        AssertText "Status after a parameter changed", Left$(StatusLine(), 14), "OUTDATED: OK: "
+        AssertText "Check again, still changed", CheckOutcome(), "RESULT=OUTDATED; cleanup=PASS"
+        AssertText "Status is marked once", Left$(StatusLine(), 14), "OUTDATED: OK: "
+        Target.Value = Saved
+        AssertText "Check after the parameter is put back", CheckOutcome(), "RESULT=CURRENT; cleanup=PASS"
+        AssertText "Status after the parameter is put back", Left$(StatusLine(), 4), "OK: "
+
+        'A position, through the entry point of the event procedures.
+        Set Target = ThisWorkbook.Names(NM_IR_POS_HEADER).RefersToRange.Offset(1, IR_VALUE - 1)
+        Saved = Target.Value
+        Target.Value = Saved + 1
+        CheckStatus_OnEvent
+        AssertText "Status after a position changed", Left$(StatusLine(), 14), "OUTDATED: OK: "
+        Target.Value = Saved
+        CheckStatus_OnEvent
+        AssertText "Status after the position is put back", Left$(StatusLine(), 4), "OK: "
+
+        'No result to check.
+        ClearOutputs_Silent
+        AssertText "Check without results", CheckOutcome(), "RESULT=NOT_CALCULATED; cleanup=PASS"
+
+End Sub
+
+
 Private Sub CheckWorkbook()
 '
 '==============================================================================
@@ -774,6 +939,117 @@ End Sub
 '------------------------------------------------------------------------------
 '                                    HELPERS
 '------------------------------------------------------------------------------
+
+Private Function RunError() As Long
+'
+'==============================================================================
+'                                   RunError
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Run RunSSA_Silent where it is expected to raise an error.
+'
+' RETURNS
+'   The error number; 0 when the run raised none.
+'
+' ERROR POLICY
+'   Contains the error of the run, so that the caller can put back what it
+'   changed.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim ResultText  As String    'Result line, not used
+
+        On Error GoTo Failed
+        ResultText = RunSSA_Silent()
+        RunError = 0
+        Exit Function
+
+Failed:
+        RunError = Err.Number
+
+End Function
+
+
+Private Function CheckOutcome() As String
+'
+'==============================================================================
+'                                 CheckOutcome
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Run CheckStatus_Silent between a change of an input and its undoing.
+'
+' RETURNS
+'   The result line, or "ERROR", the number and the description.
+'
+' ERROR POLICY
+'   Contains the error of the check, so that the caller can put back what
+'   it changed.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        On Error GoTo Failed
+        CheckOutcome = CheckStatus_Silent()
+        Exit Function
+
+Failed:
+        CheckOutcome = "ERROR " & Err.Number & " " & Err.Description
+
+End Function
+
+
+Private Function StatusLine() As String
+'
+'==============================================================================
+'                                  StatusLine
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return the status line of Results.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        StatusLine = PlainText(ThisWorkbook.Names(NM_RESULTS_STATUS).RefersToRange.Value)
+
+End Function
+
+
+Private Sub AssertNoResult( _
+    ByVal Label As String)
+'
+'==============================================================================
+'                                AssertNoResult
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Assert that the sheets show a failed run and no result: the status line,
+'   the requirement, the first calculation row, the error count of Checks,
+'   the fingerprint and what the check returns.
+'
+' INPUTS
+'   Label   Start of each assertion's label.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        AssertText Label & ": status line", Left$(StatusLine(), 8), "FAILED: "
+        AssertText Label & ": requirement", _
+                   PlainText(ThisWorkbook.Names("SSA_Requirement").RefersToRange.Value), vbNullString
+        AssertText Label & ": first calculation row", _
+                   PlainText(ThisWorkbook.Names(NM_IR_CALC_HEADER).RefersToRange.Offset(1, 0).Value), _
+                   vbNullString
+        AssertText Label & ": error count of Checks", _
+                   PlainText(ThisWorkbook.Names(NM_CHECKS_ERRORS).RefersToRange.Value), vbNullString
+        AssertText Label & ": fingerprint", _
+                   PlainText(ThisWorkbook.Names(NM_FINGERPRINT).RefersToRange.Value), vbNullString
+        AssertText Label & ": check", CheckOutcome(), "RESULT=FAILED; cleanup=PASS"
+
+End Sub
+
 
 Private Function RowsFrom( _
     ByVal Width As Long, _

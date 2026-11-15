@@ -80,6 +80,8 @@ CORE_Config	Const	NM_RESULTS_HEADER
 # SIG	CORE_Config	Const	NM_RESULTS_HEADER	Public Const NM_RESULTS_HEADER As String = "Results_Header"
 CORE_Config	Const	NM_RESULTS_STATUS
 # SIG	CORE_Config	Const	NM_RESULTS_STATUS	Public Const NM_RESULTS_STATUS As String = "Results_Status"
+CORE_Config	Const	NM_FINGERPRINT
+# SIG	CORE_Config	Const	NM_FINGERPRINT	Public Const NM_FINGERPRINT As String = "Results_Fingerprint"
 CORE_Config	Const	NM_CHECKS_HEADER
 # SIG	CORE_Config	Const	NM_CHECKS_HEADER	Public Const NM_CHECKS_HEADER As String = "Checks_Header"
 CORE_Config	Const	NM_FINDINGS_HEADER
@@ -566,6 +568,8 @@ CORE_Util	Sub	AddFinding
 # SIG	CORE_Util	Sub	AddFinding	Public Sub AddFinding(ByRef Findings() As String, ByRef FindingCount As Long, ByVal SheetName As String, ByVal Item As String, ByVal RowText As String, ByVal Reason As String)
 CORE_Util	Sub	WriteTotalRow
 # SIG	CORE_Util	Sub	WriteTotalRow	Public Sub WriteTotalRow(ByRef BucketOutput() As Variant, ByVal BucketCount As Long, ByVal Label As String)
+CORE_Util	Function	Fingerprint
+# SIG	CORE_Util	Function	Fingerprint	Public Function Fingerprint(ByRef Values() As Variant) As String
 M_Main	Sub	RunSSA
 # SIG	M_Main	Sub	RunSSA	Public Sub RunSSA()
 M_Main	Function	RunSSA_Silent
@@ -574,3 +578,9 @@ M_Main	Sub	ClearOutputs
 # SIG	M_Main	Sub	ClearOutputs	Public Sub ClearOutputs()
 M_Main	Function	ClearOutputs_Silent
 # SIG	M_Main	Function	ClearOutputs_Silent	Public Function ClearOutputs_Silent() As String
+M_Main	Sub	CheckStatus
+# SIG	M_Main	Sub	CheckStatus	Public Sub CheckStatus()
+M_Main	Function	CheckStatus_Silent
+# SIG	M_Main	Function	CheckStatus_Silent	Public Function CheckStatus_Silent() As String
+M_Main	Sub	CheckStatus_OnEvent
+# SIG	M_Main	Sub	CheckStatus_OnEvent	Public Sub CheckStatus_OnEvent()

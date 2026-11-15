@@ -267,6 +267,12 @@ ERROR_TEXT = "#ERROR"
 NETTING_KEY = "Z"
 
 
+# The output sheets that repeat the status line of Results, and the cell, in
+# the band at the top of the sheet, that repeats it.
+STATUS_SHEETS = ("IR_Zones", "IR_Ladder", "Buckets", "IRCalc", "EQCalc", "COCalc", "FXCalc", "Checks")
+STATUS_CELL = "E1"
+
+
 # ----------------------------------------------------- literal comparison
 # The formula workbook groups, counts and looks up rows by typed keys as the
 # engine does: as text, without regard to case. COUNTIF, SUMIFS and MATCH
@@ -1067,7 +1073,7 @@ def build_results(ctx: Context) -> None:
                       'from the totals.","OK: "&$N$11&" positions used, no errors. Every figure is a live formula.")')
     ws["C4"].font = font(10, i=True, color=NOTE_TXT)
     ws.row_dimensions[4].height = 20
-    ws.conditional_formatting.add("C4", FormulaRule(formula=['LEFT($C$4,10)="INCOMPLETE"'], **RED))
+    ws.conditional_formatting.add("C4", FormulaRule(formula=[not_to_rely_on("$C$4")], **RED))
     section(ws, 13, "Headline", "C", "P")
     heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges"),
              ("Risk-weighted assets", "=SSA_RWA", "Requirement x 12.5"),
@@ -1079,6 +1085,13 @@ def build_results(ctx: Context) -> None:
         put(ws, f"E{rr}", fm, NF_DATE if "Date" in fm else NF_AMT, "total", align="center" if k >= 2 else None, sz=11)
         put(ws, f"F{rr}", note, None, None, color=GREY_TXT)
         ws.row_dimensions[rr].height = 22
+    # Written by the run, as a value, and read by CheckStatus.
+    put(ws, "C18", "Input fingerprint", None, None, b=True, sz=10)
+    put(ws, "E18", None, "@", "total", align="center", sz=11)
+    put(ws, "F18", "Of the inputs of the last run; CheckStatus compares it with the sheets" if ctx.template
+        else "Not used: every output is a live formula", None, None, color=GREY_TXT)
+    ws.row_dimensions[18].height = 22
+    name(wb, "Results_Fingerprint", "Results!$E$18")
     section(ws, 19, "Where the numbers come from", "C", "P")
     for k, (sh, txt) in enumerate([("IR_Zones", "Interest rate charges per currency, with every offset"),
                                    ("IR_Ladder", "Weighted positions per currency and time band"),
@@ -1306,7 +1319,8 @@ def build_readme(ctx: Context) -> None:
          "the workbook."),
         ("4. Run" if TEMPLATE else "4. Read",
          ("Import the modules of src/ (README), save as .xlsm, then Alt+F8 > RunSSA. The outputs are values written by the "
-          "engine; rerun after any change. A Params value the engine cannot use stops the run and is listed on Checks." if TEMPLATE
+          "engine; rerun after any change (CheckStatus tells whether an input changed after the run). A Params value the "
+          "engine cannot use stops the run and is listed on Checks." if TEMPLATE
           else "No Run button: every output is a live formula.") +
          " Results gives the requirement and RWA; Checks lists every rejected row and parameter finding; TestCatalogue "
          "shows the reference tests."),
@@ -1399,8 +1413,10 @@ def fill_home(ctx: Context) -> None:
         ("2. Enter the positions", "One row per position on IRPositions, EQPositions, COPositions and FXPositions; non-delta "
          "option charges on OptionCharges."),
         ("3. Run" if TEMPLATE else "3. Read the results",
-         "Alt+F8 > RunSSA calculates and writes every output sheet (ClearOutputs empties them). If the Results status "
-         "line says INCOMPLETE or STOPPED, Checks lists every rejected row and unusable parameter." if TEMPLATE else
+         "Alt+F8 > RunSSA calculates and writes every output sheet (ClearOutputs empties them). If the status line says "
+         "INCOMPLETE or STOPPED, Checks lists every rejected row and unusable parameter. FAILED: the run raised an error "
+         "and no result is shown. OUTDATED: an input changed after the run; CheckStatus, and opening or saving the "
+         "workbook, check it. Every output sheet repeats the line at its top." if TEMPLATE else
          "Results updates live. If its status line says INCOMPLETE, Checks lists every rejected row with its reason."),
         ("4. Drill down", "IRCalc / EQCalc / COCalc / FXCalc per row; IR_Ladder and IR_Zones for the maturity method; "
          "Buckets per market, commodity and currency."),
@@ -1496,6 +1512,23 @@ def fix_package_times(path: Path) -> None:
             package.writestr(info, data)
 
 
+def not_to_rely_on(cell: str) -> str:
+    """TRUE when a status line says that rows were rejected, the run failed or an input changed since."""
+    return (f'OR(LEFT({cell},10)="INCOMPLETE",LEFT({cell},6)="FAILED",'
+            f'LEFT({cell},8)="OUTDATED")')
+
+
+def status_lines(ctx: Context) -> None:
+    """Repeat the status line of Results at the top of every other output sheet."""
+    for sheet in STATUS_SHEETS:
+        cell = ctx.wb[sheet][STATUS_CELL]
+        cell.value = "=Results_Status"
+        cell.font = Font(name=FONT, size=9, italic=True, color="FFFFFFFF")
+        cell.alignment = Alignment(horizontal="left", vertical="center")
+        ctx.wb[sheet].conditional_formatting.add(
+            STATUS_CELL, FormulaRule(formula=[not_to_rely_on("$E$1")], **RED))
+
+
 def build(output: Path, template: bool) -> None:
     """Build the workbook and save it to output: the template if template is set, else the formula prototype."""
     wb = Workbook()
@@ -1521,6 +1554,7 @@ def build(output: Path, template: bool) -> None:
     build_checks(ctx)
     build_test_catalogue(ctx)
     build_readme(ctx)
+    status_lines(ctx)
     fill_home(ctx)
     finish_workbook(wb)
     if template:

@@ -90,6 +90,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const NM_BK_FX_HEADER     As String = "Buckets_FX_Header"      'Header "#", FX block
         Public Const NM_RESULTS_HEADER   As String = "Results_Header"         'Header "Risk class"
         Public Const NM_RESULTS_STATUS   As String = "Results_Status"         'Run status line
+        Public Const NM_FINGERPRINT      As String = "Results_Fingerprint"    'Fingerprint of the run's inputs
         Public Const NM_CHECKS_HEADER    As String = "Checks_Header"          'Header "Rule"
         Public Const NM_FINDINGS_HEADER  As String = "Checks_Findings_Header" 'Header "#", findings
         Public Const NM_CHECKS_ERRORS    As String = "Checks_Errors"          'Error count cell

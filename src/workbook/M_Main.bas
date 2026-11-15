@@ -6,11 +6,14 @@ Attribute VB_Name = "M_Main"
 '   Host layer of K-FRTB-SSA: the command macros, reading the input sheets and
 '   Params into the engine's input vector, calling CORE_Engine.Calculate and
 '   writing every output table back, with Excel application state captured
-'   and restored around each operation.
+'   and restored around each operation. A run that fails leaves no result,
+'   and a check tells whether an input changed after the last run.
 '
 ' PUBLIC SURFACE
-'   RunSSA, RunSSA_Silent, ClearOutputs, ClearOutputs_Silent (command
-'   macros; not part of the supported worksheet-function API).
+'   RunSSA, RunSSA_Silent, ClearOutputs, ClearOutputs_Silent, CheckStatus,
+'   CheckStatus_Silent (command macros) and CheckStatus_OnEvent (for the
+'   workbook's event procedures); not part of the supported
+'   worksheet-function API.
 '
 ' DEPENDENCIES
 '   CORE_Config, CORE_Engine, CORE_Util. Locates every table through the
@@ -21,18 +24,21 @@ Attribute VB_Name = "M_Main"
 '   (IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder, IR_Zones, Buckets, Results,
 '   Checks). Changes Calculation, ScreenUpdating and EnableEvents for the
 '   duration of an operation and restores them. mSilent holds the silent
-'   flag of the running operation.
+'   flag of the running operation, and mStatusWritten tells whether the
+'   last check changed the status line.
 '
 ' ERROR POLICY
 '   The command macros report a failure in a message box (silent variants:
-'   re-raise it). The primary error is preserved through cleanup; a
-'   cleanup-only failure raises ERR_CLEANUP_FAILED.
+'   re-raise it; CheckStatus_OnEvent: contain it). A run that raises an
+'   error clears every output area and writes a FAILED status line before
+'   the error is reported. The primary error is preserved through cleanup;
+'   a cleanup-only failure raises ERR_CLEANUP_FAILED.
 '
 ' COMPATIBILITY
 '   Excel for Windows, VBA7; no references beyond the defaults.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -49,14 +55,20 @@ Attribute VB_Name = "M_Main"
 '------------------------------------------------------------------------------
         Private Const OP_RUN         As Long = 1     'Operation: calculate
         Private Const OP_CLEAR       As Long = 2     'Operation: clear outputs
+        Private Const OP_CHECK       As Long = 3     'Operation: check the status line
+        Private Const CLEAR_PARTS    As Long = 18    'Parts ClearPart clears
         Private Const CHECKS_COUNT_COLUMN  As Long = 4    'Count, from the rule column (F)
         Private Const CHECKS_RESULT_COLUMN As Long = 5    'Result, from the rule column (G)
         Private Const NOT_RUN        As String = "NOT RUN"    'Result of a rule not evaluated
+        Private Const STATUS_EMPTY   As String = "Not calculated: run RunSSA."    'No result is shown
+        Private Const STATUS_FAILED  As String = "FAILED: "      'Start of the line after a failed run
+        Private Const STATUS_OUTDATED As String = "OUTDATED: "   'Before the line of a run, inputs changed
 
 '------------------------------------------------------------------------------
 ' MODULE STATE
 '------------------------------------------------------------------------------
         Private mSilent              As Boolean      'True while a _Silent macro runs
+        Private mStatusWritten       As Boolean      'True when the last check changed the status line
 
 
 '------------------------------------------------------------------------------
@@ -202,6 +214,118 @@ Failed:
 End Function
 
 
+Public Sub CheckStatus()
+'
+'==============================================================================
+'                                  CheckStatus
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Tell whether the results shown are those of the inputs on the sheets,
+'   mark them OUTDATED on the status line when an input changed after the
+'   run, and show the outcome in a message.
+'
+' USAGE
+'   Alt+F8 > CheckStatus.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Summary     As String    'Result line of the check
+
+        On Error GoTo Failed
+        mSilent = False
+        Summary = ExecuteOperation(OP_CHECK)
+        MsgBox Replace(Summary, "; ", vbLf) & vbLf & _
+               PlainText(NamedRange(NM_RESULTS_STATUS).Value), vbInformation, PRODUCT_NAME
+        Exit Sub
+
+Failed:
+        MsgBox "The check failed." & vbLf & Err.Description & vbLf & "(" & Err.Source & ")", _
+               vbCritical, PRODUCT_NAME
+
+End Sub
+
+
+Public Function CheckStatus_Silent() As String
+'
+'==============================================================================
+'                              CheckStatus_Silent
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Run CheckStatus unattended.
+'
+' RETURNS
+'   "RESULT=CURRENT|OUTDATED|FAILED|NOT_CALCULATED; cleanup=PASS".
+'
+' ERROR POLICY
+'   Re-raises the operation's error after mSilent is cleared.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim ErrNumber      As Long      'Primary error number; 0 for none
+    Dim ErrSource      As String    'Primary error source
+    Dim ErrDescription As String    'Primary error description
+
+        On Error GoTo Failed
+        mSilent = True
+        CheckStatus_Silent = ExecuteOperation(OP_CHECK)
+        mSilent = False
+        Exit Function
+
+Failed:
+        ErrNumber = Err.Number
+        ErrSource = Err.Source
+        ErrDescription = Err.Description
+        mSilent = False
+        Err.Raise ErrNumber, ErrSource, ErrDescription
+
+End Function
+
+
+Public Sub CheckStatus_OnEvent()
+'
+'==============================================================================
+'                              CheckStatus_OnEvent
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Run the check from an event procedure of the workbook: when it is
+'   opened and before it is saved.
+'
+' STATE OWNERSHIP
+'   Writes the status line only when it must change, and then leaves the
+'   workbook marked as changed; otherwise the workbook stays saved if it
+'   was.
+'
+' ERROR POLICY
+'   Contains every error: an event procedure has no caller to report to,
+'   and a message box would stop an unattended run. When the check cannot
+'   be made, the results are marked OUTDATED; CheckStatus reports why.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim WasSaved    As Boolean   'Workbook had no unsaved change
+
+        On Error GoTo Failed
+        WasSaved = ThisWorkbook.Saved
+        mSilent = True
+        mStatusWritten = False
+        ExecuteOperation OP_CHECK
+        mSilent = False
+        If WasSaved And Not mStatusWritten Then ThisWorkbook.Saved = True
+        Exit Sub
+
+Failed:
+        mSilent = False
+        MarkUnchecked
+
+End Sub
+
+
 '------------------------------------------------------------------------------
 '                                   OPERATION
 '------------------------------------------------------------------------------
@@ -217,7 +341,7 @@ Private Function ExecuteOperation( _
 '   Run one operation with Excel state captured, changed and restored.
 '
 ' INPUTS
-'   Operation   OP_RUN or OP_CLEAR.
+'   Operation   OP_RUN, OP_CLEAR or OP_CHECK.
 '
 ' RETURNS
 '   The operation's result line, with "; cleanup=PASS" appended.
@@ -229,10 +353,11 @@ Private Function ExecuteOperation( _
 '
 ' ERROR POLICY
 '   Preserves the primary error through cleanup and re-raises it; raises
-'   ERR_CLEANUP_FAILED when only the restoration failed.
+'   ERR_CLEANUP_FAILED when only the restoration failed. A run that raised
+'   an error is first marked as failed on the sheets.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '==============================================================================
 '
     Dim SavedCalculation As Long        'Calculation mode before the operation
@@ -260,6 +385,8 @@ Private Function ExecuteOperation( _
             Case OP_CLEAR
                 ClearAllOutputs
                 ResultLine = "RESULT=CLEARED"
+            Case OP_CHECK
+                ResultLine = CheckResults()
         End Select
 
 CleanUp:
@@ -280,6 +407,7 @@ Failed:
         ErrNumber = Err.Number
         ErrSource = Err.Source
         ErrDescription = Err.Description
+        If Operation = OP_RUN Then ErrDescription = AppendDetail(ErrDescription, MarkFailed(ErrDescription))
         Resume CleanUp
 
 End Function
@@ -291,8 +419,8 @@ Private Function RunCalculation() As String
 '                                RunCalculation
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Read the inputs, calculate, write the outputs and activate the sheet to
-'   review.
+'   Read the inputs, calculate, replace the outputs and activate the sheet
+'   to review.
 '
 ' RETURNS
 '   "RESULT=...; errors=n; warnings=n; positions_used=n; requirement=x;
@@ -303,10 +431,11 @@ Private Function RunCalculation() As String
 '
 ' STATE OWNERSHIP
 '   Clears and writes the output sheets; activates Results or Checks unless
-'   silent.
+'   silent. Nothing is cleared before the calculation ended, and the status
+'   line is written after every table.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '==============================================================================
 '
     Dim Inputs()    As Variant   'Engine input vector
@@ -316,7 +445,7 @@ Private Function RunCalculation() As String
         ReadInputs Inputs
         Calculate Inputs, Outputs
         ClearAllOutputs
-        WriteOutputs Outputs
+        WriteOutputs Outputs, Fingerprint(Inputs)
 
         If Outputs(OUT_STOPPED) Then
             Outcome = "STOPPED"
@@ -339,6 +468,173 @@ Private Function RunCalculation() As String
                          "; rwa=" & InvariantNumber(Outputs(OUT_RWA))
 
 End Function
+
+
+Private Function CheckResults() As String
+'
+'==============================================================================
+'                                 CheckResults
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Compare the fingerprint of the inputs on the sheets with the one the
+'   last run stored, and put the status line in agreement: the line of the
+'   run, with STATUS_OUTDATED before it when the two differ.
+'
+' RETURNS
+'   "RESULT=CURRENT" (the results are those of the inputs), "RESULT=OUTDATED"
+'   (an input changed after the run), "RESULT=FAILED" (the last run failed)
+'   or "RESULT=NOT_CALCULATED" (no result is shown).
+'
+' ERROR POLICY
+'   Propagates ERR_LAYOUT (a workbook name is missing).
+'
+' STATE OWNERSHIP
+'   Writes the status line only when it must change, and then sets
+'   mStatusWritten.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Inputs()    As Variant   'Engine input vector
+    Dim Shown       As String    'Status line on the sheet
+    Dim RunLine     As String    'Line the run wrote
+    Dim Wanted      As String    'Line to show
+    Dim Outcome     As String    'CURRENT, OUTDATED, FAILED or NOT_CALCULATED
+
+        mStatusWritten = False
+        Shown = PlainText(NamedRange(NM_RESULTS_STATUS).Value)
+        RunLine = LineOfRun(Shown)
+        If Len(RunLine) = 0 Then
+            If Left$(Shown, Len(STATUS_FAILED)) = STATUS_FAILED Then
+                Outcome = "FAILED"
+            Else
+                Outcome = "NOT_CALCULATED"
+            End If
+        Else
+            ReadInputs Inputs
+            If Fingerprint(Inputs) = PlainText(NamedRange(NM_FINGERPRINT).Value) Then
+                Wanted = RunLine
+                Outcome = "CURRENT"
+            Else
+                Wanted = STATUS_OUTDATED & RunLine
+                Outcome = "OUTDATED"
+            End If
+            If Wanted <> Shown Then
+                NamedRange(NM_RESULTS_STATUS).Value = Wanted
+                mStatusWritten = True
+            End If
+        End If
+        CheckResults = "RESULT=" & Outcome
+
+End Function
+
+
+Private Function LineOfRun( _
+    ByVal Shown As String) _
+    As String
+'
+'==============================================================================
+'                                   LineOfRun
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return the line a run that ended wrote, from the status line shown.
+'
+' INPUTS
+'   Shown   Status line on the sheet.
+'
+' RETURNS
+'   The line without STATUS_OUTDATED before it; "" when the sheet shows no
+'   result: an empty line, STATUS_EMPTY or a line of a failed run.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        If Left$(Shown, Len(STATUS_OUTDATED)) = STATUS_OUTDATED Then
+            LineOfRun = Mid$(Shown, Len(STATUS_OUTDATED) + 1)
+        ElseIf Shown = STATUS_EMPTY Or Left$(Shown, Len(STATUS_FAILED)) = STATUS_FAILED Then
+            LineOfRun = vbNullString
+        Else
+            LineOfRun = Shown
+        End If
+
+End Function
+
+
+Private Function MarkFailed( _
+    ByVal Reason As String) _
+    As String
+'
+'==============================================================================
+'                                  MarkFailed
+'------------------------------------------------------------------------------
+' PURPOSE
+'   After a run raised an error: clear every output area, so that no result
+'   of that run or of an earlier one stays, and write a FAILED status line.
+'
+' INPUTS
+'   Reason   Description of the error the run raised.
+'
+' RETURNS
+'   "" when the line was written; else why it was not.
+'
+' ERROR POLICY
+'   Contains its own error; never raises. An area that could not be cleared
+'   is named on the status line.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim NotCleared  As String    'Areas that could not be cleared
+
+        On Error GoTo Failed
+        NotCleared = ClearEveryOutput()
+        If Len(NotCleared) > 0 Then NotCleared = " Not cleared: " & NotCleared
+        NamedRange(NM_RESULTS_STATUS).Value = STATUS_FAILED & "the run of " & _
+            TimeText(Now) & " raised an error and no result is shown. " & Reason & NotCleared
+        MarkFailed = vbNullString
+        Exit Function
+
+Failed:
+        MarkFailed = "the failure could not be marked on " & SH_RESULTS & ": " & Err.Description
+
+End Function
+
+
+Private Sub MarkUnchecked()
+'
+'==============================================================================
+'                                 MarkUnchecked
+'------------------------------------------------------------------------------
+' PURPOSE
+'   After a check raised an error in an event procedure: mark the results
+'   OUTDATED, because they could not be confirmed.
+'
+' ERROR POLICY
+'   Contains its own error; never raises. When the status line cannot be
+'   read or written, nothing is marked.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Shown       As String    'Status line on the sheet
+    Dim RunLine     As String    'Line the run wrote
+
+        On Error GoTo Failed
+        Shown = PlainText(NamedRange(NM_RESULTS_STATUS).Value)
+        RunLine = LineOfRun(Shown)
+        If Len(RunLine) > 0 And Shown = RunLine Then
+            NamedRange(NM_RESULTS_STATUS).Value = STATUS_OUTDATED & RunLine
+        End If
+        Exit Sub
+
+Failed:
+        'Nothing to report to: see the error policy.
+
+End Sub
 
 
 '------------------------------------------------------------------------------
@@ -562,24 +858,59 @@ End Function
 '------------------------------------------------------------------------------
 
 Private Sub WriteOutputs( _
-    ByRef Outputs() As Variant)
+    ByRef Outputs() As Variant, _
+    ByVal InputFingerprint As String)
 '
 '==============================================================================
 '                                 WriteOutputs
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Write the engine outputs to their sheets; the sheets were cleared
-'   before.
+'   before. The result tables come first, then Checks, then the
+'   fingerprint of the inputs, and the status line last: a write that
+'   raises an error leaves the line ClearAllOutputs wrote.
 '
 ' INPUTS
-'   Outputs   Vector (1 To OUT_COUNT) from CORE_Engine.Calculate.
+'   Outputs            Vector (1 To OUT_COUNT) from CORE_Engine.Calculate.
+'   InputFingerprint   Fingerprint of the inputs the outputs come from.
 '
 ' STATE OWNERSHIP
 '   Writes IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder, IR_Zones, Buckets,
 '   Results and Checks.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
+'==============================================================================
+'
+        If Not Outputs(OUT_STOPPED) Then WriteResults Outputs
+        WriteRules Outputs(OUT_RULES)
+        NamedRange(NM_CHECKS_ERRORS).Value = Outputs(OUT_ERRORS)
+        NamedRange(NM_CHECKS_WARNINGS).Value = Outputs(OUT_WARNINGS)
+        WriteBlock NamedRange(NM_FINDINGS_HEADER).Offset(1, 0), Outputs(OUT_FINDINGS)
+        NamedRange(NM_FINGERPRINT).Value = InputFingerprint
+        NamedRange(NM_RESULTS_STATUS).Value = Outputs(OUT_STATUS) & " Run " & TimeText(Now) & "."
+
+End Sub
+
+
+Private Sub WriteResults( _
+    ByRef Outputs() As Variant)
+'
+'==============================================================================
+'                                 WriteResults
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Write the result tables of a run that was not stopped.
+'
+' INPUTS
+'   Outputs   Vector (1 To OUT_COUNT) from CORE_Engine.Calculate.
+'
+' STATE OWNERSHIP
+'   Writes IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder, IR_Zones, Buckets and
+'   the table of Results.
+'
+' UPDATED
+'   2026-11-15
 '==============================================================================
 '
     Dim Header      As Range     'Header cell of a table
@@ -588,13 +919,6 @@ Private Sub WriteOutputs( _
     Dim SummaryTable As Variant  'FX ONOP and charge
     Dim Capacity    As Long      'Rows of a Buckets block
     Dim Shown       As Long      'Rows written to a Buckets block
-
-        NamedRange(NM_RESULTS_STATUS).Value = Outputs(OUT_STATUS)
-        WriteRules Outputs(OUT_RULES)
-        NamedRange(NM_CHECKS_ERRORS).Value = Outputs(OUT_ERRORS)
-        NamedRange(NM_CHECKS_WARNINGS).Value = Outputs(OUT_WARNINGS)
-        WriteBlock NamedRange(NM_FINDINGS_HEADER).Offset(1, 0), Outputs(OUT_FINDINGS)
-        If Outputs(OUT_STOPPED) Then Exit Sub
 
         WriteBlock NamedRange(NM_IR_CALC_HEADER).Offset(1, 0), Outputs(OUT_IR_CALC)
         WriteBlock NamedRange(NM_EQ_CALC_HEADER).Offset(1, 0), Outputs(OUT_EQ_CALC)
@@ -770,48 +1094,139 @@ Private Sub ClearAllOutputs()
 '   Clears the output sheets; never touches inputs, Params or formulas
 '   outside the output areas.
 '
+' ERROR POLICY
+'   Raises ERR_LAYOUT, after every other area was cleared, when an area
+'   could not be.
+'
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
+'==============================================================================
+'
+    Dim NotCleared  As String    'Areas that could not be cleared
+
+        NotCleared = ClearEveryOutput()
+        If Len(NotCleared) > 0 Then Err.Raise ERR_LAYOUT, "M_Main.ClearAllOutputs", NotCleared
+
+End Sub
+
+
+Private Function ClearEveryOutput() As String
+'
+'==============================================================================
+'                               ClearEveryOutput
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Clear every output area, going on after one that cannot be cleared.
+'
+' RETURNS
+'   "" when every area was cleared; else why each of the others was not,
+'   separated by "; ".
+'
+' ERROR POLICY
+'   Never raises: ClearPart contains the error of its part.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim NotCleared  As String    'Areas that could not be cleared
+    Dim Part        As Long      'Part of the outputs
+
+        For Part = 1 To CLEAR_PARTS
+            NotCleared = AppendDetail(NotCleared, ClearPart(Part))
+        Next Part
+        ClearEveryOutput = NotCleared
+
+End Function
+
+
+Private Function ClearPart( _
+    ByVal Part As Long) _
+    As String
+'
+'==============================================================================
+'                                   ClearPart
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Clear one part of the outputs. The status line is the first part, so
+'   that no later failure leaves the line of a run over cleared tables.
+'
+' INPUTS
+'   Part   1 To CLEAR_PARTS.
+'
+' RETURNS
+'   "" on success, else what failed.
+'
+' ERROR POLICY
+'   Contains its own error; never raises.
+'
+' UPDATED
+'   2026-11-15
 '==============================================================================
 '
     Dim Header      As Range     'Header cell of a table
     Dim r           As Long      'Rule row
 
-        ClearToEnd NM_IR_CALC_HEADER, IR_CALC_WIDTH
-        ClearToEnd NM_EQ_CALC_HEADER, EQ_CALC_WIDTH
-        ClearToEnd NM_CO_CALC_HEADER, CO_CALC_WIDTH
-        ClearToEnd NM_FX_CALC_HEADER, FX_CALC_WIDTH
-        ClearToEnd NM_LADDER_HEADER, LADDER_WIDTH
-        ClearToEnd NM_FINDINGS_HEADER, FINDINGS_WIDTH
-        ClearRows NM_ZONES_HEADER, NamedRange(NM_IR_GMR_TOTAL).Row, ZONES_WIDTH
-        ClearRows NM_BK_EQ_HEADER, NamedRange(NM_EQ_GENERAL).Row, BK_EQ_WIDTH
-        ClearRows NM_BK_CO_HEADER, NamedRange(NM_CO_DIRECTIONAL).Row, BK_CO_WIDTH
-        ClearRows NM_BK_FX_HEADER, NamedRange(NM_BK_FX_HEADER).Row + _
-                  NamedRange(NM_FX_CCY).Rows.Count + 1, BK_FX_WIDTH
-        NamedRange(NM_FX_ONOP).ClearContents
-        NamedRange(NM_FX_CHARGE).ClearContents
+        On Error GoTo Failed
+        Select Case Part
+            Case 1
+                NamedRange(NM_RESULTS_STATUS).Value = STATUS_EMPTY
+            Case 2
+                NamedRange(NM_FINGERPRINT).ClearContents
+            Case 3
+                ClearToEnd NM_IR_CALC_HEADER, IR_CALC_WIDTH
+            Case 4
+                ClearToEnd NM_EQ_CALC_HEADER, EQ_CALC_WIDTH
+            Case 5
+                ClearToEnd NM_CO_CALC_HEADER, CO_CALC_WIDTH
+            Case 6
+                ClearToEnd NM_FX_CALC_HEADER, FX_CALC_WIDTH
+            Case 7
+                ClearToEnd NM_LADDER_HEADER, LADDER_WIDTH
+            Case 8
+                ClearToEnd NM_FINDINGS_HEADER, FINDINGS_WIDTH
+            'The label of a total row sits in the cleared area: put it back.
+            Case 9
+                ClearRows NM_ZONES_HEADER, NamedRange(NM_IR_GMR_TOTAL).Row, ZONES_WIDTH
+                NamedRange(NM_IR_GMR_TOTAL).Worksheet.Cells(NamedRange(NM_IR_GMR_TOTAL).Row, _
+                    NamedRange(NM_ZONES_HEADER).Column).Value = LBL_TOTAL_ZONES
+            Case 10
+                ClearRows NM_BK_EQ_HEADER, NamedRange(NM_EQ_GENERAL).Row, BK_EQ_WIDTH
+                NamedRange(NM_BK_EQ_HEADER).Worksheet.Cells(NamedRange(NM_EQ_GENERAL).Row, _
+                    NamedRange(NM_BK_EQ_HEADER).Column + 1).Value = LBL_TOTAL_EQ
+            Case 11
+                ClearRows NM_BK_CO_HEADER, NamedRange(NM_CO_DIRECTIONAL).Row, BK_CO_WIDTH
+                NamedRange(NM_BK_CO_HEADER).Worksheet.Cells(NamedRange(NM_CO_DIRECTIONAL).Row, _
+                    NamedRange(NM_BK_CO_HEADER).Column + 1).Value = LBL_TOTAL_CO
+            Case 12
+                ClearRows NM_BK_FX_HEADER, NamedRange(NM_BK_FX_HEADER).Row + _
+                          NamedRange(NM_FX_CCY).Rows.Count + 1, BK_FX_WIDTH
+                NamedRange(NM_BK_FX_HEADER).Offset(NamedRange(NM_FX_CCY).Rows.Count + 1, 1).Value = _
+                    LBL_TOTAL_FX
+            Case 13
+                NamedRange(NM_FX_ONOP).ClearContents
+            Case 14
+                NamedRange(NM_FX_CHARGE).ClearContents
+            Case 15
+                Set Header = NamedRange(NM_RESULTS_HEADER)
+                Header.Offset(1, RESULTS_COLUMN - 1).Resize(RC_COUNT + 1, RESULTS_WIDTH).ClearContents
+            Case 16
+                Set Header = NamedRange(NM_CHECKS_HEADER)
+                For r = 1 To RULE_COUNT
+                    Header.Offset(r, CHECKS_COUNT_COLUMN - 1).Resize(1, 2).ClearContents
+                Next r
+            Case 17
+                NamedRange(NM_CHECKS_ERRORS).ClearContents
+            Case 18
+                NamedRange(NM_CHECKS_WARNINGS).ClearContents
+        End Select
+        ClearPart = vbNullString
+        Exit Function
 
-        'Labels of the total rows sit in the cleared areas: put them back.
-        NamedRange(NM_IR_GMR_TOTAL).Worksheet.Cells(NamedRange(NM_IR_GMR_TOTAL).Row, _
-            NamedRange(NM_ZONES_HEADER).Column).Value = LBL_TOTAL_ZONES
-        NamedRange(NM_BK_EQ_HEADER).Worksheet.Cells(NamedRange(NM_EQ_GENERAL).Row, _
-            NamedRange(NM_BK_EQ_HEADER).Column + 1).Value = LBL_TOTAL_EQ
-        NamedRange(NM_BK_CO_HEADER).Worksheet.Cells(NamedRange(NM_CO_DIRECTIONAL).Row, _
-            NamedRange(NM_BK_CO_HEADER).Column + 1).Value = LBL_TOTAL_CO
-        NamedRange(NM_BK_FX_HEADER).Offset(NamedRange(NM_FX_CCY).Rows.Count + 1, 1).Value = LBL_TOTAL_FX
+Failed:
+        ClearPart = Err.Description
 
-        Set Header = NamedRange(NM_RESULTS_HEADER)
-        Header.Offset(1, RESULTS_COLUMN - 1).Resize(RC_COUNT + 1, RESULTS_WIDTH).ClearContents
-        NamedRange(NM_RESULTS_STATUS).Value = "Not calculated: run RunSSA."
-
-        Set Header = NamedRange(NM_CHECKS_HEADER)
-        For r = 1 To RULE_COUNT
-            Header.Offset(r, CHECKS_COUNT_COLUMN - 1).Resize(1, 2).ClearContents
-        Next r
-        NamedRange(NM_CHECKS_ERRORS).ClearContents
-        NamedRange(NM_CHECKS_WARNINGS).ClearContents
-
-End Sub
+End Function
 
 
 Private Sub ClearToEnd( _
@@ -945,6 +1360,50 @@ Private Function InvariantNumber( _
         Else
             InvariantNumber = Trim$(Str$(CDbl(Value)))
         End If
+
+End Function
+
+
+Private Function TimeText( _
+    ByVal Moment As Date) _
+    As String
+'
+'==============================================================================
+'                                   TimeText
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return a local date and time as "yyyy-mm-dd hh:mm:ss", built from its
+'   parts so that no format pattern or regional setting changes it.
+'
+' INPUTS
+'   Moment   Date and time.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        TimeText = CStr(Year(Moment)) & "-" & TwoDigits(Month(Moment)) & "-" & _
+                   TwoDigits(Day(Moment)) & " " & TwoDigits(Hour(Moment)) & ":" & _
+                   TwoDigits(Minute(Moment)) & ":" & TwoDigits(Second(Moment))
+
+End Function
+
+
+Private Function TwoDigits( _
+    ByVal Part As Long) _
+    As String
+'
+'==============================================================================
+'                                   TwoDigits
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return a number from 0 to 99 as two digits.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        TwoDigits = Right$("0" & CStr(Part), 2)
 
 End Function
 

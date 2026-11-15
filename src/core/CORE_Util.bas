@@ -5,7 +5,8 @@ Attribute VB_Name = "CORE_Util"
 ' PURPOSE
 '   Shared helpers of the K-FRTB-SSA core: classify cell values (number, date,
 '   text), normalise codes, look codes up in arrays, parse the delimited
-'   lists of CORE_Config, collect Checks findings and total a Buckets block.
+'   lists of CORE_Config, collect Checks findings, total a Buckets block and
+'   take the fingerprint of an input vector.
 '
 ' PUBLIC SURFACE
 '   None outside this VBA project (Option Private Module).
@@ -43,6 +44,13 @@ Attribute VB_Name = "CORE_Util"
 ' MODULE CONSTANTS
 '------------------------------------------------------------------------------
         Private Const ERROR_TEXT As String = "#ERROR"    'Text of a cell error value
+        Private Const FINGERPRINT_VERSION As String = "F1"      'Form of a fingerprint
+        Private Const HASH_BASE_1    As Double = 131#           'Multiplier of the first hash
+        Private Const HASH_MODULUS_1 As Double = 2147483647#    'Prime 2^31 - 1
+        Private Const HASH_BASE_2    As Double = 137#           'Multiplier of the second hash
+        Private Const HASH_MODULUS_2 As Double = 2147483629#    'Prime 2^31 - 19
+        Private Const HASH_SEPARATOR As Long = 30               'Code added after each value
+        Private Const CODE_UNITS     As Long = 65536            'Values of a UTF-16 code unit
 
 
 '------------------------------------------------------------------------------
@@ -524,3 +532,203 @@ Public Sub WriteTotalRow( _
         Next c
 
 End Sub
+
+
+'------------------------------------------------------------------------------
+'                                  FINGERPRINT
+'------------------------------------------------------------------------------
+
+Public Function Fingerprint( _
+    ByRef Values() As Variant) _
+    As String
+'
+'==============================================================================
+'                                  Fingerprint
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return a fingerprint of a vector of values: the same values in the same
+'   order give the same text, and a changed, added or removed value gives
+'   another one, short of a collision of two 31-bit hashes. It tells a
+'   change; it is not a cryptographic digest.
+'
+' INPUTS
+'   Values   Vector whose items are cell values, or arrays of cell values of
+'            one or two dimensions.
+'
+' RETURNS
+'   FINGERPRINT_VERSION, "-" and sixteen hexadecimal digits.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim First       As Double    'First running hash
+    Dim Second      As Double    'Second running hash
+    Dim Table       As Variant   'One array of Values
+    Dim i           As Long      'Item of Values
+    Dim r           As Long      'Row of Table
+    Dim c           As Long      'Column of Table
+
+        First = HASH_BASE_1
+        Second = HASH_BASE_2
+        For i = LBound(Values) To UBound(Values)
+            If Not IsArray(Values(i)) Then
+                AddToHash ValueKey(Values(i)), First, Second
+            Else
+                Table = Values(i)
+                'The rows of the array, so that a row moved to another table
+                'does not leave the sequence of values as it was.
+                AddToHash "A" & CStr(UBound(Table, 1) - LBound(Table, 1) + 1), First, Second
+                If HasColumns(Table) Then
+                    For r = LBound(Table, 1) To UBound(Table, 1)
+                        For c = LBound(Table, 2) To UBound(Table, 2)
+                            AddToHash ValueKey(Table(r, c)), First, Second
+                        Next c
+                    Next r
+                Else
+                    For r = LBound(Table, 1) To UBound(Table, 1)
+                        AddToHash ValueKey(Table(r)), First, Second
+                    Next r
+                End If
+            End If
+        Next i
+        Fingerprint = FINGERPRINT_VERSION & "-" & HexWord(First) & HexWord(Second)
+
+End Function
+
+
+Private Function HasColumns( _
+    ByRef Table As Variant) _
+    As Boolean
+'
+'==============================================================================
+'                                  HasColumns
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Tell whether an array has a second dimension.
+'
+' INPUTS
+'   Table   Array of one or two dimensions.
+'
+' ERROR POLICY
+'   The error of asking an array of one dimension for its second bound is
+'   contained on the single statement that can raise it.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Upper       As Long      'Upper bound of the second dimension
+
+        Upper = -1
+        On Error Resume Next
+        Upper = UBound(Table, 2)
+        On Error GoTo 0
+        HasColumns = (Upper >= 0)
+
+End Function
+
+
+Private Function ValueKey( _
+    ByVal Value As Variant) _
+    As String
+'
+'==============================================================================
+'                                   ValueKey
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return the text a cell value enters a fingerprint with: its kind and its
+'   content, the same in every regional setting.
+'
+' INPUTS
+'   Value   Cell value.
+'
+' RETURNS
+'   "E" for an error value, "_" for an empty cell, "S", the length, ":" and
+'   the text for a text, "B0" or "B1" for a Boolean, "N" and the number for
+'   a number or a date, and "?" with the type name for anything else.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        If IsError(Value) Then
+            ValueKey = "E"
+        ElseIf IsEmpty(Value) Or IsNull(Value) Then
+            ValueKey = "_"
+        ElseIf VarType(Value) = vbString Then
+            ValueKey = "S" & CStr(Len(Value)) & ":" & Value
+        ElseIf VarType(Value) = vbBoolean Then
+            If Value Then
+                ValueKey = "B1"
+            Else
+                ValueKey = "B0"
+            End If
+        ElseIf IsNumeric(Value) Or VarType(Value) = vbDate Then
+            'Str$ writes a decimal point whatever the regional setting.
+            ValueKey = "N" & Str$(CDbl(Value))
+        Else
+            ValueKey = "?" & TypeName(Value)
+        End If
+
+End Function
+
+
+Private Sub AddToHash( _
+    ByVal Text As String, _
+    ByRef First As Double, _
+    ByRef Second As Double)
+'
+'==============================================================================
+'                                   AddToHash
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Add a text and a separator to two running polynomial hashes.
+'
+' INPUTS
+'   Text     Text to add; may be empty.
+'   First    Hash modulo HASH_MODULUS_1, updated.
+'   Second   Hash modulo HASH_MODULUS_2, updated.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim Code        As Long      'Code unit of one character
+    Dim p           As Long      'Position in Text
+
+        For p = 1 To Len(Text) + 1
+            If p > Len(Text) Then
+                Code = HASH_SEPARATOR
+            Else
+                Code = AscW(Mid$(Text, p, 1))
+                'AscW returns a signed Integer.
+                If Code < 0 Then Code = Code + CODE_UNITS
+            End If
+            'A product stays far below 2^53, so the Double arithmetic is exact.
+            First = First * HASH_BASE_1 + Code
+            First = First - Int(First / HASH_MODULUS_1) * HASH_MODULUS_1
+            Second = Second * HASH_BASE_2 + Code
+            Second = Second - Int(Second / HASH_MODULUS_2) * HASH_MODULUS_2
+        Next p
+
+End Sub
+
+
+Private Function HexWord( _
+    ByVal Value As Double) _
+    As String
+'
+'==============================================================================
+'                                    HexWord
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Return a whole number from 0 to 2^31 - 1 as eight hexadecimal digits.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+        HexWord = Right$("0000000" & Hex$(CLng(Value)), 8)
+
+End Function

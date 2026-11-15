@@ -275,6 +275,40 @@ class Generator(NeedsOpenpyxl):
                          '=IF($C6="",0,SUMPRODUCT((UPPER(IRCalc!$E$5:$E$504)=UPPER($C6))'
                          '*(IRCalc!$K$5:$K$504=$D6)*(IRCalc!$G$5:$G$504>0)*1,IRCalc!$G$5:$G$504))')
 
+    def test_every_output_sheet_repeats_the_status_line(self) -> None:
+        assert openpyxl is not None
+        generator = tool("build_prototype")
+        self.assertEqual(generator.STATUS_SHEETS, ("IR_Zones", "IR_Ladder", "Buckets", "IRCalc",
+                                                   "EQCalc", "COCalc", "FXCalc", "Checks"))
+        for form in (self.template, self.formula):
+            book = openpyxl.load_workbook(form)
+            for sheet in generator.STATUS_SHEETS:
+                with self.subTest(form=form.name, sheet=sheet):
+                    self.assertEqual(book[sheet]["E1"].value, "=Results_Status")
+            self.assertEqual(book.defined_names["Results_Status"].attr_text, "Results!$C$4")
+        template = openpyxl.load_workbook(self.template)
+        self.assertEqual(template["Results"]["C4"].value, "Not calculated: run RunSSA.")
+        # A status line that is not to be relied on stands out, on every sheet.
+        for sheet, cell in (("Results", "C4"), ("IRCalc", "E1"), ("Checks", "E1")):
+            rules = [rule.formula[0] for ranges in template[sheet].conditional_formatting
+                     if str(ranges.sqref) == cell for rule in ranges.rules]
+            with self.subTest(sheet=sheet):
+                self.assertEqual(len(rules), 1)
+                for word in ('"INCOMPLETE"', '"FAILED"', '"OUTDATED"'):
+                    self.assertIn(word, rules[0])
+
+    def test_the_fingerprint_of_the_inputs_has_a_named_cell_that_the_template_leaves_empty(
+            self) -> None:
+        assert openpyxl is not None
+        book = openpyxl.load_workbook(self.template)
+        self.assertEqual(book.defined_names["Results_Fingerprint"].attr_text, "Results!$E$18")
+        self.assertIsNone(book["Results"]["E18"].value)
+        self.assertEqual(book["Results"]["C18"].value, "Input fingerprint")
+        # It is outside the areas that a run clears and the comparison reads.
+        compare = tool("compare_outputs")
+        self.assertFalse(any(area.sheet == "Results" and 18 in area.rows
+                             for area in compare.FIXED_AREAS))
+
     def test_no_other_repository_is_named_in_the_workbook(self) -> None:
         assert openpyxl is not None
         for sheet in openpyxl.load_workbook(TEMPLATE):
