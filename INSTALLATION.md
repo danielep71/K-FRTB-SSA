@@ -207,7 +207,8 @@ never Excel evidence.
 `python3 tools/devbuild/lo_macro.py WORKBOOK MACRO OUTPUT` runs one macro of
 a workbook you built, such as `M_Main.RunSSA_Silent` or
 `TEST_Suite.Test_RunAll`, prints what it returned and saves the recalculated
-sheets to `OUTPUT` as a macro-free `.xlsx`. It exits 0 when the macro ran, 1
+sheets to `OUTPUT` as a macro-free `.xlsx`. With `-` as `MACRO` it calls none
+and only recalculates and saves. It exits 0 when the macro ran, 1
 when LibreOffice could not open the workbook or the macro raised, and 2 for
 an unknown option, a missing workbook or a missing LibreOffice or UNO bridge.
 It is the same early warning, never Excel evidence.
