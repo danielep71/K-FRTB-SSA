@@ -5,8 +5,8 @@ Applies the mechanical rules of docs/VBA_HOUSE_STYLE.md and the placement
 rules of docs/REPOSITORY_STRUCTURE.md to every tracked file: VBA components
 only in their homes, each with its role's name prefix and a VB_Name equal to
 its file name; ASCII only; Option Explicit, and Option Private Module where
-required; no Option Base; no tab or trailing white space, except in the
-VBE header of a form; string literals closed; forms beside their .frx; LF
+required; no Option Base; no vbObjectError in a constant expression; no tab
+or trailing white space, except in the VBE header of a form; string literals closed; forms beside their .frx; LF
 storage with CRLF checkout; no workbook committed except the macro-free
 src/workbook/Template.xlsx and the byte-preserved copies of regulatory
 sources under docs/methodology/sources/.
@@ -66,6 +66,9 @@ OPTION_EXPLICIT = re.compile(r"Option\s+Explicit", re.I)
 OPTION_PRIVATE = re.compile(r"Option\s+Private\s+Module", re.I)
 # Explicit array bounds, never Option Base (docs/VBA_HOUSE_STYLE.md).
 OPTION_BASE = re.compile(r"Option\s+Base\b", re.I)
+# LibreOffice, the optional smoke host, compiles no module of a project that
+# evaluates vbObjectError in a constant expression.
+CONST_OBJECT_ERROR = re.compile(r"\bConst\b.*\bvbObjectError\b", re.I)
 FRX_REFERENCE = re.compile(r'"([^"\n]+\.frx)":([0-9A-Fa-f]+)')
 REM_STATEMENT = re.compile(r"Rem(?=[ \t]|$)", re.I)
 LINE_NUMBER = re.compile(r"[ \t]*\d+(?=[ \t])")
@@ -200,6 +203,9 @@ def content(root: Path, path: str, tracked: set[str], names: dict[str, str]) -> 
         findings.append(Finding(path, None, "missing Option Private Module"))
     findings.extend(Finding(path, line, "Option Base; declare explicit array bounds")
                     for line, statement in options if OPTION_BASE.match(statement))
+    findings.extend(Finding(path, line, "vbObjectError in a constant expression; write the "
+                                        "number as a literal, with its offset in the comment")
+                    for line, statement in options if CONST_OBJECT_ERROR.search(statement))
     findings.extend(Finding(path, number, "string literal not closed")
                     for number in unclosed_literals(text))
     findings.extend(layout(path, text))

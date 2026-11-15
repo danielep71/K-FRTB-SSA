@@ -103,6 +103,14 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- The workbook built from source runs in LibreOffice again. The engine's
+  three error numbers are literals equal to `vbObjectError + 2049` to
+  `+ 2051`: LibreOffice cannot evaluate `vbObjectError` in a constant
+  expression and then compiled no module, so `tools/devbuild/lo_smoke.py`
+  wrote no log. `tools/check_vba_source.py` now rejects such a constant, and
+  `tools/devbuild/lo_macro.py` runs one macro of a built workbook in
+  LibreOffice and saves the values. LibreOffice is not a supported host, and
+  none of this is Excel evidence (#36).
 - A final maturity or next repricing date typed as a number that is not a
   date, such as `20311231`, now rejects its interest rate row with a reason,
   and the run goes on. Before, the row was accepted: LibreOffice slotted it

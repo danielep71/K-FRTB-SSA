@@ -386,6 +386,8 @@ Attribute VB_Name = "CORE_Config"
 ' ERROR NUMBERS
 '------------------------------------------------------------------------------
     'Raised by the core and the macros; range vbObjectError + 2048 to 4095.
-        Public Const ERR_LAYOUT          As Long = vbObjectError + 2049    'Template name or layout missing
-        Public Const ERR_ARGUMENT        As Long = vbObjectError + 2050    'Core called with inconsistent arrays
-        Public Const ERR_CLEANUP_FAILED  As Long = vbObjectError + 2051    'Excel settings not restored
+    'Written as literals equal to vbObjectError + n: LibreOffice, the optional
+    'smoke host, cannot evaluate vbObjectError in a constant expression.
+        Public Const ERR_LAYOUT          As Long = &H80040801    'vbObjectError + 2049: Template name or layout missing
+        Public Const ERR_ARGUMENT        As Long = &H80040802    'vbObjectError + 2050: Core called with inconsistent arrays
+        Public Const ERR_CLEANUP_FAILED  As Long = &H80040803    'vbObjectError + 2051: Excel settings not restored
