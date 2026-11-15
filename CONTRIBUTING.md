@@ -127,7 +127,7 @@ none of these is not a contract change.
 ## 🧪 Local checks
 
 Run these before opening a pull request. The tests need Node.js for the label
-scripts. The tests that read YAML and the `codeql-default-branch` check need the
+scripts. The tests that read YAML and the `workflow-default-branch` check need the
 pinned configuration parser; without it they are skipped locally.
 The quality checks need Ruff and mypy, whose hashes cover CPython 3.13 on
 Linux x86_64, and actionlint:
@@ -187,7 +187,7 @@ either, `changelog` runs without `--repository`.
 | `markdown-links` | `python tools/check_links.py` |
 | `documented-commands` | `python tools/check_doc_commands.py` |
 | `dependabot-target-branches` | Built in: Every Dependabot target-branch exists. |
-| `codeql-default-branch` | Built in: codeql.yml lists the default branch, which branch filters cannot name. |
+| `workflow-default-branch` | Built in: The workflows with branch filters list the default branch, which a filter cannot name. |
 | `required-documents` | Built in: The documents the repository requires exist and are not empty. |
 | `whitespace-committed` | `git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 HEAD` |
 | `whitespace-local` | `git diff --check HEAD` |
