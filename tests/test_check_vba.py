@@ -293,6 +293,23 @@ class SourceTest(unittest.TestCase):
                                            f"Option Explicit\nOption Base {base}\n"),
                                    "Option Base; declare explicit array bounds")
 
+    def test_no_vbobjecterror_in_a_constant_expression(self) -> None:
+        core = "src/core/CORE_Validation.bas"
+
+        def with_statement(statement: str) -> dict[str, str | bytes]:
+            return changed(core, "Option Explicit\n", "Option Explicit\n" + statement)
+
+        self.assertFinding(
+            with_statement("Private Const ERR_SAMPLE As Long = vbObjectError + 2049\n"),
+            "vbObjectError in a constant expression")
+        # A literal with the offset in its comment, a commented declaration and
+        # a use outside a constant are not constant expressions.
+        for statement in ("Private Const ERR_SAMPLE As Long = &H80040801   'vbObjectError + 2049\n",
+                          "'Private Const ERR_SAMPLE As Long = vbObjectError + 2049\n"):
+            with self.subTest(statement=statement):
+                self.assertFalse(any("vbObjectError" in item
+                                     for item in self.findings(with_statement(statement))))
+
     def test_options_in_comments_do_not_count(self) -> None:
         core = "src/core/CORE_Validation.bas"
         continued = "Option Explicit\n' An example _\nOption Base 1\n"

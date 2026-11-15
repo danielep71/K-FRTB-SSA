@@ -505,11 +505,11 @@ CORE_Config	Const	RULE_COUNT
 CORE_Config	Const	RULE_SEVERITIES
 # SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR"
 CORE_Config	Const	ERR_LAYOUT
-# SIG	CORE_Config	Const	ERR_LAYOUT	Public Const ERR_LAYOUT As Long = vbObjectError + 2049
+# SIG	CORE_Config	Const	ERR_LAYOUT	Public Const ERR_LAYOUT As Long = &H80040801
 CORE_Config	Const	ERR_ARGUMENT
-# SIG	CORE_Config	Const	ERR_ARGUMENT	Public Const ERR_ARGUMENT As Long = vbObjectError + 2050
+# SIG	CORE_Config	Const	ERR_ARGUMENT	Public Const ERR_ARGUMENT As Long = &H80040802
 CORE_Config	Const	ERR_CLEANUP_FAILED
-# SIG	CORE_Config	Const	ERR_CLEANUP_FAILED	Public Const ERR_CLEANUP_FAILED As Long = vbObjectError + 2051
+# SIG	CORE_Config	Const	ERR_CLEANUP_FAILED	Public Const ERR_CLEANUP_FAILED As Long = &H80040803
 CORE_Engine	Sub	Calculate
 # SIG	CORE_Engine	Sub	Calculate	Public Sub Calculate(ByRef Inputs() As Variant, ByRef Outputs() As Variant)
 CORE_Equity	Sub	CalculateEquity

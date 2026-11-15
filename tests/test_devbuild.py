@@ -38,6 +38,7 @@ import build_workbook  # noqa: E402
 import check_binaries  # noqa: E402
 import check_excel_run  # noqa: E402
 import export_manifest  # noqa: E402
+import lo_macro  # noqa: E402
 import lo_smoke  # noqa: E402
 import vba_project  # noqa: E402
 import workbook_template  # noqa: E402
@@ -975,6 +976,88 @@ class LibreOfficeSmoke(unittest.TestCase):
         # The injected mode's designed failure is found under the policy's log name.
         self.assertEqual(summary["unexpected"], [])
         self.assertEqual(code, 0)
+
+
+class LibreOfficeMacro(unittest.TestCase):
+    """The exit codes of lo_macro.py that need no LibreOffice."""
+
+    def test_an_unknown_option_or_a_missing_workbook_exits_2_before_starting_libreoffice(
+            self) -> None:
+        with unittest.mock.patch("subprocess.Popen") as popen, \
+                contextlib.redirect_stderr(io.StringIO()) as errors:
+            with self.assertRaises(SystemExit) as raised:
+                lo_macro.main(["--help-me"])
+            self.assertEqual(raised.exception.code, 2)
+            self.assertEqual(
+                lo_macro.main(["no-such-workbook.xlsm", "M_Main.RunSSA_Silent", "out.xlsx"]), 2)
+        popen.assert_not_called()
+        self.assertIn("no workbook at no-such-workbook.xlsm", errors.getvalue())
+
+    def run_main(self, **patches: Any) -> tuple[int, str, Any]:
+        """Exit code and output of main on a file, with LibreOffice replaced by mocks."""
+        with tempfile.TemporaryDirectory() as directory:
+            workbook = Path(directory) / "Workbook.xlsm"
+            workbook.write_bytes(b"not a workbook")
+            with unittest.mock.patch("shutil.which",
+                                     return_value=patches.get("soffice", "soffice")), \
+                    unittest.mock.patch("importlib.util.find_spec", return_value=object()), \
+                    unittest.mock.patch("subprocess.Popen") as popen, \
+                    unittest.mock.patch.object(lo_smoke, "connect"), \
+                    unittest.mock.patch.object(lo_smoke, "enable_vba"), \
+                    unittest.mock.patch.object(lo_macro, "run", **patches.get("run", {})), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                code = lo_macro.main([str(workbook), "M_Main.RunSSA_Silent",
+                                      str(Path(directory) / "out.xlsx")])
+        return code, output.getvalue(), popen
+
+    def test_without_libreoffice_it_exits_2_and_starts_nothing(self) -> None:
+        code, output, popen = self.run_main(soffice=None)
+        self.assertEqual(code, 2)
+        self.assertIn("lo-macro: SKIP (needs LibreOffice and python3-uno", output)
+        popen.assert_not_called()
+
+    def test_a_macro_that_raises_exits_1_without_a_traceback(self) -> None:
+        code, output, popen = self.run_main(run={"side_effect": RuntimeError("cannot load")})
+        self.assertEqual(code, 1)
+        self.assertIn("lo-macro: FAIL (LibreOffice could not run M_Main.RunSSA_Silent: "
+                      "RuntimeError: cannot load)", output)
+        popen.return_value.wait.assert_called_once_with(timeout=60)
+
+    def test_the_result_line_holds_what_the_macro_returned(self) -> None:
+        code, output, _ = self.run_main(run={"return_value": "RESULT=OK; cleanup=PASS"})
+        self.assertEqual((code, output), (0, "RESULT: RESULT=OK; cleanup=PASS\n"))
+
+    def test_run_calls_the_macro_recalculates_saves_and_closes(self) -> None:
+        context = unittest.mock.MagicMock()
+        desktop = context.ServiceManager.createInstanceWithContext.return_value
+        document = desktop.loadComponentFromURL.return_value
+        script = document.getScriptProvider.return_value.getScript.return_value
+        script.invoke.return_value = ("PASS=91; FAIL=0",)
+        # The real one needs the UNO bridge.
+        self.enterContext(unittest.mock.patch.object(
+            lo_smoke, "property_value", side_effect=lambda name, value: (name, value)))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "out.xlsx"
+            returned = lo_macro.run(context, Path(directory) / "Workbook.xlsm",
+                                    "TEST_Suite.Test_RunAll", output)
+            saved = output.resolve().as_uri()
+        self.assertEqual(returned, "PASS=91; FAIL=0")
+        document.getScriptProvider.return_value.getScript.assert_called_once_with(
+            "vnd.sun.star.script:VBAProject.TEST_Suite.Test_RunAll"
+            "?language=Basic&location=document")
+        document.calculateAll.assert_called_once_with()
+        document.storeToURL.assert_called_once_with(
+            saved, (("FilterName", lo_macro.XLSX_FILTER),))
+        document.close.assert_called_once_with(True)
+        desktop.terminate.assert_called_once_with()
+        # A Sub returns nothing; a macro that raises still closes the workbook.
+        script.invoke.return_value = (None,)
+        self.assertEqual(lo_macro.run(context, Path("Workbook.xlsm"), "M_Main.ClearOutputs",
+                                      Path("out.xlsx")), "")
+        script.invoke.side_effect = RuntimeError("BASIC runtime error")
+        with self.assertRaisesRegex(RuntimeError, "BASIC runtime error"):
+            lo_macro.run(context, Path("Workbook.xlsm"), "M_Main.RunSSA_Silent", Path("out.xlsx"))
+        self.assertEqual(document.close.call_count, 3)
 
 
 if __name__ == "__main__":

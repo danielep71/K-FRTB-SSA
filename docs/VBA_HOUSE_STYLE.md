@@ -114,6 +114,11 @@ Errors raised by the project use named `ERR_` constants, allocated once in one
 documented range: `vbObjectError + 2048` through `vbObjectError + 4063`. The
 range `vbObjectError + 4064` through `vbObjectError + 4095` is reserved for the
 test harness and its example suite (`TEST_Harness`, `TEST_Examples`).
+Write each number as a literal equal to `vbObjectError + n`, such as
+`&H80040801` for `vbObjectError + 2049`, with the offset in its comment.
+LibreOffice, the optional smoke host, cannot evaluate `vbObjectError` in a
+constant expression and then compiles no module of the project;
+`tools/check_vba_source.py` rejects one.
 `Err.Source` names the component and procedure. A message describes the
 condition without repeating confidential input. Error codes distinguish
 invalid input, unsupported scope, numerical failure, and host or cleanup
