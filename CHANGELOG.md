@@ -90,6 +90,25 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The workbook no longer shows results it cannot stand behind (#25):
+  - A run that raises an error, while it reads, calculates or writes, clears
+    every output area and writes a status line that begins with `FAILED`,
+    with the time and the error. Before, an error while writing left some
+    tables under a status of `OK`, and an error before writing left the
+    previous results unmarked.
+  - The status line is written after every table, and ends with the time of
+    the run.
+  - `RunSSA` stores a fingerprint of the inputs it read in
+    `Results_Fingerprint`. The new macro `CheckStatus`, which `ThisWorkbook`
+    also runs when the workbook is opened and before it is saved, compares
+    it with the inputs on the sheets and writes `OUTDATED:` before the
+    status line when an input changed after the run.
+  - `IR_Zones`, `IR_Ladder`, `Buckets`, the four calculation sheets and
+    `Checks` repeat the status line of `Results` in `E1`.
+
+  The template gains the fingerprint cell and the repeated status lines.
+  The figures of a run that ends do not change. Tested in LibreOffice's VBA
+  mode only, not in Excel.
 - The template's README sheet no longer names another repository: its
   subtitle, its *Names* row and its *References* section describe this
   workbook only, and its *Source* row names this repository (#17).

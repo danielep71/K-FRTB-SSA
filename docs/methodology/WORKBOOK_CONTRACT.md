@@ -33,17 +33,26 @@ where the prototype set them:
 - **No regulatory calculation in sheet formulas.** VBA writes every
   calculated value as a value. The template's formulas only repeat or
   compare written values: the *Changed* flags of `Params`, the headline of
-  `Results` and the comparisons of `TestCatalogue`. Input areas use data
-  validation, and conditional formats read written values.
+  `Results`, the status line that the other output sheets repeat and the
+  comparisons of `TestCatalogue`. Input areas use data validation, and
+  conditional formats read written values.
 - **The adapter owns the sheets.** Only `M_Main`, the Excel adapter in
   `src/workbook/`, reads or writes a worksheet. It finds every cell and
   table through a workbook name ([defined names](#defined-names)), never
   through a hard-coded address, and uses a tab name only to show `Results`
   or `Checks` after a run. The core modules and the worksheet functions of
-  `FRTBSSA_Formulas` never touch a workbook object.
+  `FRTBSSA_Formulas` never touch a workbook object, and the event procedures
+  of `ThisWorkbook` only call `M_Main`.
 - **Calculate first, then replace.** A run reads the inputs and calculates
-  in memory, then clears every output area and writes the new results. It
-  does not yet clear or mark the results when it fails
+  in memory, then clears every output area and writes the new results, the
+  status line last.
+- **No partial results.** A run that raises an error, before or while it
+  writes, clears every output area and writes a status line that begins
+  with `FAILED`. No result of that run or of an earlier one stays
+  ([status and staleness](#status-and-staleness)).
+- **Outdated results are marked.** A run stores a fingerprint of the inputs
+  it read. A check compares it with the inputs on the sheets and marks the
+  results `OUTDATED` when an input changed after the run
   ([status and staleness](#status-and-staleness)).
 
 ## Sheets
@@ -106,8 +115,10 @@ Tab order is the order of the table. Every sheet is visible.
 - Input cells have a yellow fill, and the MAR40 constants on `Params` a grey
   one. No cell is unlocked and no sheet is protected yet
   ([protection](#protection)).
-- `Results` has the only status line, `Results_Status`
-  ([status and staleness](#status-and-staleness)).
+- `Results` holds the status line, `Results_Status`, and every other output
+  sheet repeats it in `E1`, in the band at its top, with the formula
+  `=Results_Status`: `IR_Zones`, `IR_Ladder`, `Buckets`, the four calculation
+  sheets and `Checks` ([status and staleness](#status-and-staleness)).
 
 ## Defined names
 
@@ -168,7 +179,8 @@ The names that refer to one cell:
 | `FX_Charge` | `shBuckets` | The FX and gold requirement | `RunSSA` |
 | `SSA_Requirement` | `shResults` | The requirement after scaling, on the total row | `RunSSA` |
 | `Results_Header` | `shResults` | The first header cell of the requirement per risk class | `RunSSA`, in the rows below it |
-| `Results_Status` | `shResults` | The status line of the last run | `RunSSA` and `ClearOutputs` |
+| `Results_Status` | `shResults` | The status line of the last run | `RunSSA`, `ClearOutputs` and `CheckStatus` |
+| `Results_Fingerprint` | `shResults` | The fingerprint of the inputs of the last run | `RunSSA`; cleared by `ClearOutputs` and by a run that fails |
 | `SSA_RWA` | `shResults` | The risk-weighted assets, on the total row | `RunSSA` |
 | `Checks_Header` | `shChecks` | The first header cell of the rules | `RunSSA`, in the count and result columns |
 | `Checks_Errors` | `shChecks` | The number of errors of the last run | `RunSSA` |
@@ -187,8 +199,9 @@ build stops when the template defines one elsewhere.
 - **Table anchors:** `<Sheet>_Header`, or `<Sheet>_<Table>_Header` on a sheet
   with several tables, on a table's first header cell.
 - **Totals:** a name of its own on each total that code or a formula reads.
-- **State:** `Results_Status`, the status line of the last run, and the two
-  counts `Checks_Errors` and `Checks_Warnings`.
+- **State:** `Results_Status`, the status line of the last run,
+  `Results_Fingerprint`, the fingerprint of its inputs, and the two counts
+  `Checks_Errors` and `Checks_Warnings`.
 - **Build stamp:** `build_commit`, `build_time` and `build_configuration`, on
   the `README` sheet.
 - Before it reads or writes through a name, `M_Main` checks that the name
@@ -235,6 +248,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 | `FXPositions_Header` | `shFXPositions` | Input | Users | One row per net currency or gold position; the rows vary |
 | Option charges | `shOptionCharges` | Input | Users, in the *Charge* column | Four rows, one per risk class (the `Options` names) |
 | `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes and a total row; below them a headline of four formulas |
+| `Results_Fingerprint` | `shResults` | Parameter | `RunSSA` | One cell: the fingerprint of the inputs of the last run, which `CheckStatus` reads |
 | `IR_Zones_Header` | `shIRZones` | Result | `RunSSA` | One row per currency of the FX table, and a total row |
 | `IR_Ladder_Header` | `shIRLadder` | Result | `RunSSA` | One block of 15 time bands per currency of the FX table |
 | `Buckets_EQ_Header` | `shBuckets` | Result | `RunSSA` | Up to 30 equity markets, and a total row |
@@ -261,19 +275,29 @@ for that table.
   `Buckets` are not listed; the totals include them and `Checks` warns.
 - **Diagnostics** areas hold the rules, the findings and the test catalogue.
   The workbook has no operation log.
-- No sheet has a **Parameter** area: no operation writes values that a later
-  one reads.
+- The one **Parameter** area, a value that an operation writes and a later
+  one reads, is `Results_Fingerprint`. `RunSSA` writes it, and `CheckStatus`
+  compares it with the fingerprint of the inputs on the sheets. Do not type
+  in it.
 
 ## Operations
 
 | Entry point | Reads | Writes | Requires |
 | --- | --- | --- | --- |
-| `M_Main.RunSSA` | Every input area | Every result and diagnostics area but the test catalogue, and `Results_Status` | Every name it uses |
+| `M_Main.RunSSA` | Every input area | Every result and diagnostics area but the test catalogue, `Results_Fingerprint` and `Results_Status` | Every name it uses |
 | `M_Main.ClearOutputs` | Nothing | The same areas, cleared; `Results_Status` set to not calculated | Every name it uses |
+| `M_Main.CheckStatus` | Every input area, `Results_Fingerprint` and `Results_Status` | `Results_Status`, and only when it must change | The names of the input areas and of the two cells |
 
-- `RunSSA_Silent` and `ClearOutputs_Silent` do the same without a message
-  box or a change of the active sheet. They return the result line and
-  re-raise an error.
+- `RunSSA_Silent`, `ClearOutputs_Silent` and `CheckStatus_Silent` do the same
+  without a message box or a change of the active sheet. They return the
+  result line and re-raise an error.
+- `ThisWorkbook` runs the check when the workbook is opened and before it is
+  saved, through `M_Main.CheckStatus_OnEvent`. That entry point shows no
+  message and raises no error, so that an unattended open or save is never
+  stopped. When the check cannot be made, because a name is missing, it
+  marks the results `OUTDATED`; `CheckStatus` reports the error. It leaves
+  the workbook marked as saved when it was and the status line did not
+  change.
 - Each entry point is an adapter procedure that calls the engine,
   `CORE_Engine.Calculate`; it holds no regulatory formula.
 - It captures and restores the Excel settings it changes: calculation
@@ -281,13 +305,15 @@ for that table.
   cleanup outcome
   ([house style](../VBA_HOUSE_STYLE.md#operation-and-cleanup-outcomes)).
 - Clearing removes values, not formats, and puts back the labels of the
-  total rows.
+  total rows. It goes on after an area it cannot clear, and then stops with
+  a layout error that names it.
 - `FRTBSSA_Formulas` holds worksheet functions. They calculate from their
   arguments and read or write no sheet.
 
 ## Status and staleness
 
-`Results_Status` holds one line:
+`Results_Status` holds one line, and every other output sheet repeats it in
+`E1`:
 
 | Line begins | Set by | Meaning |
 | --- | --- | --- |
@@ -295,25 +321,56 @@ for that table.
 | `OK` | `RunSSA` | Every input row was used; the line gives the number of positions and the engine version |
 | `INCOMPLETE` | `RunSSA` | Rows were rejected and are excluded from the totals; `Checks` lists them |
 | `STOPPED` | `RunSSA` | A parameter is unusable: no result was calculated, and only `Checks` was written |
+| `FAILED` | `RunSSA` | The run raised an error: the output areas are empty, and the line gives the time and the error |
+| `OUTDATED` | `CheckStatus`, before the line of the run | An input changed after the run: the results shown are not those of the inputs on the sheets |
+
+The line of a run that ended, `OK`, `INCOMPLETE` or `STOPPED`, ends with the
+time of the run, as `Run 2026-11-15 14:05:09.`: the local time of the
+computer, without a time zone.
 
 | Area kind | After a run that ends | After a run that raises an error |
 | --- | --- | --- |
 | Input | Unchanged: no operation writes it | Unchanged |
-| Result | Cleared, then written, unless the run is `STOPPED` | Not cleared and not marked: see below |
-| Diagnostics | Counts and findings rewritten | Not cleared and not marked: see below |
+| Result | Cleared, then written, unless the run is `STOPPED` | Cleared |
+| Diagnostics | Counts and findings rewritten | Cleared |
+| Parameter | The fingerprint of the inputs of the run | Cleared |
 
-The workbook does not yet do what follows, and
-[issue 25](https://github.com/danielep71/K-FRTB-SSA/issues/25) tracks it:
+**A run that fails.** Whether the error is raised while the inputs are read,
+while the calculation runs or while the results are written, the run clears
+every output area and writes the `FAILED` line before it reports the error.
+The status line is the first cell cleared and the last one written, so a
+run that is interrupted in between, with no error to handle, leaves
+`Not calculated` and never the line of a run. An area that cannot be
+cleared, because its name is missing, is named on the `FAILED` line. When
+`Results_Status` itself cannot be written, the error message says so.
 
-- An error raised while the inputs are read or the calculation runs leaves
-  the previous results and their status line in place. Only the message box,
-  or the error a silent run re-raises, says that the run failed.
-- An error raised while the results are written leaves them incomplete, with
-  a status line that already reads `OK` or `INCOMPLETE`: the status line is
-  written first.
-- An input changed after a run is not flagged, and the status line does not
-  say when the run was made. Rerun after any change.
-- The other output sheets have no status line of their own.
+**An input changed after a run.** `RunSSA` stores in `Results_Fingerprint`
+a fingerprint of everything it read: the parameters, the specific-risk
+table, the ladder, the FX table, the option charges and the four position
+tables. The check reads the same inputs again and compares:
+
+- It runs on request, as `CheckStatus`; when the workbook is opened; and
+  before it is saved. A change is therefore reported at the next of these
+  operations, not at the moment it is typed. Run `CheckStatus`, or rerun,
+  before you read the results of a workbook you have edited.
+- When the fingerprints differ, it writes `OUTDATED:` before the line of the
+  run. When an input is put back, they agree again, and it takes the mark
+  away.
+- It returns `CURRENT`, `OUTDATED`, `FAILED` or `NOT_CALCULATED`, and writes
+  nothing when the line already says so.
+- Any change counts: a text typed in another case, or a row added below a
+  table, marks the results even where the calculation would not change.
+- The fingerprint is two 31-bit hashes of the values, which tell a change
+  from no change; it is not a cryptographic digest and proves nothing about
+  who made the run.
+
+The other output sheets show the line through a formula. With manual
+calculation, they show the new line after the next recalculation.
+
+Nothing of this is tested in Excel yet. In LibreOffice's VBA mode, which is
+not a supported host, `TEST_Suite` covers a run that fails while it writes,
+one that fails while it reads, and a parameter and a position changed after
+a run.
 
 ## Build
 
@@ -421,5 +478,6 @@ compares neither the password nor protection that VBA sets at run time with
 | 2026-11-14 | The sheets keep formulas that repeat or compare written values | They show a changed constant, the headline and the test results without a run of their own; none calculates a requirement | [16](https://github.com/danielep71/K-FRTB-SSA/issues/16) |
 | 2026-11-15 | One path builds the workbook: `tools/prototype/build_prototype.py` writes the template, and `tools/devbuild/build_workbook.py` builds the workbook from it. LibreOffice, where used, runs that workbook | Two build paths would let the workbook that is checked differ from the one that is built. The tool that inserted source text into a template and patched it on the way in is not kept | [17](https://github.com/danielep71/K-FRTB-SSA/issues/17) |
 | 2026-11-15 | A date is a serial from 1 January 1900 to 31 December 9999, and no shorter limit applies to a final maturity | A number above that range, such as a date typed as `20311231`, is not a date in Excel or VBA. A long maturity is valid, and the last time band has no upper bound | [29](https://github.com/danielep71/K-FRTB-SSA/issues/29) |
-| 2026-11-14 | A failed or outdated run is not yet marked on the sheets | The prototype is brought in as received; the change is tracked | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
+| 2026-11-15 | A changed input is found by a fingerprint of the inputs, which a check compares on request, when the workbook is opened and before it is saved | A change event would mark the results at once, but its first write after a run empties Excel's undo history, it does not fire while events are off, and it cannot be exercised outside Excel | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
+| 2026-11-15 | Every output sheet repeats the status line of `Results` with a formula, in `E1` | A reader of one sheet can tell whether it belongs to the last run, and one written cell holds the state | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-14 | No sheet is protected and no cell is unlocked yet | The prototype is brought in as received; the change is tracked | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |

@@ -77,6 +77,7 @@
     {"name": "SSA_Requirement", "sheet": "shResults", "cell": "K11"},
     {"name": "Results_Header", "sheet": "shResults", "cell": "C6"},
     {"name": "Results_Status", "sheet": "shResults", "cell": "C4"},
+    {"name": "Results_Fingerprint", "sheet": "shResults", "cell": "E18"},
     {"name": "SSA_RWA", "sheet": "shResults", "cell": "L11"},
     {"name": "Checks_Header", "sheet": "shChecks", "cell": "C6"},
     {"name": "Checks_Errors", "sheet": "shChecks", "cell": "D4"},
