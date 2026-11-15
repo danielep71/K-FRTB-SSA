@@ -601,10 +601,12 @@ Private Function RowStatus( _
 '   IdUses       InputRows sharing this PositionID (1 = unique).
 '
 ' RETURNS
-'   "OK" or "INVALID: reason".
+'   "OK" or "INVALID: reason". A final maturity, or the next repricing
+'   date of a floating-rate row, that is a number but not the serial of a
+'   date (CORE_Util.IsDateSerial) is a reason.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '==============================================================================
 '
     Dim Maturity    As Variant   'Final maturity cell
@@ -630,12 +632,16 @@ Private Function RowStatus( _
             RowStatus = ST_INVALID & "Rate type must be Fixed or Floating"
         ElseIf Not IsNumberValue(Maturity) Then
             RowStatus = ST_INVALID & "Final maturity date missing"
+        ElseIf Not IsDateSerial(Maturity) Then
+            RowStatus = ST_INVALID & "Final maturity date is not a date"
         ElseIf NumberValue(Maturity) < AsOfDate Then
             RowStatus = ST_INVALID & "final maturity before AsOfDate"
         ElseIf Not IsFloating And Not IsNumberValue(InputRows(r, IR_COUPON)) Then
             RowStatus = ST_INVALID & "Coupon required for a fixed-rate position"
         ElseIf IsFloating And Not IsNumberValue(Repricing) Then
             RowStatus = ST_INVALID & "Next repricing date required for a floating-rate position"
+        ElseIf IsFloating And Not IsDateSerial(Repricing) Then
+            RowStatus = ST_INVALID & "Next repricing date is not a date"
         ElseIf IsFloating And (NumberValue(Repricing) < AsOfDate _
                                Or NumberValue(Repricing) > NumberValue(Maturity)) Then
             RowStatus = ST_INVALID & "repricing date outside AsOfDate to final maturity"

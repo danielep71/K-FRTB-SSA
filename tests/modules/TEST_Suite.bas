@@ -134,6 +134,7 @@ Private Sub RunCoreTests()
         RunTest "Commodity"
         RunTest "InterestRateRows"
         RunTest "IssueNetting"
+        RunTest "DateBounds"
         RunTest "Parameters"
         RunTest "Facade"
 
@@ -168,6 +169,7 @@ Private Sub RunTest( _
             Case "Commodity": CheckCommodity
             Case "InterestRateRows": CheckInterestRateRows
             Case "IssueNetting": CheckIssueNetting
+            Case "DateBounds": CheckDateBounds
             Case "Parameters": CheckParameters
             Case "Facade": CheckFacade
             Case "Workbook": CheckWorkbook
@@ -545,6 +547,92 @@ Private Sub CheckIssueNetting()
         AssertNear "Rows of an issue that mixes SR keys", Totals(TOT_MIXED), 3
         AssertNear "IR specific total, issue netting", Totals(TOT_SPECIFIC), 38416
         AssertNear "IR rows used, issue netting", Totals(TOT_USED), 5
+
+End Sub
+
+
+Private Sub CheckDateBounds()
+'
+'==============================================================================
+'                                CheckDateBounds
+'------------------------------------------------------------------------------
+' PURPOSE
+'   A number that is not the serial of a date is not a date: such a final
+'   maturity or next repricing date rejects its row and the run goes on,
+'   and such a reporting date is an unusable parameter.
+'
+' REFERENCE
+'   Row 1: maturity typed as the number 20311231, above the serial of 31
+'   December 9999 (2,958,465). Row 2: floating, repricing date typed as
+'   20290101. Row 3: maturity on 31 December 9999, the last date. Row 4:
+'   an ordinary row.
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim InputRows()   As Variant   'IRPositions cells
+    Dim FxCodes()     As String    'FX table codes
+    Dim FxRates()     As Double    'FX table rates
+    Dim Parameters()  As Double    'MAR40 parameters
+    Dim Ladder()      As Double    'MAR40 ladder
+    Dim Labels()      As String    'Ladder labels
+    Dim SrKeys()      As String    'Specific-risk keys
+    Dim SrCharges()   As Double    'Specific-risk charges
+    Dim RowOutput()   As Variant   'IRCalc
+    Dim LadderOutput() As Variant  'IR_Ladder
+    Dim ZoneOutput()  As Variant   'IR_Zones
+    Dim Totals()      As Double    'Totals
+    Dim AsOfDate      As Double    'Reporting date
+    Dim Raw()         As Variant   'Raw numeric parameters
+    Dim Validated()   As Double    'Validated parameters
+    Dim Findings()    As String    'Findings
+    Dim FindingCount  As Long      'Findings in use
+    Dim ReportingCcy  As String    'Reporting currency
+    Dim GoldCode      As String    'Gold code
+    Dim i             As Long      'Parameter
+
+        ReferenceParameters Parameters
+        ReferenceLadder Ladder
+        ReDim Labels(1 To BAND_COUNT, 1 To 2)
+        FxTable "EUR|XAU", FxCodes, FxRates
+        ReDim SrKeys(1 To 1)
+        ReDim SrCharges(1 To 1)
+        SrKeys(1) = "GOV|AAA TO AA-|ANY": SrCharges(1) = 0
+        AsOfDate = CDbl(DateSerial(2026, 9, 30))
+        InputRows = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R1", "", "Bond", "EUR", "Long", 1000, "Fixed", 0.04, 20311231, _
+                  Empty, "GOV", "AAA to AA-", ""), _
+            Array("R2", "", "FRN", "EUR", "Long", 1000, "Floating", Empty, DateSerial(2031, 10, 1), _
+                  20290101, "GOV", "AAA to AA-", ""), _
+            Array("R3", "", "Bond", "EUR", "Long", 1000, "Fixed", 0.04, DATE_SERIAL_MAX, _
+                  Empty, "GOV", "AAA to AA-", ""), _
+            Array("R4", "", "Bond", "EUR", "Long", 1000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "GOV", "AAA to AA-", "")))
+        CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
+                              SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
+        AssertText "Maturity typed as a number is not a date", CStr(RowOutput(1, 2)), _
+                   ST_INVALID & "Final maturity date is not a date"
+        AssertText "Repricing date typed as a number is not a date", CStr(RowOutput(2, 2)), _
+                   ST_INVALID & "Next repricing date is not a date"
+        AssertText "Maturity on the last date is a date", CStr(RowOutput(3, 2)), ST_OK
+        AssertText "A row after a rejected date is used", CStr(RowOutput(4, 2)), ST_OK
+        AssertNear "IR rows used, date bounds", Totals(TOT_USED), 2
+        AssertNear "IR rows rejected, date bounds", Totals(TOT_REJECTED), 2
+
+        ReDim Raw(1 To PI_COUNT)
+        For i = 1 To PI_COUNT
+            Raw(i) = Parameters(i)
+        Next i
+        AssertNear "Reporting date typed as a number is unusable", _
+            BuildParameters(Raw, 20260930, "EUR", "XAU", Validated, AsOfDate, _
+                            ReportingCcy, GoldCode, Findings, FindingCount), 1
+        AssertNear "Reporting date of zero is unusable", _
+            BuildParameters(Raw, 0, "EUR", "XAU", Validated, AsOfDate, _
+                            ReportingCcy, GoldCode, Findings, FindingCount), 1
+        AssertNear "Reporting date on the last date is usable", _
+            BuildParameters(Raw, DATE_SERIAL_MAX, "EUR", "XAU", Validated, AsOfDate, _
+                            ReportingCcy, GoldCode, Findings, FindingCount), 0
 
 End Sub
 

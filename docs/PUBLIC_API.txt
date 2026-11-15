@@ -432,6 +432,10 @@ CORE_Config	Const	ZC_GENERAL
 # SIG	CORE_Config	Const	ZC_GENERAL	Public Const ZC_GENERAL As Long = 26
 CORE_Config	Const	ZC_COUNT
 # SIG	CORE_Config	Const	ZC_COUNT	Public Const ZC_COUNT As Long = 26
+CORE_Config	Const	DATE_SERIAL_MIN
+# SIG	CORE_Config	Const	DATE_SERIAL_MIN	Public Const DATE_SERIAL_MIN As Double = 1#
+CORE_Config	Const	DATE_SERIAL_MAX
+# SIG	CORE_Config	Const	DATE_SERIAL_MAX	Public Const DATE_SERIAL_MAX As Double = 2958465#
 CORE_Config	Const	ST_OK
 # SIG	CORE_Config	Const	ST_OK	Public Const ST_OK As String = "OK"
 CORE_Config	Const	ST_INVALID
@@ -540,6 +544,8 @@ CORE_Util	Function	IsNumberValue
 # SIG	CORE_Util	Function	IsNumberValue	Public Function IsNumberValue(ByVal Value As Variant) As Boolean
 CORE_Util	Function	NumberValue
 # SIG	CORE_Util	Function	NumberValue	Public Function NumberValue(ByVal Value As Variant) As Double
+CORE_Util	Function	IsDateSerial
+# SIG	CORE_Util	Function	IsDateSerial	Public Function IsDateSerial(ByVal Value As Variant) As Boolean
 CORE_Util	Function	PlainText
 # SIG	CORE_Util	Function	PlainText	Public Function PlainText(ByVal Value As Variant) As String
 CORE_Util	Function	CodeText

@@ -29,7 +29,7 @@ Attribute VB_Name = "CORE_Config"
 '   Excel VBA; no references beyond the defaults.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -330,6 +330,14 @@ Attribute VB_Name = "CORE_Config"
         Public Const ZC_NET              As Long = 25    'Residual net position charge
         Public Const ZC_GENERAL          As Long = 26    'General market risk
         Public Const ZC_COUNT            As Long = 26    'Size of the vector
+
+'------------------------------------------------------------------------------
+' DATES
+'------------------------------------------------------------------------------
+    'Serial numbers a cell can hold as a date, in Excel and in VBA. A larger
+    'number, such as a date typed as 20311231, is not a date.
+        Public Const DATE_SERIAL_MIN As Double = 1#          '1 January 1900
+        Public Const DATE_SERIAL_MAX As Double = 2958465#    '31 December 9999
 
 '------------------------------------------------------------------------------
 ' LABELS
