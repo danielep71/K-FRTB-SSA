@@ -128,7 +128,9 @@ none of these is not a contract change.
 
 Run these before opening a pull request. The tests need Node.js for the label
 scripts. The tests that read YAML and the `workflow-default-branch` check need the
-pinned configuration parser; without it they are skipped locally.
+pinned configuration parser, and the tests of `tools/prototype/` need
+openpyxl; both are in `.github/requirements.txt`, and without them those
+tests are skipped locally.
 The quality checks need Ruff and mypy, whose hashes cover CPython 3.13 on
 Linux x86_64, and actionlint:
 

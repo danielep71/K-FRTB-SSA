@@ -129,7 +129,8 @@ ignores, with:
 - the layout of `src/workbook/Template.xlsx`, when the project has one: the
   build starts from a copy of it and keeps its formats and protection
   ([build](docs/methodology/WORKBOOK_CONTRACT.md#build)). Without it, the
-  sheets are blank;
+  sheets are blank. The template is itself written by a tool
+  ([below](#writing-the-template));
 - the build stamp on the reference sheet: the commit, its committer time and
   the configuration. A tracked change, an untracked file in a source
   directory, or `--override` (below) adds *NOT evidence-grade* to the commit;
@@ -212,6 +213,34 @@ and only recalculates and saves. It exits 0 when the macro ran, 1
 when LibreOffice could not open the workbook or the macro raised, and 2 for
 an unknown option, a missing workbook or a missing LibreOffice or UNO bridge.
 It is the same early warning, never Excel evidence.
+
+<a id="writing-the-template"></a>
+
+**Writing the template.** `src/workbook/Template.xlsx` is not drawn by hand:
+`tools/prototype/build_prototype.py` writes it, with the sample data of
+`tools/prototype/ssa_reference.py`. After a change to either, write it again
+and commit the result:
+
+```sh
+python tools/prototype/build_prototype.py src/workbook/Template.xlsx --template
+```
+
+It needs openpyxl, which `.github/requirements.txt` pins. **Repository
+integrity** fails while the tracked file is not what the tool writes. Without
+`--template` the tool writes the formula workbook instead: the same sheets,
+with every output as a formula. It is a second implementation of the same
+rules, to compare the VBA engine with.
+
+**Comparison with the formula workbook (optional).** Where LibreOffice is
+installed, `python3 tools/prototype/verify.py` builds the formula workbook and
+the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
+a scenario of invalid rows and on unusable parameters, compares every output
+area with the formula workbook's, and runs `TEST_Suite.Test_RunAll`.
+`--uno-python PYTHON` names the Python that provides the UNO bridge, when it
+is not the one that has openpyxl, and `--keep FOLDER` keeps the workbooks of
+the run. It exits 0 when every step passes, 1 at the first that fails, and 2
+when LibreOffice is missing. It compares two implementations in a host that
+is not supported, so it is never Excel evidence.
 
 <a id="running-the-harness"></a>
 

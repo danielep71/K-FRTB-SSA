@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -273,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--keep", type=Path, metavar="FOLDER",
                         help="keep the workbooks of the run in FOLDER")
     args = parser.parse_args(argv)
+    # The negative scenario types a number into a date cell on purpose.
+    warnings.filterwarnings("ignore", message="Cell .* is marked as a date", category=UserWarning)
     if shutil.which("soffice") is None:
         print("verify: SKIP (needs LibreOffice; this is never Excel evidence)")
         return 2

@@ -8,15 +8,28 @@ a live formula. With --template it writes the macro-free template for the
 VBA engine: the output areas are empty and RunSSA fills them.
 
 Both forms share layout, names, sample data and the TestCatalogue sheet, so
-the formula prototype is an independent check of the VBA engine. OUTPUT
-defaults to K-FRTB-SSA_Prototype.xlsx in the current directory. The sample
-data and the expected test values come from ssa_reference.py.
+the formula prototype is a second implementation to compare the VBA engine
+with. OUTPUT defaults to K-FRTB-SSA_Prototype.xlsx in the current directory.
+The sample data and the expected test values come from ssa_reference.py.
+
+The template is tracked as src/workbook/Template.xlsx, and
+tools/devbuild/build_workbook.py builds the workbook from it. After a change
+here, write it again:
+
+    python tools/prototype/build_prototype.py src/workbook/Template.xlsx --template
+
+tests/test_prototype.py fails while the tracked file is not what this
+module writes. Two builds are byte-identical in one environment; across
+environments openpyxl may serialize the same XML differently, so the test
+compares the parts as XML.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -39,6 +52,16 @@ Cell = Any
 
 DEFAULT_OUTPUT = "K-FRTB-SSA_Prototype.xlsx"
 PRODUCT = "K-FRTB-SSA"
+REPOSITORY = "danielep71/K-FRTB-SSA"
+# The labels of the build stamp on the README sheet and the names of its cells.
+STAMP = (("Commit", "build_commit"), ("Commit time", "build_time"),
+         ("Configuration", "build_configuration"))
+# Excel's last date serial, 31 December 9999: a larger number is not a date.
+DATE_SERIAL_MAX = 2958465
+# Timestamps of the package, so that two builds are byte-identical: the
+# creation and modification times of its properties, and of its zip entries.
+PACKAGE_TIME = "2026-01-01T00:00:00Z"
+ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 FONT = "Aptos"
 FIRST, CAP = 5, 500
 LAST = FIRST + CAP - 1
@@ -72,6 +95,11 @@ AMBER: dict[str, Any] = dict(font=Font(color="FF9C5700"), fill=PatternFill(bgCol
 GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated"'
 # Status test shared by the four calculation sheets; {r} is the row number.
 DUP = 'COUNTIF($C$5:$C$504,$C{r})>1'
+# True when a numeric cell is outside the serials Excel holds as dates.
+NOT_A_DATE = f"OR({{cell}}<1,{{cell}}>{DATE_SERIAL_MAX})"
+
+# The created and modified elements of docProps/core.xml.
+CORE_TIME = re.compile(rb"(<dcterms:(?:created|modified)[^>]*>)([^<]*)(</dcterms:(?:created|modified)>)")
 
 # One rule of the Checks sheet: rule, severity, sheet, count formula, reference, message.
 Rule = tuple[str, str, str, str, str, str]
@@ -541,13 +569,15 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(IRPositions!H{r}<0,"INVALID: Position value must be >= 0 (Direction gives the sign)",'
         'IF(AND(IRPositions!I{r}<>"Fixed",IRPositions!I{r}<>"Floating"),"INVALID: Rate type must be Fixed or Floating",'
         'IF(NOT(ISNUMBER(IRPositions!K{r})),"INVALID: Final maturity date missing",'
+        'IF(' + NOT_A_DATE.format(cell="IRPositions!K{r}") + ',"INVALID: Final maturity date is not a date",'
         'IF(IRPositions!K{r}<AsOfDate,"INVALID: final maturity before AsOfDate",'
         'IF(AND(IRPositions!I{r}="Fixed",NOT(ISNUMBER(IRPositions!J{r}))),"INVALID: Coupon required for a fixed-rate position",'
         'IF(AND(IRPositions!I{r}="Floating",NOT(ISNUMBER(IRPositions!L{r}))),"INVALID: Next repricing date required for a floating-rate position",'
+        'IF(AND(IRPositions!I{r}="Floating",' + NOT_A_DATE.format(cell="IRPositions!L{r}") + '),"INVALID: Next repricing date is not a date",'
         'IF(AND(IRPositions!I{r}="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
         'IF(ISNA(MATCH($O{r},{"GOV","QUAL","OTHER","NONE"},0)),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
-        '"OK")))))))))))))))')
+        '"OK")))))))))))))))))')
     grd = "TRIM(IRPositions!N{r})"
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'
     k2 = '$O{r}&"|"&' + grd + '&"|Any"'
@@ -582,7 +612,7 @@ def build_ir_calc(ctx: Context) -> None:
          '=IF($C{r}="","",IF($O{r}="NONE","NONE",IF(ISNUMBER(MATCH(' + k1 + ',SR_Key,0)),' + k1 +
          ',IF(ISNUMBER(MATCH(' + k2 + ',SR_Key,0)),' + k2 + ',"NO MATCH"))))',
          '=IF(AND($D{r}="OK",$Q{r}<>"NONE"),INDEX(SR_Charge,MATCH($Q{r},SR_Key,0)),0)',
-         '=IF(AND($D{r}="OK",$O{r}<>"NONE"),IF(TRIM(IRPositions!O{r})="",$C{r},UPPER(TRIM(IRPositions!O{r}))),"")',
+         '=IF(AND($D{r}="OK",$O{r}<>"NONE"),IF(TRIM(IRPositions!O{r})="","POS:"&$C{r},UPPER(TRIM(IRPositions!O{r}))),"")',
          '=IF($S{r}="","",SUMIFS(' + R("G") + ',' + R("S") + ',$S{r}))',
          '=IF($S{r}="",FALSE,COUNTIF($S$5:$S{r},$S{r})=1)',
          '=IF($U{r},ABS($T{r})*$R{r},0)',
@@ -1150,8 +1180,8 @@ def build_readme(ctx: Context) -> None:
     TEMPLATE = ctx.template
     ws = new_sheet(ctx.wb, "README", "ReadMe",
                    "Basel MAR40 simplified standardised approach for market risk (the recalibrated Basel II standardised "
-                   "approach), " + ("with a VBA engine (RunSSA) in the K-SACCR layout." if TEMPLATE
-                    else "as a macro-free prototype in the K-SACCR layout."), "E", "home", {"C": 40, "D": 150, "E": 4.8})
+                   "approach), " + ("with a VBA engine (RunSSA)." if TEMPLATE
+                    else "as a macro-free prototype."), "E", "home", {"C": 40, "D": 150, "E": 4.8})
     r = 5
     section(ws, r, "How to use", "C", "D")
     r = text_block(ws, r + 1, [
@@ -1200,7 +1230,7 @@ def build_readme(ctx: Context) -> None:
         ("Dates", "Residual maturity = (date - AsOfDate) / DaysPerYear. Time-band upper bounds are inclusive."),
         ("Row status", "OK = used; INVALID: reason = rejected, contributes nothing, listed on Checks; EXCLUDED = deliberately "
          "out of scope (FX in reporting currency)."),
-        ("Names", "Every parameter and table is a workbook name (Formulas > Name Manager), as in K-SACCR."),
+        ("Names", "Every parameter and table is a workbook name (Formulas > Name Manager)."),
     ], True)
     r += 1
     section(ws, r, "Scope and limitations", "C", "D")
@@ -1217,11 +1247,19 @@ def build_readme(ctx: Context) -> None:
     ], True)
     r += 1
     section(ws, r, "References", "C", "D")
-    text_block(ws, r + 1, [
+    r = text_block(ws, r + 1, [
         ("MAR40", "Basel Committee on Banking Supervision, Basel Framework, MAR40 Simplified standardised approach "
          "(bis.org/basel_framework/chapter/MAR/40.htm)."),
-        ("Companion", "K-SACCR (danielep71/K-SACCR): layout, naming and test-catalogue conventions."),
+        ("Source", f"{REPOSITORY} on GitHub: the exported VBA source, the guides and the tools that build this workbook."),
     ], True)
+    r += 1
+    # The build stamp: tools/devbuild/build_workbook.py writes the commit, its
+    # time and the configuration into these cells, which it finds by name.
+    section(ws, r, "Build", "C", "D")
+    text_block(ws, r + 1, [(label, "") for label, _ in STAMP], True)
+    for k, (_, stamp_name) in enumerate(STAMP, r + 1):
+        ws.cell(k, 4).value = None
+        name(ctx.wb, stamp_name, f"README!$D${k}")
 
 
 # ================================================================= Home (fill)
@@ -1325,6 +1363,26 @@ def blank_outputs(ctx: Context) -> None:
                                       font=Font(color="FF7F7F7F")))
 
 
+def fix_package_times(path: Path) -> None:
+    """Rewrite the package with fixed timestamps, so that two builds are byte-identical.
+
+    openpyxl stamps the properties with the time of the save, and the zip
+    entries with the clock."""
+    with zipfile.ZipFile(path) as package:
+        parts = [(info.filename, package.read(info.filename)) for info in package.infolist()]
+    with zipfile.ZipFile(path, "w") as package:
+        for filename, data in parts:
+            if filename == "docProps/core.xml":
+                data = CORE_TIME.sub(rb"\g<1>" + PACKAGE_TIME.encode("ascii") + rb"\g<3>", data)
+            info = zipfile.ZipInfo(filename, date_time=ZIP_TIME)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            # ZipInfo takes the creating system from sys.platform; fix it, so
+            # that the package is the same wherever it is built.
+            info.create_system = 3
+            info.external_attr = 0o644 << 16
+            package.writestr(info, data)
+
+
 def build(output: Path, template: bool) -> None:
     """Build the workbook and save it to output: the template if template is set, else the formula prototype."""
     wb = Workbook()
@@ -1355,6 +1413,7 @@ def build(output: Path, template: bool) -> None:
     if template:
         blank_outputs(ctx)
     wb.save(output)
+    fix_package_times(output)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -77,9 +77,22 @@ Use only the categories an entry needs.
   how to build it and what has and has not been checked, with the same
   status as the README. `docs/WEBSITE.md` says how it is published and
   maintained (#30).
+- The tools that write the template and check the engine, under
+  `tools/prototype/`: `build_prototype.py` writes
+  `src/workbook/Template.xlsx`, or the same workbook with every output as a
+  formula; `ssa_reference.py` holds the sample data and a Python
+  re-calculation of them; `compare_outputs.py` and `verify.py` compare the
+  engine's output with the formula workbook in LibreOffice, through the
+  workbook that `tools/devbuild/` builds. The tracked template is now what
+  the tool writes, and a test fails when it is not. In LibreOffice 24.2 the
+  engine and the formula workbook agree on every output cell of the sample
+  data and of a scenario of invalid rows; this is not Excel evidence (#17).
 
 ### Changed
 
+- The template's README sheet no longer names another repository: its
+  subtitle, its *Names* row and its *References* section describe this
+  workbook only, and its *Source* row names this repository (#17).
 - **Repository integrity** runs on pushes to the default branch and to
   release branches only, and on every pull request as before. A push to a
   task branch no longer starts a second run of the commit its pull request

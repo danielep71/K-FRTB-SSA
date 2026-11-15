@@ -356,11 +356,13 @@ configuration but `development`. It builds the sheets in one of two ways:
   table. Every other part of the template is copied unchanged, and two builds
   of the same commit and working tree stay byte-identical.
 
-Save the template in Excel as a macro-free `.xlsx` workbook without personal
-document metadata: **Repository integrity** fails on macros, or on an
-author, last editor, company or manager in it. The
+`tools/prototype/build_prototype.py` writes the template, with the sample
+data, as a macro-free `.xlsx` workbook without personal document metadata;
+it is not edited in Excel. **Repository integrity** fails while the tracked
+template is not what the tool writes, and on macros, or on an author, last
+editor, company or manager in it. The
 [installation guide](../../INSTALLATION.md#building-a-workbook-from-source)
-says how to run the build.
+says how to write the template and how to run the build.
 
 ## Protection
 
@@ -417,6 +419,7 @@ compares neither the password nor protection that VBA sets at run time with
 | 2026-11-14 | Twelve names refer to a column of a table, not to one cell | `M_Main` reads the specific-risk table, the ladder and the FX table as columns of a fixed length. The build configuration checks one-cell names only, so the contract lists the range names apart | [16](https://github.com/danielep71/K-FRTB-SSA/issues/16) |
 | 2026-11-14 | The build stamp sits on the `README` sheet, in `D38:D40` | It is the sheet that describes the workbook and its limits | [16](https://github.com/danielep71/K-FRTB-SSA/issues/16) |
 | 2026-11-14 | The sheets keep formulas that repeat or compare written values | They show a changed constant, the headline and the test results without a run of their own; none calculates a requirement | [16](https://github.com/danielep71/K-FRTB-SSA/issues/16) |
+| 2026-11-15 | One path builds the workbook: `tools/prototype/build_prototype.py` writes the template, and `tools/devbuild/build_workbook.py` builds the workbook from it. LibreOffice, where used, runs that workbook | Two build paths would let the workbook that is checked differ from the one that is built. The tool that inserted source text into a template and patched it on the way in is not kept | [17](https://github.com/danielep71/K-FRTB-SSA/issues/17) |
 | 2026-11-15 | A date is a serial from 1 January 1900 to 31 December 9999, and no shorter limit applies to a final maturity | A number above that range, such as a date typed as `20311231`, is not a date in Excel or VBA. A long maturity is valid, and the last time band has no upper bound | [29](https://github.com/danielep71/K-FRTB-SSA/issues/29) |
 | 2026-11-14 | A failed or outdated run is not yet marked on the sheets | The prototype is brought in as received; the change is tracked | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-14 | No sheet is protected and no cell is unlocked yet | The prototype is brought in as received; the change is tracked | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
