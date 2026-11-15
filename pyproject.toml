@@ -22,7 +22,7 @@ max-complexity = 15
 [tool.mypy]
 python_version = "3.11"
 files = ["tools", "tests"]
-mypy_path = ["tools", "tools/devbuild"]
+mypy_path = ["tools", "tools/devbuild", "tools/prototype"]
 pretty = true
 show_error_codes = true
 warn_unused_configs = true
@@ -33,4 +33,10 @@ warn_unreachable = true
 [[tool.mypy.overrides]]
 # PyYAML ships no type information; its stubs are not installed.
 module = ["yaml", "yaml.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# openpyxl ships no type information; its stubs are not installed. The tools
+# that use it are still checked: its objects are read as Any.
+module = ["openpyxl", "openpyxl.*"]
 ignore_missing_imports = true

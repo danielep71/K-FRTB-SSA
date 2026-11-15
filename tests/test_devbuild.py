@@ -1054,10 +1054,16 @@ class LibreOfficeMacro(unittest.TestCase):
         script.invoke.return_value = (None,)
         self.assertEqual(lo_macro.run(context, Path("Workbook.xlsm"), "M_Main.ClearOutputs",
                                       Path("out.xlsx")), "")
+        # Without a macro it only recalculates and saves.
+        script.invoke.reset_mock()
+        self.assertEqual(lo_macro.run(context, Path("Formulas.xlsx"), lo_macro.NO_MACRO,
+                                      Path("out.xlsx")), "")
+        script.invoke.assert_not_called()
+        self.assertEqual(document.calculateAll.call_count, 3)
         script.invoke.side_effect = RuntimeError("BASIC runtime error")
         with self.assertRaisesRegex(RuntimeError, "BASIC runtime error"):
             lo_macro.run(context, Path("Workbook.xlsm"), "M_Main.RunSSA_Silent", Path("out.xlsx"))
-        self.assertEqual(document.close.call_count, 3)
+        self.assertEqual(document.close.call_count, 4)
 
 
 if __name__ == "__main__":

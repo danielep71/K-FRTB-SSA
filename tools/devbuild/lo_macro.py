@@ -7,7 +7,9 @@ It opens WORKBOOK, a workbook that tools/devbuild/build_workbook.py built, in
 LibreOffice with VBA compatibility, calls MACRO, a procedure without
 arguments named as Module.Procedure, recalculates the sheets and saves their
 values to OUTPUT as a macro-free .xlsx. It prints "RESULT: " and what the
-macro returned, which is empty for a Sub.
+macro returned, which is empty for a Sub. With "-" as MACRO it calls none: it
+only recalculates and saves, which is how a workbook of formulas without a
+VBA project gets its values.
 
 It exits 0 when the macro ran, 1 when LibreOffice could not open the workbook
 or the macro raised (lo-macro: FAIL (...)), and 2 when an option is unknown,
@@ -37,6 +39,8 @@ import lo_smoke  # noqa: E402
 
 # The filter that saves a spreadsheet as a macro-free .xlsx.
 XLSX_FILTER = "Calc MS Excel 2007 XML"
+# In place of a macro: recalculate and save only.
+NO_MACRO = "-"
 
 
 def run(context: Any, workbook: Path, macro: str, output: Path) -> str:
@@ -56,9 +60,11 @@ def run(context: Any, workbook: Path, macro: str, output: Path) -> str:
         desktop.terminate()
         raise
     try:
-        script = document.getScriptProvider().getScript(
-            f"vnd.sun.star.script:VBAProject.{macro}?language=Basic&location=document")
-        returned = script.invoke((), (), ())[0]
+        returned = None
+        if macro != NO_MACRO:
+            script = document.getScriptProvider().getScript(
+                f"vnd.sun.star.script:VBAProject.{macro}?language=Basic&location=document")
+            returned = script.invoke((), (), ())[0]
         document.calculateAll()
         document.storeToURL(output.resolve().as_uri(),
                             (lo_smoke.property_value("FilterName", XLSX_FILTER),))
@@ -74,7 +80,7 @@ def run(context: Any, workbook: Path, macro: str, output: Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("workbook", type=Path, help="a workbook built by build_workbook.py")
-    parser.add_argument("macro", help="the procedure to call, as Module.Procedure")
+    parser.add_argument("macro", help="the procedure to call, as Module.Procedure, or - for none")
     parser.add_argument("output", type=Path, help="the .xlsx to write the values to")
     args = parser.parse_args(argv)
     # Checked before LibreOffice starts, which would otherwise wait on a load

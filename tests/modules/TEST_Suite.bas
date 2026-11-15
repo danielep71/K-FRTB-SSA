@@ -29,7 +29,7 @@ Attribute VB_Name = "TEST_Suite"
 '
 ' REFERENCE
 '   Expected values: hand calculation (stated in each test), MAR40.61
-'   Table 9, and tests/derivations/ssa_reference.py for the sample data.
+'   Table 9, and tools/prototype/ssa_reference.py for the sample data.
 '
 ' UPDATED
 '   2026-11-15
@@ -742,7 +742,7 @@ Private Sub CheckWorkbook()
 '   Rewrites the output sheets.
 '
 ' REFERENCE
-'   tests/derivations/ssa_reference.py (requirement 48,267,441; RWA
+'   tools/prototype/ssa_reference.py (requirement 48,267,441; RWA
 '   603,343,012.5; 35 positions used).
 '
 ' UPDATED
