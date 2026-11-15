@@ -103,6 +103,12 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- Interest rate specific risk no longer nets a position without an Issue ID
+  against an issue whose Issue ID equals that position's PositionID. Such a
+  position is an issue of its own, and its *Issue key* on `IRCalc` reads
+  `POS:` and its PositionID. Before, two such rows of opposite sign had a
+  charge of zero with no warning. The sample data's result does not change.
+  Tested in LibreOffice's VBA mode only, not in Excel (#28).
 - `INSTALLATION.md` no longer lists a tested environment for a commit that is
   not in this repository's history, and the *Host behaviour* table of the
   validation plan no longer cites issues that do not exist here. The three

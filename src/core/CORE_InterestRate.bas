@@ -33,7 +33,7 @@ Attribute VB_Name = "CORE_InterestRate"
 '   method, Tables 4 and 5).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -77,6 +77,10 @@ Attribute VB_Name = "CORE_InterestRate"
         Private Const SRB_MEDIUM     As String = "6m-24m"    'Over 6 to 24 months
         Private Const SRB_LONG       As String = ">24m"      'Over 24 months
         Private Const SRB_ANY        As String = "Any"       'Any maturity
+    'Netting keys of the issue pass. An entered Issue ID and a row without one
+    'have keys in separate namespaces, so that they can never be equal.
+        Private Const KEY_ISSUE      As String = "ISSUE:"    'Entered Issue ID
+        Private Const KEY_POSITION   As String = "POS:"      'Row without an Issue ID
 
 
 '------------------------------------------------------------------------------
@@ -131,13 +135,19 @@ Public Sub CalculateInterestRate( _
 ' ERROR POLICY
 '   Raises ERR_ARGUMENT when InputRows is not IR_INPUT_WIDTH wide.
 '
+' NETTING
+'   Rows with the same Issue ID, ignoring case, net for specific risk. A row
+'   without an Issue ID is an issue of its own: it nets with no other row,
+'   whatever the Issue IDs of the others, and its Issue key is "POS:" and
+'   its PositionID.
+'
 ' REFERENCE
 '   MAR40.6 (specific risk on the net position per issue), MAR40.24 (one
 '   ladder per currency), MAR40.25 (fixed by residual maturity, floating by
 '   next repricing), MAR40.26-40.28.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '==============================================================================
 '
     Dim RowCount      As Long        'Input rows
@@ -146,6 +156,7 @@ Public Sub CalculateInterestRate( _
     Dim IdCount       As Long        'Distinct PositionIDs
     Dim IdUses()      As Long        'InputRows per distinct PositionID
     Dim RowSlot()     As Long        'FX slot of each OK row, 0 otherwise
+    Dim RowIssue()    As String      'Netting key of each row with specific risk
     Dim Issues()      As String      'Distinct issue keys
     Dim IssueCount    As Long        'Distinct issue keys in use
     Dim IssueNet()    As Double      'Net signed value per issue
@@ -186,6 +197,7 @@ Public Sub CalculateInterestRate( _
         SlotCount = UBound(FxCodes)
         ReDim RowOutput(1 To RowCount, 1 To IR_CALC_WIDTH)
         ReDim RowSlot(1 To RowCount)
+        ReDim RowIssue(1 To RowCount)
         ReDim Totals(1 To TOT_COUNT)
 
         'Count each PositionID, ignoring case, to find duplicates.
@@ -253,8 +265,11 @@ Public Sub CalculateInterestRate( _
                     End If
                     If Category <> SR_NONE Then
                         If Len(PlainText(InputRows(r, IR_ISSUE))) = 0 Then
-                            RowOutput(r, OC_ISSUE) = PlainText(InputRows(r, IR_ID))
+                            'No Issue ID: the position is an issue of its own.
+                            RowIssue(r) = KEY_POSITION & PlainText(InputRows(r, IR_ID))
+                            RowOutput(r, OC_ISSUE) = RowIssue(r)
                         Else
+                            RowIssue(r) = KEY_ISSUE & CodeText(InputRows(r, IR_ISSUE))
                             RowOutput(r, OC_ISSUE) = CodeText(InputRows(r, IR_ISSUE))
                         End If
                     End If
@@ -273,8 +288,8 @@ Public Sub CalculateInterestRate( _
         ReDim IssueFirst(1 To RowCount)
         ReDim IssueMixed(1 To RowCount)
         For r = 1 To RowCount
-            If Len(CStr(RowOutput(r, OC_ISSUE))) > 0 Then
-                Position = KeyPosition(Issues, IssueCount, CStr(RowOutput(r, OC_ISSUE)), True)
+            If Len(RowIssue(r)) > 0 Then
+                Position = KeyPosition(Issues, IssueCount, RowIssue(r), True)
                 If IssueFirst(Position) = 0 Then
                     IssueFirst(Position) = r
                 Else
@@ -289,8 +304,8 @@ Public Sub CalculateInterestRate( _
         Next r
         ReDim SlotSpecific(1 To SlotCount)
         For r = 1 To RowCount
-            If Len(CStr(RowOutput(r, OC_ISSUE))) > 0 Then
-                Position = KeyPosition(Issues, IssueCount, CStr(RowOutput(r, OC_ISSUE)), False)
+            If Len(RowIssue(r)) > 0 Then
+                Position = KeyPosition(Issues, IssueCount, RowIssue(r), False)
                 RowOutput(r, OC_ISSUE_NET) = IssueNet(Position)
                 If IssueFirst(Position) = r Then
                     RowOutput(r, OC_ISSUE_FIRST) = True

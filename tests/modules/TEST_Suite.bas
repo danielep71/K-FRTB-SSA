@@ -32,7 +32,7 @@ Attribute VB_Name = "TEST_Suite"
 '   Table 9, and tests/derivations/ssa_reference.py for the sample data.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-15
 '
 ' AUTHOR
 '   Daniele Penza
@@ -133,6 +133,7 @@ Private Sub RunCoreTests()
         RunTest "Equity"
         RunTest "Commodity"
         RunTest "InterestRateRows"
+        RunTest "IssueNetting"
         RunTest "Parameters"
         RunTest "Facade"
 
@@ -166,6 +167,7 @@ Private Sub RunTest( _
             Case "Equity": CheckEquity
             Case "Commodity": CheckCommodity
             Case "InterestRateRows": CheckInterestRateRows
+            Case "IssueNetting": CheckIssueNetting
             Case "Parameters": CheckParameters
             Case "Facade": CheckFacade
             Case "Workbook": CheckWorkbook
@@ -469,6 +471,80 @@ Private Sub CheckInterestRateRows()
         AssertNear "IR specific total", Totals(TOT_SPECIFIC), 16000
         AssertNear "IR general total (net 32,500)", Totals(TOT_GENERAL), 32500
         AssertNear "IR rejected", Totals(TOT_REJECTED), 4
+
+End Sub
+
+
+Private Sub CheckIssueNetting()
+'
+'==============================================================================
+'                               CheckIssueNetting
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Specific-risk netting: rows net only through an entered Issue ID, and a
+'   row without one never nets, even when its PositionID equals the Issue ID
+'   of another row.
+'
+' REFERENCE
+'   Rows 1 and 2: PositionID R1 without an Issue ID, and Issue ID R1; long
+'   and short 1,000,000 at 1.6%: 16,000 each, not a net of zero. Rows 3 to
+'   5: Issue ID ISS9 in two cases, net 600,000 - 200,000 + 1,000 = 401,000,
+'   charged on the first row at its 1.6% = 6,416; row 5 has another SR key,
+'   so the three rows are flagged MIXED (MAR40.6).
+'
+' UPDATED
+'   2026-11-15
+'==============================================================================
+'
+    Dim InputRows()   As Variant   'IRPositions cells
+    Dim FxCodes()     As String    'FX table codes
+    Dim FxRates()     As Double    'FX table rates
+    Dim Parameters()  As Double    'MAR40 parameters
+    Dim Ladder()      As Double    'MAR40 ladder
+    Dim Labels()      As String    'Ladder labels
+    Dim SrKeys()      As String    'Specific-risk keys
+    Dim SrCharges()   As Double    'Specific-risk charges
+    Dim RowOutput()   As Variant   'IRCalc
+    Dim LadderOutput() As Variant  'IR_Ladder
+    Dim ZoneOutput()  As Variant   'IR_Zones
+    Dim Totals()      As Double    'Totals
+    Dim AsOfDate      As Double    'Reporting date
+
+        ReferenceParameters Parameters
+        ReferenceLadder Ladder
+        ReDim Labels(1 To BAND_COUNT, 1 To 2)
+        FxTable "EUR|XAU", FxCodes, FxRates
+        ReDim SrKeys(1 To 2)
+        ReDim SrCharges(1 To 2)
+        SrKeys(1) = "QUAL|A+ TO BBB-|>24M": SrCharges(1) = 0.016
+        SrKeys(2) = "GOV|AAA TO AA-|ANY": SrCharges(2) = 0
+        AsOfDate = CDbl(DateSerial(2026, 9, 30))
+        InputRows = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R1", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "QUAL", "A+ to BBB-", ""), _
+            Array("R2", "", "Bond", "EUR", "Short", 1000000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "QUAL", "A+ to BBB-", "R1"), _
+            Array("R3", "", "Bond", "EUR", "Long", 600000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "QUAL", "A+ to BBB-", "iss9"), _
+            Array("R4", "", "Bond", "EUR", "Short", 200000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "QUAL", "A+ to BBB-", "ISS9"), _
+            Array("R5", "", "Bond", "EUR", "Long", 1000, "Fixed", 0.04, DateSerial(2031, 10, 1), _
+                  Empty, "GOV", "AAA to AA-", "Iss9")))
+        CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
+                              SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
+        AssertText "Issue key without an Issue ID", CStr(RowOutput(1, 17)), "POS:R1"
+        AssertText "Issue key of an entered Issue ID", CStr(RowOutput(2, 17)), "R1"
+        AssertNear "Issue net, row without an Issue ID", RowOutput(1, 18), 1000000
+        AssertNear "Issue net, Issue ID equal to that PositionID", RowOutput(2, 18), -1000000
+        AssertNear "Specific risk, row without an Issue ID", RowOutput(1, 20), 16000
+        AssertNear "Specific risk, Issue ID equal to that PositionID", RowOutput(2, 20), 16000
+        AssertText "Issue key ignores case", CStr(RowOutput(3, 17)), "ISS9"
+        AssertNear "Issue net, same Issue ID in two cases", RowOutput(3, 18), 401000
+        AssertNear "Specific risk on the first row of the issue", RowOutput(3, 20), 6416
+        AssertNear "No specific risk on a later row of the issue", RowOutput(4, 20), 0
+        AssertNear "Rows of an issue that mixes SR keys", Totals(TOT_MIXED), 3
+        AssertNear "IR specific total, issue netting", Totals(TOT_SPECIFIC), 38416
+        AssertNear "IR rows used, issue netting", Totals(TOT_USED), 5
 
 End Sub
 
