@@ -18,9 +18,15 @@ It needs LibreOffice and openpyxl. The steps:
    constant and an option charge. It also adds keys that a criteria function
    would read as a pattern or as a comparison: a PositionID, Issue IDs, a
    stock, a market, commodities, and a currency of FX_Table that is a
-   pattern for another one, with positions in it.
-5. Make two Params values unusable: the run stops and lists both.
-6. Run TEST_Suite.Test_RunAll: no assertion fails.
+   pattern for another one, with positions in it. And it adds error values
+   where a text is typed and no output shows it: the Issue ID of a rejected
+   row, and a direction.
+5. Type error values where an output shows the text, on the formula workbook
+   only: no output cell holds an error value, and each such text reads
+   "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
+   for a cell that holds an error value, so the two cannot be compared here.
+6. Make two Params values unusable: the run stops and lists both.
+7. Run TEST_Suite.Test_RunAll: no assertion fails.
 
 Every macro runs through tools/devbuild/lo_macro.py, on the workbook the
 build produces. --uno-python names the Python that provides LibreOffice's
@@ -66,6 +72,10 @@ FIRST_COLUMN = 3
 
 # A currency code that a criteria function would read as a pattern for USD.
 WILD_CURRENCY = "U?D"
+# openpyxl writes a text that is the name of an error value as that error value.
+NOT_AVAILABLE = "#N/A"
+# The text the engine reads an error value as, in Excel.
+ERROR_TEXT = build_prototype.ERROR_TEXT
 
 Findings = set[tuple[object, object, object, object]]
 
@@ -153,6 +163,12 @@ def negative(source: Path, target: Path) -> None:
          "NONE", "", ""],
         ["IR-C3", "T", "Bond", WILD_CURRENCY, "Short", 2e6, "Fixed", 0.02, day(2031, 1, 1), None,
          "NONE", "", ""],
+        # Error values where no output shows them: the Issue ID of a rejected
+        # row, and a direction. Neither may reach another row.
+        ["IR-E1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", None, day(2030, 1, 1), None,
+         "OTHER", "BB+ to BB-", NOT_AVAILABLE],
+        ["IR-E2", "T", "Bond", "EUR", "#DIV/0!", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
     ])
     append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
         ["EQ-BAD", "T", "IT", "Basket", "B", "EUR", "Long", 1e6],
@@ -177,6 +193,7 @@ def negative(source: Path, target: Path) -> None:
         ["FX-009", "FX", "CHF", "Long", 4e6],
         ["FX-W1", "FX", "U*", "Long", 1e6],
         ["FX-W2", "FX", WILD_CURRENCY, "Short", 6e6],
+        ["FX-E1", "FX", "CHF", NOT_AVAILABLE, 1e6],
     ])
     # A currency of FX_Table that is a pattern for another one, USD.
     code = first_cell(workbook, "FX_Ccy").offset(len(ssa_reference.FX))
@@ -185,6 +202,43 @@ def negative(source: Path, target: Path) -> None:
     named_cell(workbook, "ScalingIR").value = 1.5
     named_cell(workbook, "OptionsFX").value = 1000
     workbook.save(target)
+
+
+def error_keys(source: Path, target: Path) -> None:
+    """Save ``source`` with error values typed where an output shows the text."""
+    workbook = load(source)
+    day = datetime.date
+    append_rows(workbook["IRPositions"], FIRST_ROW + len(ssa_reference.IR), [
+        # Two Issue IDs that both read "#ERROR": one issue.
+        ["IR-K1", "T", "Bond", "EUR", "Long", 3e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "OTHER", "BB+ to BB-", NOT_AVAILABLE],
+        ["IR-K2", "T", "Bond", "EUR", "Short", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "OTHER", "BB+ to BB-", "#VALUE!"],
+        ["IR-K3", "T", "Bond", NOT_AVAILABLE, "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+    ])
+    append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
+        [NOT_AVAILABLE, "T", "IT", "Single name", "ENI", "EUR", "Short", 1e6],
+        ["EQ-K2", "T", "IT", "Single name", "#REF!", "EUR", "Long", 2e6],
+        ["EQ-K3", "T", NOT_AVAILABLE, "Index", "DAX", "EUR", "Long", 1e6],
+    ])
+    append_rows(workbook["COPositions"], FIRST_ROW + len(ssa_reference.CO), [
+        ["CO-K1", "T", NOT_AVAILABLE, "Long", 100, "t", 250, "EUR"],
+        ["CO-K2", "T", "Wheat", "Long", 100, "t", 250, NOT_AVAILABLE],
+    ])
+    append_rows(workbook["FXPositions"], FIRST_ROW + len(ssa_reference.FXPOS), [
+        ["FX-K1", "FX", NOT_AVAILABLE, "Long", 1e6],
+    ])
+    workbook.save(target)
+
+
+def error_cells(path: Path) -> list[str]:
+    """The cells of the output areas of a workbook of values that hold an error value."""
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    return [f"{area.sheet}!{cell.coordinate}"
+            for area in compare_outputs.areas(workbook, workbook)
+            for row in area.rows for column in area.columns
+            for cell in [workbook[area.sheet].cell(row, column)] if cell.data_type == "e"]
 
 
 def unusable(source: Path, target: Path) -> None:
@@ -283,6 +337,29 @@ def negative_scenario(run: Run) -> str:
     return f"{result}\n{compared}\n{len(engine)} findings, the same in both"
 
 
+def error_values(run: Run) -> str:
+    formula, values = run.folder / "errors-formula.xlsx", run.folder / "errors-formula-values.xlsx"
+    error_keys(run.formula, formula)
+    run.macro(formula, "-", values)
+    errors = error_cells(values)
+    if errors:
+        raise Failure(f"{len(errors)} output cell(s) hold an error value: "
+                      + ", ".join(errors[:compare_outputs.SHOWN]))
+    workbook = openpyxl.load_workbook(values, data_only=True)
+    calc, first = workbook["IRCalc"], FIRST_ROW + len(ssa_reference.IR)
+    # The Issue key and the net value of the two rows of the issue, the
+    # currency and the status of the third row, and the PositionID typed as
+    # an error value.
+    read = ([calc.cell(first + offset, column).value for offset in (0, 1) for column in (19, 20)]
+            + [calc.cell(first + 2, column).value for column in (5, 4)]
+            + [workbook["EQCalc"].cell(FIRST_ROW + len(ssa_reference.EQ), 3).value])
+    expected = [ERROR_TEXT, 2e6, ERROR_TEXT, 2e6, ERROR_TEXT, "INVALID: currency not in FX_Table",
+                ERROR_TEXT]
+    if not all(compare_outputs.same(*pair) for pair in zip(read, expected, strict=True)):
+        raise Failure(f"read {read}, expected {expected}")
+    return f"no error value in an output area; every such text reads {ERROR_TEXT}"
+
+
 def stopped_run(run: Run) -> str:
     workbook, output = run.folder / "unusable.xlsm", run.folder / "vba-unusable.xlsx"
     unusable(run.workbook, workbook)
@@ -305,6 +382,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Recalculate the formula workbook", formula_tests),
     ("RunSSA on the sample data against the formula workbook", sample),
     ("Negative scenario on both workbooks", negative_scenario),
+    ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
     ("TEST_Suite.Test_RunAll", test_suite),
 )

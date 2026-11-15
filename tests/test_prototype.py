@@ -215,7 +215,7 @@ class Generator(NeedsOpenpyxl):
         # Every row placeholder of the generator was replaced by the row number.
         self.assertNotIn("{r}", status)
         # A position without an Issue ID is an issue of its own.
-        self.assertIn('IF(TRIM(IRPositions!O5)="","POS:"&$C5,', issue_key)
+        self.assertIn('IF(IFERROR(TRIM(IRPositions!O5),"#ERROR")="","POS:"&$C5,', issue_key)
 
     def test_duplicate_position_ids_are_counted_as_text_not_as_patterns(self) -> None:
         assert openpyxl is not None
@@ -246,12 +246,28 @@ class Generator(NeedsOpenpyxl):
                         self.assertNotRegex(value, lookup, f"{sheet.title}!{cell.coordinate}")
         self.assertGreater(formulas, 10000)
         calc = book["IRCalc"]
-        # The rows of an issue: the same key shown, and both with an Issue ID
-        # or both without, so that an entered "POS:R1" is not the position R1.
-        issue = ('(UPPER($S$5:$S$504)=UPPER($S5))'
-                 '*((TRIM(IRPositions!$O$5:$O$504)="")=(TRIM(IRPositions!$O5)=""))')
-        self.assertEqual(calc["T5"].value, f'=IF($S5="","",SUMPRODUCT({issue}*1,$G$5:$G$504))')
-        self.assertIn("SUMPRODUCT((UPPER($S$5:$S5)=UPPER($S5))", str(calc["U5"].value))
+        # The rows of an issue have the same netting key: the engine's own, so
+        # that an entered "POS:R1" is not the position R1. The key reads the
+        # Issue ID of a row only when the row has an Issue key.
+        self.assertEqual(calc["Z5"].value,
+                         '=IF($S5="","",IF(IFERROR(TRIM(IRPositions!O5),"#ERROR")="",$S5,'
+                         '"ISSUE:"&$S5))')
+        self.assertEqual(calc["T5"].value,
+                         '=IF($S5="","",SUMPRODUCT((UPPER($Z$5:$Z$504)=UPPER($Z5))*1,$G$5:$G$504))')
+        self.assertIn("SUMPRODUCT((UPPER($Z$5:$Z5)=UPPER($Z5))*1)=1", str(calc["U5"].value))
+        # No formula compares a whole column of a position sheet: an error
+        # value on one row would make an error of every row's result.
+        for sheet in book:
+            for row in sheet.iter_rows():
+                for cell in row:
+                    if isinstance(cell.value, str) and cell.value.startswith("="):
+                        self.assertNotRegex(cell.value, r"Positions!\$?[A-Z]+\$?\d+:",
+                                            f"{sheet.title}!{cell.coordinate}")
+        # A typed text is read as the engine reads it.
+        self.assertEqual(calc["C5"].value, '=IFERROR(TRIM(IRPositions!C5),"#ERROR")')
+        self.assertIn('IF(AND(IFERROR(IRPositions!G5,"#ERROR")<>"Long",'
+                      'IFERROR(IRPositions!G5,"#ERROR")<>"Short"),', str(calc["D5"].value))
+        self.assertIsNone(openpyxl.load_workbook(self.template)["IRCalc"]["Z4"].value)
         # A blank currency is not one of FX_Table, whose unused rows are blank.
         self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(FX_Ccy)=UPPER($E5))*1)=0),'
                       '"INVALID: currency not in FX_Table"', str(calc["D5"].value))
@@ -378,11 +394,17 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 18)]
+        added = [positions.cell(row, 3).value for row in range(first, first + 20)]
         self.assertEqual(added, ["IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
                                  "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
-                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3"])
-        self.assertIsNone(positions.cell(first + 18, 3).value)
+                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2"])
+        self.assertIsNone(positions.cell(first + 20, 3).value)
+        # Error values, not texts that read like them: the Issue ID of a
+        # rejected row, which has no coupon, and a direction.
+        self.assertIsNone(positions.cell(first + 18, 10).value)
+        for offset, column in ((18, 15), (19, 7)):
+            with self.subTest(offset=offset, column=column):
+                self.assertEqual(positions.cell(first + offset, column).data_type, "e")
         # Keys that a criteria function would read as patterns or comparisons.
         self.assertEqual([positions.cell(first + offset, 15).value for offset in range(10, 15)],
                          ["ISS-?", "ISS-A", "ISS-*", "<>ISS-A", "POS:R1"])
@@ -403,6 +425,38 @@ class Verification(NeedsOpenpyxl):
                             ("FXPositions", ssa_reference.FXPOS)):
             with self.subTest(sheet=sheet):
                 self.assertIsNotNone(book[sheet].cell(verify.FIRST_ROW + len(rows), 3).value)
+
+    def test_error_values_are_typed_where_an_output_shows_the_text(self) -> None:
+        assert openpyxl is not None
+        verify = tool("verify")
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "errors.xlsx"
+            verify.error_keys(TEMPLATE, target)
+            book = openpyxl.load_workbook(target)
+        typed = {"IRPositions": (len(ssa_reference.IR), ((0, 15), (1, 15), (2, 6))),
+                 "EQPositions": (len(ssa_reference.EQ), ((0, 3), (1, 7), (2, 5))),
+                 "COPositions": (len(ssa_reference.CO), ((0, 5), (1, 10))),
+                 "FXPositions": (len(ssa_reference.FXPOS), ((0, 5),))}
+        for sheet, (rows, cells) in typed.items():
+            for offset, column in cells:
+                with self.subTest(sheet=sheet, offset=offset, column=column):
+                    self.assertEqual(
+                        book[sheet].cell(verify.FIRST_ROW + rows + offset, column).data_type, "e")
+        self.assertEqual(verify.ERROR_TEXT, "#ERROR")
+
+    def test_error_values_in_an_output_area_are_listed(self) -> None:
+        assert openpyxl is not None
+        verify = tool("verify")
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "values.xlsx"
+            book = openpyxl.load_workbook(TEMPLATE)
+            self.assertEqual(verify.error_cells(TEMPLATE), [])
+            book["Results"]["E7"].value = "#N/A"
+            # Outside every output area, and a text that only reads like an error.
+            book["Results"]["A1"].value = "#N/A"
+            book["Results"]["E8"].value = "#ERROR"
+            book.save(path)
+            self.assertEqual(verify.error_cells(path), ["Results!E7"])
 
     def test_the_unusable_scenario_changes_two_named_cells(self) -> None:
         assert openpyxl is not None

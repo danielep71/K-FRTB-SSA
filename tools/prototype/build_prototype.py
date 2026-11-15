@@ -260,6 +260,13 @@ def R(c: str) -> str:
     return f"${c}${FIRST}:${c}${LAST}"
 
 
+# The text the engine reads an error value in a cell as.
+ERROR_TEXT = "#ERROR"
+# The column of IRCalc, right of its output columns, that holds the key the
+# rows of an issue are netted on. Only the formula workbook has it.
+NETTING_KEY = "Z"
+
+
 # ----------------------------------------------------- literal comparison
 # The formula workbook groups, counts and looks up rows by typed keys as the
 # engine does: as text, without regard to case. COUNTIF, SUMIFS and MATCH
@@ -306,14 +313,31 @@ def fx_rate(code: str) -> str:
     return sum_where("FX_Rate", same("FX_Ccy", code))
 
 
+def text(cell: str) -> str:
+    """A typed text as the engine reads it: trimmed, and ERROR_TEXT for an error value.
+
+    An error value read as it is would make an error of every formula that
+    compares the whole column, whatever the row it is on."""
+    return f'IFERROR(TRIM({cell}),"{ERROR_TEXT}")'
+
+
+def typed(cell: str) -> str:
+    """A typed text that is compared as it is: ERROR_TEXT for an error value."""
+    return f'IFERROR({cell},"{ERROR_TEXT}")'
+
+
+def neither(cell: str, first: str, second: str) -> str:
+    """TRUE when a typed text is neither of two words."""
+    return f'AND({typed(cell)}<>"{first}",{typed(cell)}<>"{second}")'
+
+
 def issue_rows(last: str) -> str:
     """The interest rate rows, down to row last, of the issue of row {r}.
 
     The Issue key shown is not enough: a position without an Issue ID shows
     "POS:" and its PositionID, which another row can hold as its entered Issue
-    ID. The two never net, so the rows must also agree on having an Issue ID."""
-    return (same(f"$S${FIRST}:$S{last}", "$S{r}")
-            + f'*((TRIM(IRPositions!$O${FIRST}:$O{last})="")=(TRIM(IRPositions!$O{{r}})=""))')
+    ID. The two never net, so the rows are matched on the netting key."""
+    return same(f"${NETTING_KEY}${FIRST}:${NETTING_KEY}{last}", f"${NETTING_KEY}{{r}}")
 
 
 def IC(c: str) -> str:
@@ -626,10 +650,10 @@ def build_ir_calc(ctx: Context) -> None:
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
-        'IF(AND(IRPositions!G{r}<>"Long",IRPositions!G{r}<>"Short"),"INVALID: Direction must be Long or Short",'
+        'IF(' + neither("IRPositions!G{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(IRPositions!H{r})),"INVALID: Position value must be a number",'
         'IF(IRPositions!H{r}<0,"INVALID: Position value must be >= 0 (Direction gives the sign)",'
-        'IF(AND(IRPositions!I{r}<>"Fixed",IRPositions!I{r}<>"Floating"),"INVALID: Rate type must be Fixed or Floating",'
+        'IF(' + neither("IRPositions!I{r}", "Fixed", "Floating") + ',"INVALID: Rate type must be Fixed or Floating",'
         'IF(NOT(ISNUMBER(IRPositions!K{r})),"INVALID: Final maturity date missing",'
         'IF(' + NOT_A_DATE.format(cell="IRPositions!K{r}") + ',"INVALID: Final maturity date is not a date",'
         'IF(IRPositions!K{r}<AsOfDate,"INVALID: final maturity before AsOfDate",'
@@ -640,7 +664,8 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
         '"OK")))))))))))))))))')
-    grd = "TRIM(IRPositions!N{r})"
+    grd = text("IRPositions!N{r}")
+    issue = text("IRPositions!O{r}")
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'
     k2 = '$O{r}&"|"&' + grd + '&"|Any"'
     calc_sheet(
@@ -655,9 +680,9 @@ def build_ir_calc(ctx: Context) -> None:
          ("First row of issue", 9.6, "General"), ("Specific risk charge", 14.6, NF_AMT), ("Issue mixes SR keys or ccys", 11.6, "@"),
          ("Error #", 6.6, "0")],
         "X",
-        ['=IF(TRIM(IRPositions!C{r})="","",TRIM(IRPositions!C{r}))',
+        ['=' + text("IRPositions!C{r}"),
          ir_status,
-         '=IF($C{r}="","",UPPER(TRIM(IRPositions!F{r})))',
+         '=IF($C{r}="","",UPPER(' + text("IRPositions!F{r}") + '))',
          '=IF($C{r}="","",IF(' + no_currency("$E{r}") + ',"",' + fx_rate("$E{r}") + '))',
          '=IF($D{r}="OK",IF(IRPositions!G{r}="Long",1,-1)*IRPositions!H{r}*$F{r},0)',
          '=IF($D{r}="OK",IF(IRPositions!I{r}="Floating",IRPositions!L{r},IRPositions!K{r}),"")',
@@ -668,29 +693,43 @@ def build_ir_calc(ctx: Context) -> None:
          '=IF($D{r}="OK",INDEX(Ladder_Zone,$K{r}),"")',
          '=IF($D{r}="OK",INDEX(Ladder_RW,$K{r}),"")',
          '=IF($D{r}="OK",$G{r}*$M{r},0)',
-         '=IF($C{r}="","",UPPER(TRIM(IRPositions!M{r})))',
+         '=IF($C{r}="","",UPPER(' + text("IRPositions!M{r}") + '))',
          '=IF($C{r}="","",IFERROR(IF((IRPositions!K{r}-AsOfDate)/DaysPerYear<=0.5,"<=6m",'
          'IF((IRPositions!K{r}-AsOfDate)/DaysPerYear<=2,"6m-24m",">24m")),""))',
          '=IF($C{r}="","",IF($O{r}="NONE","NONE",IF(' + count_where(same("SR_Key", k1)) + '>0,' + k1 +
          ',IF(' + count_where(same("SR_Key", k2)) + '>0,' + k2 + ',"NO MATCH"))))',
          '=IF(AND($D{r}="OK",$Q{r}<>"NONE"),' + sum_where("SR_Charge", same("SR_Key", "$Q{r}")) + ',0)',
-         '=IF(AND($D{r}="OK",$O{r}<>"NONE"),IF(TRIM(IRPositions!O{r})="","POS:"&$C{r},UPPER(TRIM(IRPositions!O{r}))),"")',
+         '=IF(AND($D{r}="OK",$O{r}<>"NONE"),IF(' + issue + '="","POS:"&$C{r},UPPER(' + issue + ')),"")',
          '=IF($S{r}="","",' + sum_where(R("G"), issue_rows(f"${LAST}")) + ')',
          '=IF($S{r}="",FALSE,' + count_where(issue_rows("{r}")) + '=1)',
          '=IF($U{r},ABS($T{r})*$R{r},0)',
          '=IF($S{r}="","",IF(' + count_where(issue_rows(f"${LAST}"), "(" + R("Q") + "<>$Q{r})") + '+'
          + count_where(issue_rows(f"${LAST}"), "(" + R("E") + "<>$E{r})") + '>0,"MIXED",""))',
          '=IF(LEFT($D{r},7)="INVALID",COUNTIF($D$5:$D{r},"INVALID*"),"")'])
+    if not ctx.template:
+        # The engine's own key: the Issue key shown for a position without an
+        # Issue ID, and "ISSUE:" before an entered one. It reads the Issue ID
+        # of a row only when the row has an Issue key.
+        ws = ctx.wb["IRCalc"]
+        ws.column_dimensions[NETTING_KEY].width = 24.6
+        header(ws, 4, NETTING_KEY, ["Netting key (formula workbook only)"], "output", 11, 42, 2)
+        for rr in range(FIRST, LAST + 1):
+            c = ws[f"{NETTING_KEY}{rr}"]
+            c.value = (f'=IF($S{rr}="","",IF(' + issue.replace("{r}", str(rr))
+                       + f'="",$S{rr},"ISSUE:"&$S{rr}))')
+            c.font, c.border, c.number_format = font(9), BOX, "@"
+            c.alignment = Alignment(horizontal="center")
 
 
 def build_eq_calc(ctx: Context) -> None:
+    eq_currency = text("EQPositions!H{r}")
     eq_status = (
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
         'IF($E{r}="","INVALID: Market missing",'
         'IF(AND($F{r}<>"Single name",$F{r}<>"Index"),"INVALID: Type must be Single name or Index",'
-        'IF(TRIM(EQPositions!G{r})="","INVALID: stock or index identifier missing",'
-        'IF(OR(' + no_currency("TRIM(EQPositions!H{r})") + ',UPPER(TRIM(EQPositions!H{r}))=GoldCode),"INVALID: currency not in FX_Table",'
-        'IF(AND(EQPositions!I{r}<>"Long",EQPositions!I{r}<>"Short"),"INVALID: Direction must be Long or Short",'
+        'IF($G{r}="","INVALID: stock or index identifier missing",'
+        'IF(OR(' + no_currency(eq_currency) + ',UPPER(' + eq_currency + ')=GoldCode),"INVALID: currency not in FX_Table",'
+        'IF(' + neither("EQPositions!I{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(EQPositions!J{r})),"INVALID: Market value must be a number",'
         'IF(EQPositions!J{r}<0,"INVALID: Market value must be >= 0 (Direction gives the sign)",'
         '"OK")))))))))')
@@ -703,12 +742,12 @@ def build_eq_calc(ctx: Context) -> None:
          ("Net key", 28.6, "@"), ("Net value of stock / index", 15.6, NF_AMT), ("Specific / index charge", 14.6, NF_AMT),
          ("Market #", 7.6, "0"), ("Error #", 6.6, "0")],
         "N",
-        ['=IF(TRIM(EQPositions!C{r})="","",TRIM(EQPositions!C{r}))',
+        ['=' + text("EQPositions!C{r}"),
          eq_status,
-         '=IF($C{r}="","",UPPER(TRIM(EQPositions!E{r})))',
-         '=IF($C{r}="","",TRIM(EQPositions!F{r}))',
-         '=IF($C{r}="","",UPPER(TRIM(EQPositions!G{r})))',
-         '=IF($D{r}="OK",' + fx_rate("TRIM(EQPositions!H{r})") + ',"")',
+         '=IF($C{r}="","",UPPER(' + text("EQPositions!E{r}") + '))',
+         '=IF($C{r}="","",' + text("EQPositions!F{r}") + ')',
+         '=IF($C{r}="","",UPPER(' + text("EQPositions!G{r}") + '))',
+         '=IF($D{r}="OK",' + fx_rate(eq_currency) + ',"")',
          '=IF($D{r}="OK",IF(EQPositions!I{r}="Long",1,-1)*EQPositions!J{r}*$H{r},0)',
          '=IF($D{r}="OK",$E{r}&"|"&$F{r}&"|"&$G{r},"")',
          '=IF($J{r}="","",' + sum_where(R("I"), same(R("J"), "$J{r}")) + ')',
@@ -719,14 +758,15 @@ def build_eq_calc(ctx: Context) -> None:
 
 
 def build_co_calc(ctx: Context) -> None:
+    co_currency = text("COPositions!J{r}")
     co_status = (
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
         'IF($E{r}="","INVALID: Commodity missing",'
-        'IF(AND(COPositions!F{r}<>"Long",COPositions!F{r}<>"Short"),"INVALID: Direction must be Long or Short",'
+        'IF(' + neither("COPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(COPositions!G{r})),"INVALID: Quantity must be a number",'
         'IF(COPositions!G{r}<0,"INVALID: Quantity must be >= 0 (Direction gives the sign)",'
         'IF(NOT(ISNUMBER(COPositions!I{r})),"INVALID: Spot price must be a number",'
-        'IF(OR(' + no_currency("TRIM(COPositions!J{r})") + ',UPPER(TRIM(COPositions!J{r}))=GoldCode),"INVALID: currency not in FX_Table",'
+        'IF(OR(' + no_currency(co_currency) + ',UPPER(' + co_currency + ')=GoldCode),"INVALID: currency not in FX_Table",'
         '"OK"))))))))')
     calc_sheet(
         ctx.wb, "COCalc", "Commodity position calculation",
@@ -735,10 +775,10 @@ def build_co_calc(ctx: Context) -> None:
          ("Signed value (rep ccy)", 15.6, NF_AMT), ("Gross value (rep ccy)", 15.6, NF_AMT), ("Commodity #", 9.6, "0"),
          ("Error #", 6.6, "0")],
         "J",
-        ['=IF(TRIM(COPositions!C{r})="","",TRIM(COPositions!C{r}))',
+        ['=' + text("COPositions!C{r}"),
          co_status,
-         '=IF($C{r}="","",UPPER(TRIM(COPositions!E{r})))',
-         '=IF($D{r}="OK",' + fx_rate("TRIM(COPositions!J{r})") + ',"")',
+         '=IF($C{r}="","",UPPER(' + text("COPositions!E{r}") + '))',
+         '=IF($D{r}="OK",' + fx_rate(co_currency) + ',"")',
          '=IF($D{r}="OK",IF(COPositions!F{r}="Long",1,-1)*COPositions!G{r}*COPositions!I{r}*$F{r},0)',
          '=ABS($G{r})',
          '=IF($D{r}<>"OK","",IF(' + FIRST_OK_ROW_OF_KEY + '=1,MAX($I$4:$I{p})+1,""))',
@@ -749,7 +789,7 @@ def build_fx_calc(ctx: Context) -> None:
     fx_status = (
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
-        'IF(AND(FXPositions!F{r}<>"Long",FXPositions!F{r}<>"Short"),"INVALID: Direction must be Long or Short",'
+        'IF(' + neither("FXPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(FXPositions!G{r})),"INVALID: Amount must be a number",'
         'IF(FXPositions!G{r}<0,"INVALID: Amount must be >= 0 (Direction gives the sign)",'
         'IF($E{r}=ReportingCcy,"EXCLUDED: reporting currency carries no FX risk",'
@@ -760,9 +800,9 @@ def build_fx_calc(ctx: Context) -> None:
         [("PositionID", 15.6, "@"), ("Status", 34.6, "@"), ("Ccy", 7.6, "@"), ("FX rate", 11.6, NF_RATE),
          ("Signed amount (ccy)", 17.6, NF_AMT), ("Signed value (rep ccy)", 17.6, NF_AMT), ("Error #", 6.6, "0")],
         "I",
-        ['=IF(TRIM(FXPositions!C{r})="","",TRIM(FXPositions!C{r}))',
+        ['=' + text("FXPositions!C{r}"),
          fx_status,
-         '=IF($C{r}="","",UPPER(TRIM(FXPositions!E{r})))',
+         '=IF($C{r}="","",UPPER(' + text("FXPositions!E{r}") + '))',
          '=IF($D{r}="OK",' + fx_rate("$E{r}") + ',"")',
          '=IF($D{r}="OK",IF(FXPositions!F{r}="Long",1,-1)*FXPositions!G{r},0)',
          '=IF($D{r}="OK",$G{r}*$F{r},0)',

@@ -122,9 +122,12 @@ Use only the categories an entry needs.
   commodity or a currency was read as a pattern, a leading `<`, `>` or `=` as
   a comparison, and an Issue ID entered as `POS:` and a PositionID netted
   with the position of that PositionID, so the comparison reported
-  differences that were not the engine's. `tools/prototype/verify.py` now
-  includes such keys in its scenario of invalid rows. The engine, the
-  template and the sample data's result do not change (#39).
+  differences that were not the engine's. It also reads an error value in a
+  typed text as the text `#ERROR`, as the engine does in Excel, so such a
+  value stays on its row. `tools/prototype/verify.py` now includes such keys
+  in its scenario of invalid rows, and checks error values on the formula
+  workbook alone: LibreOffice gives the engine 0 for a cell that holds one.
+  The engine, the template and the sample data's result do not change (#39).
 - The workbook built from source runs in LibreOffice again. The engine's
   three error numbers are literals equal to `vbObjectError + 2049` to
   `+ 2051`: LibreOffice cannot evaluate `vbObjectError` in a constant
