@@ -349,7 +349,8 @@ def read_contract(root: Path, report: Report) -> dict[str, check_data_contract.D
         report.add(where, f"is not a valid data contract ({len(problems)} problem(s); python "
                           "tools/check_data_contract.py lists them)")
         return None
-    return {dataset.source: dataset for dataset in datasets}
+    # Several datasets may share a sheet; a file is one dataset.
+    return {dataset.source: dataset for dataset in datasets if dataset.is_file}
 
 
 def read_methodology(root: Path, report: Report, file_based: bool = False) -> Methodology:

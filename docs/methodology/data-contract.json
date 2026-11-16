@@ -14,12 +14,994 @@
       "delimiter": ",",
       "decimal_separator": ".",
       "fields": [
-        {"name": "position_id", "type": "text", "unit": null, "required": true, "allowed": null,
-         "notes": "Identifies the position"},
-        {"name": "currency", "type": "currency", "unit": null, "required": true, "allowed": null,
-         "notes": "Currency of the position's amounts"},
-        {"name": "notional", "type": "decimal", "unit": {"currency_field": "currency"},
-         "required": true, "allowed": {"min": 0}, "notes": "Absolute amount, never negative"}
+        {
+          "name": "position_id",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Identifies the position"
+        },
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Currency of the position's amounts"
+        },
+        {
+          "name": "notional",
+          "type": "decimal",
+          "unit": {
+            "currency_field": "currency"
+          },
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Absolute amount, never negative"
+        }
+      ]
+    },
+    {
+      "id": "DS-02",
+      "illustrative": false,
+      "description": "Parameters",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date for the first two fields; the others are the reference values of SRC-02 unless a what-if changes them",
+      "granularity": "One record: the Value column of the parameter list, one field per row",
+      "source": "Params",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "as_of_date",
+          "type": "date",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Name AsOfDate. The reporting date"
+        },
+        {
+          "name": "reporting_currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Name ReportingCcy. Every result is in it; DS-05 lists it with rate 1"
+        },
+        {
+          "name": "days_per_year",
+          "type": "decimal",
+          "unit": "Days",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name DaysPerYear. Greater than 0. Reference value 365"
+        },
+        {
+          "name": "coupon_threshold",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name CouponThreshold. A coupon below it uses the low-coupon time bands"
+        },
+        {
+          "name": "scaling_ir",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name ScalingIR. Greater than 0"
+        },
+        {
+          "name": "scaling_eq",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name ScalingEQ. Greater than 0"
+        },
+        {
+          "name": "scaling_co",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name ScalingCO. Greater than 0"
+        },
+        {
+          "name": "scaling_fx",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name ScalingFX. Greater than 0"
+        },
+        {
+          "name": "rwa_multiplier",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name RWAMultiplier. Greater than 0"
+        },
+        {
+          "name": "vertical_disallowance",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name VerticalDisallowance"
+        },
+        {
+          "name": "horizontal_zone_1",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name HorizontalZone1"
+        },
+        {
+          "name": "horizontal_zone_2",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name HorizontalZone2"
+        },
+        {
+          "name": "horizontal_zone_3",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name HorizontalZone3"
+        },
+        {
+          "name": "horizontal_adjacent",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name HorizontalAdjacent. Between zones 1 and 2, and 2 and 3"
+        },
+        {
+          "name": "horizontal_zone_1_3",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name HorizontalZone13. Between zones 1 and 3"
+        },
+        {
+          "name": "eq_specific_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EQSpecificRate"
+        },
+        {
+          "name": "eq_index_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EQIndexRate"
+        },
+        {
+          "name": "eq_general_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EQGeneralRate"
+        },
+        {
+          "name": "fx_charge_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name FXChargeRate"
+        },
+        {
+          "name": "gold_code",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Name GoldCode. The code gold is entered under in DS-05 and DS-09. Reference value XAU"
+        },
+        {
+          "name": "com_directional_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name COMDirectionalRate"
+        },
+        {
+          "name": "com_gross_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name COMGrossRate"
+        }
+      ]
+    },
+    {
+      "id": "DS-03",
+      "illustrative": false,
+      "description": "Specific-risk charges",
+      "provider": "Typed by the user",
+      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them",
+      "granularity": "One row per category, rating grade and range of residual maturity; 18 rows",
+      "source": "Params",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "key",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column SR_Key, name SR_Key. Category, rating grade and maturity range joined by a vertical bar, as the workbook builds it for each position"
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "GOV",
+              "QUAL",
+              "OTHER"
+            ]
+          },
+          "notes": "Column Category. Repeats the first part of the key; not read"
+        },
+        {
+          "name": "rating_grade",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "AAA to AA-",
+              "A+ to BBB-",
+              "BB+ to BB-",
+              "B+ to B-",
+              "Below B-",
+              "Unrated"
+            ]
+          },
+          "notes": "Column Rating grade. Repeats the second part of the key; not read"
+        },
+        {
+          "name": "residual_maturity",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Any",
+              "6 months or less",
+              "over 6 to 24 months",
+              "over 24 months"
+            ]
+          },
+          "notes": "Column Residual maturity. Describes the third part of the key; not read"
+        },
+        {
+          "name": "charge",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Column Charge, name SR_Charge"
+        },
+        {
+          "name": "reference",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Reference. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-04",
+      "illustrative": false,
+      "description": "Maturity ladder",
+      "provider": "Typed by the user",
+      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them",
+      "granularity": "One row per time band; 15 rows",
+      "source": "Params",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "band",
+          "type": "integer",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "min": 1,
+            "max": 15
+          },
+          "notes": "Column Band, name Ladder_Band. The row's position gives the band; the number is not read"
+        },
+        {
+          "name": "zone",
+          "type": "integer",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "min": 1,
+            "max": 3
+          },
+          "notes": "Column Zone, name Ladder_Zone"
+        },
+        {
+          "name": "upper_bound_high_coupon",
+          "type": "decimal",
+          "unit": "Years",
+          "required": false,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name Ladder_UpperHigh. Inclusive. Empty: the band is open-ended, or does not exist for this coupon"
+        },
+        {
+          "name": "upper_bound_low_coupon",
+          "type": "decimal",
+          "unit": "Years",
+          "required": false,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name Ladder_UpperLow. Inclusive. Empty: the band is open-ended"
+        },
+        {
+          "name": "label_high_coupon",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Name Ladder_LabelHigh. Shown on IR_Ladder"
+        },
+        {
+          "name": "label_low_coupon",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Name Ladder_LabelLow. Shown on IR_Ladder"
+        },
+        {
+          "name": "risk_weight",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Risk weight, name Ladder_RW. 0 or more"
+        },
+        {
+          "name": "assumed_yield_change",
+          "type": "decimal",
+          "unit": "Percentage points",
+          "required": false,
+          "allowed": null,
+          "notes": "Column Assumed yield change (pp). For the duration method, which is not supported; not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-05",
+      "illustrative": false,
+      "description": "FX rates",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per currency, and one for gold; up to 20 rows",
+      "source": "Params",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Name FX_Ccy. Listed once. The reporting currency is listed, and gold under the gold code"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Not read"
+        },
+        {
+          "name": "rate",
+          "type": "decimal",
+          "unit": "Units of reporting currency per unit",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name FX_Rate. Greater than 0. The spot rate of the reporting date; 1 for the reporting currency"
+        }
+      ]
+    },
+    {
+      "id": "DS-06",
+      "illustrative": false,
+      "description": "Interest rate positions",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per debt position or derivative leg; up to 500 rows",
+      "source": "IRPositions",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "position_id",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column PositionID. Unique on the sheet, without regard to case"
+        },
+        {
+          "name": "portfolio",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Portfolio. Not read"
+        },
+        {
+          "name": "instrument",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Bond",
+              "FRN",
+              "Swap leg",
+              "Future leg",
+              "FRA leg",
+              "Forward leg",
+              "Other"
+            ]
+          },
+          "notes": "Column Instrument. Not read yet: issue 44"
+        },
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Currency. A code of DS-05, the gold code excepted"
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Long",
+              "Short"
+            ]
+          },
+          "notes": "Column Direction"
+        },
+        {
+          "name": "position_value",
+          "type": "decimal",
+          "unit": {
+            "currency_field": "currency"
+          },
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Position value (ccy). The market value of the principal or of the notional underlying; Direction gives the sign"
+        },
+        {
+          "name": "rate_type",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Fixed",
+              "Floating"
+            ]
+          },
+          "notes": "Column Rate type"
+        },
+        {
+          "name": "coupon",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": false,
+          "allowed": null,
+          "notes": "Column Coupon (decimal). Required for a fixed-rate position"
+        },
+        {
+          "name": "final_maturity_date",
+          "type": "date",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Final maturity date. Not before the reporting date"
+        },
+        {
+          "name": "next_repricing_date",
+          "type": "date",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Next repricing date (floating). Required for a floating-rate position: from the reporting date to the final maturity"
+        },
+        {
+          "name": "sr_category",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "GOV",
+              "QUAL",
+              "OTHER",
+              "NONE"
+            ]
+          },
+          "notes": "Column SR category. NONE: no specific risk"
+        },
+        {
+          "name": "rating_grade",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "AAA to AA-",
+              "A+ to BBB-",
+              "BB+ to BB-",
+              "B+ to B-",
+              "Below B-",
+              "Unrated"
+            ]
+          },
+          "notes": "Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03"
+        },
+        {
+          "name": "issue_id",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Issue ID (specific-risk netting). Rows with the same value are one issue; empty: an issue of its own"
+        },
+        {
+          "name": "comment",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-07",
+      "illustrative": false,
+      "description": "Equity positions",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per position in a stock or an index; up to 500 rows",
+      "source": "EQPositions",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "position_id",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column PositionID. Unique on the sheet, without regard to case"
+        },
+        {
+          "name": "portfolio",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Portfolio. Not read"
+        },
+        {
+          "name": "market",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Market. The national market"
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Single name",
+              "Index"
+            ]
+          },
+          "notes": "Column Type"
+        },
+        {
+          "name": "identifier",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Stock or index identifier. With the market and the type, it identifies what is netted"
+        },
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Currency. A code of DS-05, the gold code excepted"
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Long",
+              "Short"
+            ]
+          },
+          "notes": "Column Direction"
+        },
+        {
+          "name": "market_value",
+          "type": "decimal",
+          "unit": {
+            "currency_field": "currency"
+          },
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Market value (ccy). Direction gives the sign"
+        },
+        {
+          "name": "comment",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-08",
+      "illustrative": false,
+      "description": "Commodity positions",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per position in a commodity; up to 500 rows",
+      "source": "COPositions",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "position_id",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column PositionID. Unique on the sheet, without regard to case"
+        },
+        {
+          "name": "portfolio",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Portfolio. Not read"
+        },
+        {
+          "name": "commodity",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Commodity. Rows with the same name are netted. Never gold: issue 44"
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Long",
+              "Short"
+            ]
+          },
+          "notes": "Column Direction"
+        },
+        {
+          "name": "quantity",
+          "type": "decimal",
+          "unit": "Units of the commodity",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Quantity. Direction gives the sign"
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Unit. The standard unit of the quantity; not read"
+        },
+        {
+          "name": "spot_price",
+          "type": "decimal",
+          "unit": {
+            "currency_field": "currency"
+          },
+          "required": true,
+          "allowed": null,
+          "notes": "Column Spot price (ccy per unit). The current spot price of one unit, used as entered"
+        },
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Currency. A code of DS-05, the gold code excepted"
+        },
+        {
+          "name": "maturity_date",
+          "type": "date",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Maturity date. For the maturity ladder approach, which is not supported; not read"
+        },
+        {
+          "name": "comment",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-09",
+      "illustrative": false,
+      "description": "FX positions",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per net position in a currency or in gold; up to 500 rows",
+      "source": "FXPositions",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "position_id",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column PositionID. Unique on the sheet, without regard to case"
+        },
+        {
+          "name": "portfolio",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Portfolio. Not read"
+        },
+        {
+          "name": "currency",
+          "type": "currency",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Currency. A code of DS-05, the gold code included. A row in the reporting currency is excluded"
+        },
+        {
+          "name": "direction",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Long",
+              "Short"
+            ]
+          },
+          "notes": "Column Direction"
+        },
+        {
+          "name": "amount",
+          "type": "decimal",
+          "unit": {
+            "currency_field": "currency"
+          },
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign"
+        },
+        {
+          "name": "comment",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-10",
+      "illustrative": false,
+      "description": "Non-delta option charges",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per risk class; 4 rows",
+      "source": "OptionCharges",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "risk_class",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "IR",
+              "EQ",
+              "CO",
+              "FX"
+            ]
+          },
+          "notes": "Column Risk class. A label of the template, not typed"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Description. A label of the template; not read"
+        },
+        {
+          "name": "method",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Method. The method the charge was calculated by; not read"
+        },
+        {
+          "name": "charge",
+          "type": "decimal",
+          "unit": "Reporting currency",
+          "required": false,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Charge (rep ccy), names OptionsIR, OptionsEQ, OptionsCO and OptionsFX. Empty: zero"
+        },
+        {
+          "name": "comment",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Column Comment. Not read"
+        }
       ]
     }
   ]

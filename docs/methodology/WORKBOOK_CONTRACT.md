@@ -265,11 +265,11 @@ anchor: the rows below it, with the number of columns `CORE_Config` holds
 for that table.
 
 - **Input** areas hold what users type. The
-  [data contract](DATA_CONTRACT.md) is to define each field's type, unit and
-  valid values; until it does, the header row and the note in `C3` of each
-  sheet describe them. A row that fails validation is rejected: it
-  contributes nothing, its calculation row says why and `Checks` lists it.
-  An unusable parameter stops the run. No value is corrected.
+  [data contract](DATA_CONTRACT.md) defines each as a dataset, `DS-02` to
+  `DS-10`, with every field's type, unit and allowed values, and says how a
+  cell is read. A row that fails validation is rejected: it contributes
+  nothing, its calculation row says why and `Checks` lists it. An unusable
+  parameter stops the run. No value is corrected.
 - **Result** areas hold the outputs of the run, in the reporting currency
   and in unscaled units. Equity markets or commodities beyond the 30 rows of
   `Buckets` are not listed; the totals include them and `Checks` warns.
