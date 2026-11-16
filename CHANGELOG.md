@@ -65,6 +65,20 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The project's test cases: 18 JSON fixtures with their expected results,
+  on the seven calculations. One holds the two values printed in the
+  example of table 9 of MAR40.61, as `published`; the others hold the
+  template's sample portfolio, the limits of each calculation and a row for
+  each input rule a JSON value can break, as `illustrative` values that
+  `tests/derivations/ssa.py` computes from the calculation contracts.
+  `tools/prototype/run_cases.py` runs the cases on the engine in
+  LibreOffice, where the workbook holds all 327 expected values, and
+  `tools/prototype/verify.py` runs them as its last step. The default
+  tolerances are decided, and each rule of the traceability table names its
+  cases. No
+  rule is validated: no case has run in Excel, and only the FX calculation
+  has a published value. To let a fixture list the FX rates, `DS-05` and
+  `DS-10` have an identifier field (#20).
 - The data contract defines every input of the workbook: nine datasets,
   `DS-02` to `DS-10`, one for each table that is typed on a sheet, with the
   type, unit, allowed values and column of every field; how a cell is read;

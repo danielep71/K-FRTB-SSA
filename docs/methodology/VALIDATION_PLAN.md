@@ -43,13 +43,13 @@ its derivation and its tolerance
 | Calculation | Reference values | Evidence | Status |
 | --- | --- | --- | --- |
 | *Illustrative:* `CALC-01` | `illustrative` cross-checks only: two `nominal` cases, a JSON fixture and a file-based case, whose total of two synthetic notional amounts a derivation script computes; empty input and invalid input rejected are still to cover; no `published` or `independent` value yet | Evidence record per release candidate | Not implemented |
-| `CALC-02` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-03` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-04` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-05` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-06` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. `TEST_Suite` also compares the example of table 9 of MAR40.61 of `SRC-02` with the engine's result, outside the registered cases. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-07` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. `TEST_Suite` has no assertion on an option charge. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
-| `CALC-08` | None registered: no test case yet ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)). `TEST_Suite` runs the engine on hand-calculated cases and on the sample data, whose expected values an illustrative re-calculation gives; they validate nothing. | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
+| `CALC-02` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case on the sample portfolio and a `boundary` case on the limits of table 1. No `published` or `independent` value. The rows are those of `CALC-03`, whose `invalid` case covers them | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-03` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case on the sample portfolio, a `boundary` case on the limits of the time bands and an `invalid` case with a row for each input rule. No `published` or `independent` value | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-04` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal`, a `boundary` and an `invalid` case. No `published` or `independent` value | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-05` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal`, a `boundary` and an `invalid` case. No `published` or `independent` value | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-06` | Two `published` values, the overall net open position and the requirement of the example of table 9 of MAR40.61 of `SRC-02`, in the `nominal` case `mar40-61-table-9`. `illustrative` values that `tests/derivations/ssa.py` computes from the contract in a `nominal`, a `boundary` and an `invalid` case | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-07` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case. A charge that is not a number or is negative stops the run, which no fixture expresses: `TEST_Suite` has no assertion on it either | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-08` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case on the sample portfolio and a `boundary` case with positions in one risk class. No `published` or `independent` value | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
 
 The *Status* of a calculation is the least advanced
 [traceability](#traceability) status of its rules: *Validated* only when every
@@ -81,38 +81,38 @@ and to the test cases that test it, with its validation status:
 | Source | Paragraph | Calculation step | VBA procedure | Test cases | Status |
 | --- | --- | --- | --- | --- | --- |
 | *Illustrative:* `SRC-01` | Article 1(1) | `CALC-01.1` | — | `illustrative-format-example`, `illustrative-file-import-example` | Not implemented |
-| `SRC-02` | MAR40.38 | `CALC-02.1` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.5 | `CALC-02.2` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.6, table 1 | `CALC-02.3` | `CORE_InterestRate.SpecificRiskBand`, `CORE_InterestRate.SpecificRiskKey`, `CORE_Parameters.BuildSpecificRiskTable` | — | Not validated |
-| `SRC-02` | MAR40.4 and MAR40.5 | `CALC-02.4` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.24 | `CALC-03.1` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.25 | `CALC-03.2` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.26, table 4 | `CALC-03.3` | `CORE_InterestRate.TimeBand`, `CORE_InterestRate.IsHighCoupon`, `CORE_Parameters.BuildLadder` | — | Not validated |
-| `SRC-02` | MAR40.26 | `CALC-03.4` | `CORE_InterestRate.CalculateInterestRate` | — | Not validated |
-| `SRC-02` | MAR40.27 | `CALC-03.5` | `CORE_InterestRate.LadderCharges` | — | Not validated |
-| `SRC-02` | MAR40.28, table 5 | `CALC-03.6` | `CORE_InterestRate.LadderCharges` | — | Not validated |
-| `SRC-02` | MAR40.28, table 5 | `CALC-03.7` | `CORE_InterestRate.LadderCharges`, `CORE_InterestRate.Offset` | — | Not validated |
-| `SRC-02` | MAR40.23 | `CALC-03.8` | `CORE_InterestRate.LadderCharges` | — | Not validated |
-| `SRC-02` | MAR40.23 | `CALC-03.9` | `CORE_InterestRate.LadderCharges` | — | Not validated |
-| `SRC-02` | MAR40.46 | `CALC-04.1` | `CORE_Equity.CalculateEquity` | — | Not validated |
-| `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.2` | `CORE_Equity.CalculateEquity` | — | Not validated |
-| `SRC-02` | MAR40.47, and table 8 of MAR40.52 | `CALC-04.3` | `CORE_Equity.CalculateEquity` | — | Not validated |
-| `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.4` | `CORE_Equity.CalculateEquity` | — | Not validated |
-| `SRC-02` | MAR40.42 | `CALC-04.5` | `CORE_Equity.CalculateEquity` | — | Not validated |
-| `SRC-02` | MAR40.68 and MAR40.73 | `CALC-05.1` | `CORE_Commodity.CalculateCommodity` | — | Not validated |
-| `SRC-02` | MAR40.67 | `CALC-05.2` | `CORE_Commodity.CalculateCommodity` | — | Not validated |
-| `SRC-02` | MAR40.72 | `CALC-05.3` | `CORE_Commodity.CalculateCommodity` | — | Not validated |
-| `SRC-02` | MAR40.73 | `CALC-05.4` | `CORE_Commodity.CalculateCommodity` | — | Not validated |
-| `SRC-02` | MAR40.72 and MAR40.73 | `CALC-05.5` | `CORE_Commodity.CalculateCommodity` | — | Not validated |
-| `SRC-02` | MAR40.60 | `CALC-06.1` | `CORE_ForeignExchange.CalculateForeignExchange` | — | Not validated |
-| `SRC-02` | MAR40.60 | `CALC-06.2` | `CORE_ForeignExchange.NetOpenPositionCharge` | — | Not validated |
-| `SRC-02` | MAR40.61 | `CALC-06.3` | `CORE_ForeignExchange.NetOpenPositionCharge` | — | Not validated |
-| `SRC-02` | MAR40.74 to MAR40.85 | `CALC-07.1` | `CORE_Parameters.BuildOptionCharges` | — | Not validated |
+| `SRC-02` | MAR40.38 | `CALC-02.1` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-ir-specific-risk-maturity-limits`, `illustrative-sample-ir-specific-risk` | Exercised |
+| `SRC-02` | MAR40.5 | `CALC-02.2` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-ir-specific-risk-maturity-limits`, `illustrative-sample-ir-specific-risk` | Exercised |
+| `SRC-02` | MAR40.6, table 1 | `CALC-02.3` | `CORE_InterestRate.SpecificRiskBand`, `CORE_InterestRate.SpecificRiskKey`, `CORE_Parameters.BuildSpecificRiskTable` | `illustrative-ir-specific-risk-maturity-limits`, `illustrative-sample-ir-specific-risk` | Exercised |
+| `SRC-02` | MAR40.4 and MAR40.5 | `CALC-02.4` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-ir-specific-risk-maturity-limits`, `illustrative-sample-ir-specific-risk` | Exercised |
+| `SRC-02` | MAR40.24 | `CALC-03.1` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.25 | `CALC-03.2` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.26, table 4 | `CALC-03.3` | `CORE_InterestRate.TimeBand`, `CORE_InterestRate.IsHighCoupon`, `CORE_Parameters.BuildLadder` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.26 | `CALC-03.4` | `CORE_InterestRate.CalculateInterestRate` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.27 | `CALC-03.5` | `CORE_InterestRate.LadderCharges` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.28, table 5 | `CALC-03.6` | `CORE_InterestRate.LadderCharges` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.28, table 5 | `CALC-03.7` | `CORE_InterestRate.LadderCharges`, `CORE_InterestRate.Offset` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.23 | `CALC-03.8` | `CORE_InterestRate.LadderCharges` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.23 | `CALC-03.9` | `CORE_InterestRate.LadderCharges` | `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-02` | MAR40.46 | `CALC-04.1` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.2` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-02` | MAR40.47, and table 8 of MAR40.52 | `CALC-04.3` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.4` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-02` | MAR40.42 | `CALC-04.5` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-02` | MAR40.68 and MAR40.73 | `CALC-05.1` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
+| `SRC-02` | MAR40.67 | `CALC-05.2` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
+| `SRC-02` | MAR40.72 | `CALC-05.3` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
+| `SRC-02` | MAR40.73 | `CALC-05.4` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
+| `SRC-02` | MAR40.72 and MAR40.73 | `CALC-05.5` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
+| `SRC-02` | MAR40.60 | `CALC-06.1` | `CORE_ForeignExchange.CalculateForeignExchange` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
+| `SRC-02` | MAR40.60 | `CALC-06.2` | `CORE_ForeignExchange.NetOpenPositionCharge` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
+| `SRC-02` | MAR40.61 | `CALC-06.3` | `CORE_ForeignExchange.NetOpenPositionCharge` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
+| `SRC-02` | MAR40.74 to MAR40.85 | `CALC-07.1` | `CORE_Parameters.BuildOptionCharges` | `illustrative-option-charges` | Exercised |
 | `SRC-02` | MAR40.2 and MAR40.75 | `CALC-07.2` | `CORE_Engine.ResultsTable` | — | Not validated |
-| `SRC-02` | MAR40.2 and MAR40.4 | `CALC-08.1` | `CORE_Engine.ResultsTable` | — | Not validated |
-| `SRC-02` | MAR40.2 | `CALC-08.2` | `CORE_Engine.ResultsTable` | — | Not validated |
-| `SRC-02` | MAR40.2 | `CALC-08.3` | `CORE_Engine.ResultsTable` | — | Not validated |
-| `SRC-02` | MAR40.1 | `CALC-08.4` | `CORE_Engine.ResultsTable` | — | Not validated |
+| `SRC-02` | MAR40.2 and MAR40.4 | `CALC-08.1` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
+| `SRC-02` | MAR40.2 | `CALC-08.2` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
+| `SRC-02` | MAR40.2 | `CALC-08.3` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
+| `SRC-02` | MAR40.1 | `CALC-08.4` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
 
 - **Source and paragraph:** a `SRC-` ID of the [source register](SOURCES.md)
   and the exact paragraph, as in the step's *Source* column.
@@ -210,3 +210,4 @@ measured.
 | Decision | Options | Issue |
 | --- | --- | --- |
 | *Illustrative:* where the reference values that validate `CALC-01` come from | A worked example of a registered source (`published`); an external implementation by another author (`independent`, `IMPL-`) | Link |
+| Where the reference values that validate `CALC-02` to `CALC-05`, `CALC-07`, `CALC-08` and step 1 of `CALC-06` come from. Today only steps 2 and 3 of `CALC-06` have `published` values | A worked example of a registered source (`published`); an external implementation by another author (`independent`, `IMPL-`); or none, and the rules stay *Exercised* | [47](https://github.com/danielep71/K-FRTB-SSA/issues/47) |

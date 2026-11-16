@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-option-charges",
+  "synthetic": true,
+  "description": "A non-delta option charge entered for each risk class is taken as entered",
+  "category": "nominal",
+  "calculation": "CALC-07",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-10": [
+      {"id": "IR", "inputs": {"charge_amount": 120000, "currency_code": "EUR"}},
+      {"id": "EQ", "inputs": {"charge_amount": 45000.5, "currency_code": "EUR"}},
+      {"id": "CO", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "FX", "inputs": {"charge_amount": 8000, "currency_code": "EUR"}}
+    ]
+  }
+}

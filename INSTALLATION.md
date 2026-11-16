@@ -232,11 +232,23 @@ with every output as a formula, and one more column on `IRCalc`, the key the
 rows of an issue are netted on. It is a second implementation of the same
 rules, to compare the VBA engine with.
 
+**The test cases on the engine (optional).** Where LibreOffice is installed,
+`python3 tools/prototype/run_cases.py` writes each
+[test case](docs/methodology/TEST_CASES.md) of `tests/fixtures/` to the input
+sheets of the development workbook, runs `RunSSA` in LibreOffice and looks
+every expected value of `tests/expected/` up in the workbook: a number within
+its tolerance, a text exactly. A case ID as an argument runs that case only,
+and `--uno-python` and `--keep` are as below. It exits 0 when every value
+agrees, 1 when one differs, and 2 when LibreOffice is missing. It shows that
+the expected values and the engine agree in a host that is not supported: it
+is never Excel evidence, and it validates no rule.
+
 **Comparison with the formula workbook (optional).** Where LibreOffice is
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, and runs `TEST_Suite.Test_RunAll`. Error
+area with the formula workbook's, runs `TEST_Suite.Test_RunAll`, and runs the
+test cases as `run_cases.py` does. Error
 values typed as texts are checked on the formula workbook alone: LibreOffice
 gives the engine 0 for a cell that holds one, where Excel gives the error.
 `--uno-python PYTHON` names the Python that provides the UNO bridge, when it

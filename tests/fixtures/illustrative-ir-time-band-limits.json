@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-ir-time-band-limits",
+  "synthetic": true,
+  "description": "Residual terms on the upper limit of a time band and one day beyond it, for both coupon columns, a coupon of exactly 3%, a floating-rate position slotted by its repricing date, a position that matures on the reporting date and a position of zero value",
+  "category": "boundary",
+  "calculation": "CALC-03",
+  "reporting_date": "2026-12-31",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "B-30D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-01-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-31D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-01-31", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-1Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-12-31", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-1Y1D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-01-01", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-4Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.03, "final_maturity_date": "2030-12-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-4Y1D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.03, "final_maturity_date": "2030-12-31", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-LOW-4Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.0299, "final_maturity_date": "2030-12-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-LOW-12Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.0, "final_maturity_date": "2038-12-28", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-LOW-12Y1D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.0, "final_maturity_date": "2038-12-29", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-25Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2051-12-25", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-LOW-25Y", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.01, "final_maturity_date": "2051-12-25", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-FRN", "inputs": {"instrument_code": "FRN", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2036-12-28", "next_repricing_date": "2027-03-31", "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-TODAY", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2026-12-31", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "B-ZERO", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 0, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-11-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}}
+    ]
+  }
+}

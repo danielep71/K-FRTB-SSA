@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-co-matched-positions",
+  "synthetic": true,
+  "description": "A commodity whose long and short positions offset in full, which leaves only the charge on gross positions, a commodity with one position and a position of zero quantity",
+  "category": "boundary",
+  "calculation": "CALC-05",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}}
+    ],
+    "DS-08": [
+      {"id": "C-1", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 100, "spot_price_amount": 9800, "currency_code": "USD"}},
+      {"id": "C-2", "inputs": {"commodity_code": "COPPER", "direction_code": "Short", "quantity_count": 100, "spot_price_amount": 9800, "currency_code": "USD"}},
+      {"id": "C-3", "inputs": {"commodity_code": "Wheat", "direction_code": "Short", "quantity_count": 1000, "spot_price_amount": 250, "currency_code": "EUR"}},
+      {"id": "C-4", "inputs": {"commodity_code": "Corn", "direction_code": "Long", "quantity_count": 0, "spot_price_amount": 200, "currency_code": "EUR"}}
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-eq-matched-positions",
+  "synthetic": true,
+  "description": "A stock whose long and short positions offset in full, a market whose net position is zero, an index alone in its market and a position of zero value",
+  "category": "boundary",
+  "calculation": "CALC-04",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-07": [
+      {"id": "E-1", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "AAA", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1000000}},
+      {"id": "E-2", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "aaa", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 1000000}},
+      {"id": "E-3", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "BBB", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 2000000}},
+      {"id": "E-4", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "CCC", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 2000000}},
+      {"id": "E-5", "inputs": {"market_code": "FR", "type_code": "Index", "identifier_code": "IDX", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 3000000}},
+      {"id": "E-6", "inputs": {"market_code": "FR", "type_code": "Single name", "identifier_code": "DDD", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 0}}
+    ]
+  }
+}

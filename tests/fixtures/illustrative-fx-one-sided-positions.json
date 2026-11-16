@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-fx-one-sided-positions",
+  "synthetic": true,
+  "description": "Net positions that are all long, a currency whose rows net to zero, a position in gold alone on its side, a position of zero and a row in the reporting currency, which is excluded",
+  "category": "boundary",
+  "calculation": "CALC-06",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-09": [
+      {"id": "F-1", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 1000000}},
+      {"id": "F-2", "inputs": {"currency_code": "GBP", "direction_code": "Long", "net_position_amount": 500000}},
+      {"id": "F-3", "inputs": {"currency_code": "CHF", "direction_code": "Long", "net_position_amount": 750000}},
+      {"id": "F-4", "inputs": {"currency_code": "CHF", "direction_code": "Short", "net_position_amount": 750000}},
+      {"id": "F-5", "inputs": {"currency_code": "XAU", "direction_code": "Long", "net_position_amount": 100}},
+      {"id": "F-6", "inputs": {"currency_code": "GBP", "direction_code": "Short", "net_position_amount": 0}},
+      {"id": "F-7", "inputs": {"currency_code": "EUR", "direction_code": "Long", "net_position_amount": 9000000}}
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-invalid-ir-positions",
+  "synthetic": true,
+  "description": "Interest rate rows that each break one input rule of DS-06, in the order of the contract's list: the status names the first test the row fails, and no row is corrected",
+  "category": "invalid",
+  "calculation": "CALC-03",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "JPY", "inputs": {"fx_rate": 0.0058}},
+      {"id": "CAD", "inputs": {"fx_rate": 0.625}},
+      {"id": "SEK", "inputs": {"fx_rate": 0.1}},
+      {"id": "NOK", "inputs": {"fx_rate": 0.08}},
+      {"id": "DKK", "inputs": {"fx_rate": 0.134}},
+      {"id": "AUD", "inputs": {"fx_rate": 0.56}},
+      {"id": "PLN", "inputs": {"fx_rate": 0.235}},
+      {"id": "CZK", "inputs": {"fx_rate": 0.041}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-06": [
+      {"id": "X-DUP", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "x-dup", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-CCY", "inputs": {"instrument_code": "Bond", "currency_code": "ZAR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-GOLD", "inputs": {"instrument_code": "Bond", "currency_code": "XAU", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-DIR", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Buy", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-TEXT", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": "ten", "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-NEG", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": -1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-TYPE", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Variable", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-NOMAT", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": null, "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-NOTDATE", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": 20311231, "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-PAST", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2026-09-29", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-NOCPN", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": null, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-NOREP", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-REPNOTDATE", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2029-06-26", "next_repricing_date": 20270101, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-REPLATE", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2029-06-26", "next_repricing_date": "2029-06-27", "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "X-CAT", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "CORP", "rating_grade_code": "A+ to BBB-", "issue_id": null}},
+      {"id": "X-GRADE", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "OTHER", "rating_grade_code": "A+ to BBB-", "issue_id": null}},
+      {"id": "X-OK", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}}
+    ]
+  }
+}
