@@ -1375,8 +1375,9 @@ def build_readme(ctx: Context) -> None:
     r += 1
     section(ws, r, "References", "C", "D")
     r = text_block(ws, r + 1, [
-        ("MAR40", "Basel Committee on Banking Supervision, Basel Framework, MAR40 Simplified standardised approach "
-         "(bis.org/basel_framework/chapter/MAR/40.htm)."),
+        ("MAR40", "Basel Committee on Banking Supervision, Basel Framework, MAR40 Simplified standardised approach, in "
+         "force from 1 January 2023, last update 5 July 2024 "
+         "(bis.org/committees/bcbs/basel-framework/standard/mar/40/inforce/2023-01-01/published/2024-07-05)."),
         ("Source", f"{REPOSITORY} on GitHub: the exported VBA source, the guides and the tools that build this workbook."),
     ], True)
     r += 1

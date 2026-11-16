@@ -65,7 +65,7 @@ calculation, which has not been compiled or run in Excel:
 | Area | State |
 | --- | --- |
 | Calculation | Prototype. The VBA source of a MAR40 engine for the four risk classes is under `src/`, with a macro-free template of 18 sheets and synthetic sample data ([workbook contract](docs/methodology/WORKBOOK_CONTRACT.md)). I have run it only in LibreOffice's VBA mode: it is not compiled or run in Excel, no evidence of a run is recorded here, and it is not validated for regulatory reporting |
-| Methodology | The [guides](docs/methodology/README.md) are in place with illustrative rows. The FRTB sources, the data contract and the calculation contracts are still to be written |
+| Methodology | The Basel Framework's chapter MAR40 is the [registered source](docs/methodology/SOURCES.md), and each calculation of the engine has a [contract](docs/methodology/CALCULATION_CONTRACTS.md) whose rules cite it, with every parameter compared with the text. No rule is validated. The data contract is still to be written |
 | Test cases | The format, its checks and illustrative cases are in place. The prototype's test module, `tests/modules/TEST_Suite.bas`, has its own runner and does not use the test harness yet, and no FRTB test case is registered |
 | Tooling and governance | In use: every change goes through a pull request that **Repository integrity** checks |
 
