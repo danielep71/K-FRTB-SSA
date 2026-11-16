@@ -9,12 +9,12 @@ workbook or replace the [methodology](../methodology/README.md).
 README shows it. To use it as the social preview too, upload the same file in
 **Settings → General → Social preview**: GitHub offers no API for it.
 
-It shows no result: the workbook calculates nothing yet. Its only figures are
-the four scaling factors of the simplified standardised approach, 1.30 for
-interest rate risk, 3.50 for equity risk, 1.90 for commodity risk and 1.20 for
-foreign exchange risk. They describe the regulatory framework, not an
-implemented scope, and are not yet registered in the
-[sources](../methodology/SOURCES.md).
+It shows no result of a calculation. Its only figures are the four scaling
+factors of the simplified standardised approach, 1.30 for interest rate risk,
+3.50 for equity risk, 1.90 for commodity risk and 1.20 for foreign exchange
+risk. They are those of MAR40.2 of `SRC-02` in the
+[sources](../methodology/SOURCES.md), with which I compared the image on
+2026-11-16.
 
 To render it again (Chromium, then crop to the 1280 x 640 frame):
 

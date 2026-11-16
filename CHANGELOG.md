@@ -65,6 +65,19 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The calculation has a registered regulatory basis. The Basel Framework's
+  chapter MAR40, in force from 1 January 2023 and last updated on 5 July
+  2024, is `SRC-02` of the source register, with its terms and what was
+  compared with its text; no copy of it is kept. Seven calculation
+  contracts, `CALC-02` to `CALC-08`, state the rules of the engine, each
+  with its paragraph: interest rate specific risk, the maturity method,
+  equity, commodities, foreign exchange, the option charges and the
+  requirement. Every parameter is traced to its paragraph, and its
+  reference value equals the text. The support matrix states what is
+  supported, what the user enters and what is not supported, and the
+  traceability table names the procedure of each rule. No rule is
+  validated, and what the source leaves open is recorded as an assumption
+  (#18).
 - A prototype of the calculation: the VBA source of a MAR40 engine for
   interest rate, equity, commodity, and FX and gold risk; the command macros
   `RunSSA` and `ClearOutputs`; four worksheet functions; a test module; and
