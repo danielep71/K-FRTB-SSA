@@ -33,10 +33,10 @@ The workbook's scope, feature by feature:
 | Commodities risk by the simplified approach | Supported | `CALC-05` | Per commodity |
 | Foreign exchange risk, gold included, by the shorthand method | Supported | `CALC-06` | From the net position entered per currency |
 | The requirement with its scaling factors, and the risk-weighted assets | Supported | `CALC-08` | |
-| Non-delta charges for options: the simplified approach, the gamma and vega charges of the delta-plus method, the scenario approach | Entered by the user | `CALC-07`; `OptionCharges`, *Charge (rep ccy)* | One value per risk class, added before scaling |
-| Conversion of derivatives into positions in the underlying, and the delta-equivalent of an option | Entered by the user | The rows of the four position sheets | The workbook converts nothing: each leg is a row |
-| The category and the rating grade of an issuer | Entered by the user | `IRPositions`, *SR category* and *Rating grade* | The workbook does not apply the qualifying criteria |
-| The net open position in each currency, from its components | Entered by the user | `FXPositions`, *Amount (ccy)* | The workbook derives no FX position from the other sheets |
+| Non-delta charges for options: the simplified approach, the gamma and vega charges of the delta-plus method, the scenario approach | Entered by the user | `CALC-07`; `DS-10.charge` | One value per risk class, added before scaling |
+| Conversion of derivatives into positions in the underlying, and the delta-equivalent of an option | Entered by the user | The rows of `DS-06` to `DS-09` | The workbook converts nothing: each leg is a row |
+| The category and the rating grade of an issuer | Entered by the user | `DS-06.sr_category` and `DS-06.rating_grade` | The workbook does not apply the qualifying criteria |
+| The net open position in each currency, from its components | Entered by the user | `DS-09.amount` | The workbook derives no FX position from the other sheets |
 | Interest rate risk by the duration method | Not supported | `CALC-03` | No input selects it: the maturity method always applies |
 | Securitisation positions, credit derivatives and the correlation trading portfolio | Not supported | `CALC-02` | No input identifies one: entered as a debt position, it is calculated as one. Do not enter it |
 | Commodities risk by the maturity ladder approach | Not supported | `CALC-05` | The maturity date of a commodity position is not used |
@@ -52,10 +52,11 @@ The workbook's scope, feature by feature:
   what happens when the input holds it: it is reported as unsupported scope,
   never calculated silently
   ([input and output contracts](../REPOSITORY_STRUCTURE.md#input-and-output-contracts)).
-  The prototype does not meet this for the instruments that no input field
-  identifies, as their rows say: the fields that would let it report them
-  belong to the data contract
-  ([issue 19](https://github.com/danielep71/K-FRTB-SSA/issues/19)).
+  The workbook cannot meet this for an instrument entered as a supported
+  one, as the rows say: it is a stated limit of the
+  [data contract](DATA_CONTRACT.md#unsupported-input). What a field can
+  exclude, the engine is to reject
+  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
 - **Entered by the user:** the workbook does not calculate it: the user
   enters the value, which the [data contract](DATA_CONTRACT.md) or the
   [workbook contract](WORKBOOK_CONTRACT.md) defines and validates, and the

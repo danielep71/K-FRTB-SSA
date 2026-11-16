@@ -333,8 +333,9 @@ def parse(data: object) -> tuple[list[Dataset], list[str]]:
     datasets = [parse_dataset(item, f"datasets[{index}]", problems)
                 for index, item in enumerate(items)]
     valid = [dataset for dataset in datasets if dataset is not None]
-    for key in ("id", "source"):
-        seen = [getattr(dataset, key) for dataset in valid]
+    # A file is one dataset. A sheet may hold several tables, each a dataset.
+    for key, seen in (("id", [dataset.id for dataset in valid]),
+                      ("source", [dataset.source for dataset in valid if dataset.is_file])):
         problems += [f"{key} {value} appears in two datasets" for value in sorted(set(seen))
                      if seen.count(value) > 1]
     return ([] if problems else valid), problems

@@ -215,6 +215,25 @@ class ContractTest(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertProblem(edit, text)
 
+    def test_a_sheet_may_hold_several_datasets_and_a_file_only_one(self) -> None:
+        on_sheet = {"source": "Params", "encoding": None, "delimiter": None,
+                    "decimal_separator": None}
+
+        def two_tables(contract: dict[str, Any]) -> None:
+            contract["datasets"][0].update(on_sheet)
+            contract["datasets"].append({**copy.deepcopy(DATASET), **on_sheet, "id": "DS-03"})
+
+        def same_id(contract: dict[str, Any]) -> None:
+            two_tables(contract)
+            contract["datasets"][1]["id"] = "DS-02"
+
+        datasets, problems = parsed(two_tables)
+        self.assertEqual(problems, [])
+        self.assertEqual([(item.id, item.source, item.is_file) for item in datasets],
+                         [("DS-02", "Params", False), ("DS-03", "Params", False)])
+        # The same ID twice is still a problem, on a sheet as in a file.
+        self.assertProblem(same_id, "id DS-02 appears in two")
+
     def test_a_sheet_and_a_file_of_another_kind(self) -> None:
         for source in ("Inputs", "positions.xlsx"):
             with self.subTest(source=source):

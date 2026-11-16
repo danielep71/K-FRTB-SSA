@@ -65,6 +65,15 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The data contract defines every input of the workbook: nine datasets,
+  `DS-02` to `DS-10`, one for each table that is typed on a sheet, with the
+  type, unit, allowed values and column of every field; how a cell is read;
+  the rules of `Checks` that reject or report input; the largest supported
+  volume, 500 rows on a position sheet; and what a run records of its
+  inputs. It lists three points where the engine does not yet do what the
+  contract says, each with its issue. The calculation contracts name their
+  inputs as datasets and fields. `tools/check_data_contract.py` lets a sheet
+  hold several datasets, as `Params` does; a file stays one dataset (#19).
 - The calculation has a registered regulatory basis. The Basel Framework's
   chapter MAR40, in force from 1 January 2023 and last updated on 5 July
   2024, is `SRC-02` of the source register, with its terms and what was

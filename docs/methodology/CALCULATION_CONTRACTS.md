@@ -46,9 +46,10 @@ These hold for every calculation:
   ([status and staleness](WORKBOOK_CONTRACT.md#status-and-staleness)).
 - **Tolerances:** not decided yet. They come with the test cases
   ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)).
-- **Inputs:** the *Inputs* tables below name each input by its sheet and
-  column. The [data contract](DATA_CONTRACT.md) does not define the datasets
-  yet ([issue 19](https://github.com/danielep71/K-FRTB-SSA/issues/19)).
+- **Inputs:** the *Inputs* tables below name each input as a dataset and a
+  field of the [data contract](DATA_CONTRACT.md), which gives its column, its
+  type and its allowed values, and says how a cell is read
+  ([how a sheet is read](DATA_CONTRACT.md#reading-a-sheet)).
 
 ## Parameters
 
@@ -138,12 +139,12 @@ positions, the *Specific risk* of the interest rate row of `Results`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Position value | `IRPositions`, *Position value (ccy)* and *Direction* | Currency of *Currency* |
-| Currency | `IRPositions`, *Currency* | Code of `FX_Table` |
-| Category and rating grade | `IRPositions`, *SR category* (`GOV`, `QUAL`, `OTHER` or `NONE`) and *Rating grade* | Text |
-| Final maturity | `IRPositions`, *Final maturity date* | Date |
-| Issue | `IRPositions`, *Issue ID (specific-risk netting)* | Text; may be empty |
-| Charges | `Params`, `SR_Key` and `SR_Charge` | Fraction |
+| Position value | `DS-06.position_value` and `DS-06.direction` | Currency of `DS-06.currency` |
+| Currency and its rate | `DS-06.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Category and rating grade | `DS-06.sr_category` and `DS-06.rating_grade` | Text |
+| Final maturity | `DS-06.final_maturity_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
+| Issue | `DS-06.issue_id` | Text; may be empty |
+| Charges | `DS-03.key` and `DS-03.charge` | Fraction |
 
 **Rules:**
 
@@ -174,9 +175,11 @@ positions, the *Specific risk* of the interest rate row of `Results`.
   securitisation positions (MAR40.14); the cap at the maximum possible loss
   (MAR40.15); the offsets and the treatment of credit derivatives (MAR40.16
   to MAR40.21); and the correlation trading portfolio (MAR40.22).
-- The workbook cannot tell an unsupported instrument from a bond: nothing
-  on `IRPositions` identifies one. Entered as a debt position, it is
-  calculated as one. Do not enter it.
+- The workbook cannot tell an unsupported instrument from a bond. Entered
+  as a debt position, it is calculated as one: a stated limit of the
+  [data contract](DATA_CONTRACT.md#unsupported-input). Do not enter it. The
+  engine does not read `DS-06.instrument` yet
+  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
 - A category and grade that table 1 does not list, such as `OTHER` with an
   investment grade, reject the row.
 
@@ -198,12 +201,12 @@ interest rate row of `Results`, with its components per currency on
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Position value | `IRPositions`, *Position value (ccy)* and *Direction* | Currency of *Currency* |
-| Currency | `IRPositions`, *Currency* | Code of `FX_Table` |
-| Rate type and coupon | `IRPositions`, *Rate type* (`Fixed` or `Floating`) and *Coupon (decimal)* | Text; fraction |
-| Dates | `IRPositions`, *Final maturity date* and *Next repricing date (floating)* | Date |
-| Time bands | `Params`, the `Ladder_` names, and `CouponThreshold` | Years; fraction |
-| Disallowances | `Params`, `VerticalDisallowance` and the five `Horizontal` parameters | Fraction |
+| Position value | `DS-06.position_value` and `DS-06.direction` | Currency of `DS-06.currency` |
+| Currency and its rate | `DS-06.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Rate type and coupon | `DS-06.rate_type` and `DS-06.coupon` | Text; fraction |
+| Dates | `DS-06.final_maturity_date` and `DS-06.next_repricing_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
+| Time bands | `DS-04.zone`, `DS-04.upper_bound_high_coupon`, `DS-04.upper_bound_low_coupon` and `DS-04.risk_weight`; `DS-02.coupon_threshold` | Years; fraction |
+| Disallowances | `DS-02.vertical_disallowance` and the five `DS-02.horizontal_` fields | Fraction |
 
 **Rules:**
 
@@ -285,11 +288,11 @@ The first test that fails gives the text. A rejected row enters neither
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Market value | `EQPositions`, *Market value (ccy)* and *Direction* | Currency of *Currency* |
-| Currency | `EQPositions`, *Currency* | Code of `FX_Table` |
-| Market | `EQPositions`, *Market* | Text: the national market |
-| Type and identifier | `EQPositions`, *Type* (`Single name` or `Index`) and *Stock or index identifier* | Text |
-| Rates | `Params`, `EQSpecificRate`, `EQIndexRate` and `EQGeneralRate` | Fraction |
+| Market value | `DS-07.market_value` and `DS-07.direction` | Currency of `DS-07.currency` |
+| Currency and its rate | `DS-07.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Market | `DS-07.market` | Text: the national market |
+| Type and identifier | `DS-07.type` and `DS-07.identifier` | Text |
+| Rates | `DS-02.eq_specific_rate`, `DS-02.eq_index_rate` and `DS-02.eq_general_rate` | Fraction |
 
 **Rules:**
 
@@ -349,11 +352,11 @@ commodity on `Buckets`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Quantity | `COPositions`, *Quantity* and *Direction* | The standard unit of the commodity, in *Unit* |
-| Spot price | `COPositions`, *Spot price (ccy per unit)* | Currency of *Currency*, per unit |
-| Currency | `COPositions`, *Currency* | Code of `FX_Table` |
-| Commodity | `COPositions`, *Commodity* | Text |
-| Rates | `Params`, `COMDirectionalRate` and `COMGrossRate` | Fraction |
+| Quantity | `DS-08.quantity` and `DS-08.direction` | The standard unit of the commodity, which `DS-08.unit` names |
+| Spot price | `DS-08.spot_price` | Currency of `DS-08.currency`, per unit |
+| Currency and its rate | `DS-08.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Commodity | `DS-08.commodity` | Text |
+| Rates | `DS-02.com_directional_rate` and `DS-02.com_gross_rate` | Fraction |
 
 **Rules:**
 
@@ -383,8 +386,9 @@ commodity on `Buckets`.
   does not check that their units are.
 - A derivative is entered as a notional position in the commodity, as
   MAR40.71 describes. The workbook converts nothing.
-- Gold is FX risk (MAR40.63). The workbook cannot tell it from a commodity
-  by its name: enter it on `FXPositions`.
+- Gold is FX risk (MAR40.63): enter it on `FXPositions`. The engine does
+  not yet reject a commodity named as the gold code
+  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
 - A spot price is used as entered, also when it is negative.
 - `Buckets` lists up to 30 commodities. The totals include every commodity,
   and `Checks` warns (rule `C11`).
@@ -413,9 +417,9 @@ per currency and the overall net open position on `Buckets`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Net position | `FXPositions`, *Amount (ccy)* and *Direction* | Currency of *Currency*; for gold, the unit its rate in `FX_Table` is quoted for |
-| Currency | `FXPositions`, *Currency* | Code of `FX_Table`, or `GoldCode` for gold |
-| Rate | `Params`, `FXChargeRate` | Fraction |
+| Net position | `DS-09.amount` and `DS-09.direction` | Currency of `DS-09.currency`; for gold, the unit its rate is quoted for |
+| Currency and its rate | `DS-09.currency`; `DS-05.currency` and `DS-05.rate`; `DS-02.gold_code` and `DS-02.reporting_currency` | Reporting currency per unit |
+| Rate | `DS-02.fx_charge_rate` | Fraction |
 
 **Rules:**
 
@@ -471,7 +475,7 @@ options* column of `Results`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Charge per risk class | `OptionCharges`, *Charge (rep ccy)*: `OptionsIR`, `OptionsEQ`, `OptionsCO` and `OptionsFX` | Reporting currency |
+| Charge per risk class | `DS-10.charge`, for each `DS-10.risk_class` | Reporting currency |
 
 **Rules:**
 
@@ -517,7 +521,7 @@ headline of `Results`.
 | --- | --- | --- |
 | Requirement of each risk class | The outputs of `CALC-02` to `CALC-06` | Reporting currency |
 | Option charges | The outputs of `CALC-07` | Reporting currency |
-| Scaling factors and multiplier | `Params`, `ScalingIR`, `ScalingEQ`, `ScalingCO`, `ScalingFX` and `RWAMultiplier` | Number |
+| Scaling factors and multiplier | `DS-02.scaling_ir`, `DS-02.scaling_eq`, `DS-02.scaling_co`, `DS-02.scaling_fx` and `DS-02.rwa_multiplier` | Number |
 
 **Rules:**
 
