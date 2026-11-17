@@ -44,8 +44,12 @@ These hold for every calculation:
   and no result is calculated. A run that raises an error clears every
   output and reads `FAILED`
   ([status and staleness](WORKBOOK_CONTRACT.md#status-and-staleness)).
-- **Tolerances:** not decided yet. They come with the test cases
-  ([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)).
+- **Tolerances:** an expected value that a derivation gives in full
+  precision is compared within an absolute bound of `1e-6` currency units
+  and a relative bound of `1e-9`; a time band, which is a whole number,
+  exactly. A value printed in a source is compared within half a unit of
+  its last printed digit, with a relative bound of 0
+  ([tolerance](TEST_CASES.md#tolerance)).
 - **Inputs:** the *Inputs* tables below name each input as a dataset and a
   field of the [data contract](DATA_CONTRACT.md), which gives its column, its
   type and its allowed values, and says how a cell is read
@@ -140,7 +144,7 @@ positions, the *Specific risk* of the interest rate row of `Results`.
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
 | Position value | `DS-06.position_value` and `DS-06.direction` | Currency of `DS-06.currency` |
-| Currency and its rate | `DS-06.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Currency and its rate | `DS-06.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Category and rating grade | `DS-06.sr_category` and `DS-06.rating_grade` | Text |
 | Final maturity | `DS-06.final_maturity_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
 | Issue | `DS-06.issue_id` | Text; may be empty |
@@ -202,7 +206,7 @@ interest rate row of `Results`, with its components per currency on
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
 | Position value | `DS-06.position_value` and `DS-06.direction` | Currency of `DS-06.currency` |
-| Currency and its rate | `DS-06.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Currency and its rate | `DS-06.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Rate type and coupon | `DS-06.rate_type` and `DS-06.coupon` | Text; fraction |
 | Dates | `DS-06.final_maturity_date` and `DS-06.next_repricing_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
 | Time bands | `DS-04.zone`, `DS-04.upper_bound_high_coupon`, `DS-04.upper_bound_low_coupon` and `DS-04.risk_weight`; `DS-02.coupon_threshold` | Years; fraction |
@@ -289,7 +293,7 @@ The first test that fails gives the text. A rejected row enters neither
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
 | Market value | `DS-07.market_value` and `DS-07.direction` | Currency of `DS-07.currency` |
-| Currency and its rate | `DS-07.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Currency and its rate | `DS-07.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Market | `DS-07.market` | Text: the national market |
 | Type and identifier | `DS-07.type` and `DS-07.identifier` | Text |
 | Rates | `DS-02.eq_specific_rate`, `DS-02.eq_index_rate` and `DS-02.eq_general_rate` | Fraction |
@@ -354,7 +358,7 @@ commodity on `Buckets`.
 | --- | --- | --- |
 | Quantity | `DS-08.quantity` and `DS-08.direction` | The standard unit of the commodity, which `DS-08.unit` names |
 | Spot price | `DS-08.spot_price` | Currency of `DS-08.currency`, per unit |
-| Currency and its rate | `DS-08.currency`; `DS-05.currency` and `DS-05.rate` | Reporting currency per unit |
+| Currency and its rate | `DS-08.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Commodity | `DS-08.commodity` | Text |
 | Rates | `DS-02.com_directional_rate` and `DS-02.com_gross_rate` | Fraction |
 
@@ -417,8 +421,8 @@ per currency and the overall net open position on `Buckets`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Net position | `DS-09.amount` and `DS-09.direction` | Currency of `DS-09.currency`; for gold, the unit its rate is quoted for |
-| Currency and its rate | `DS-09.currency`; `DS-05.currency` and `DS-05.rate`; `DS-02.gold_code` and `DS-02.reporting_currency` | Reporting currency per unit |
+| Net position | `DS-09.net_position` and `DS-09.direction` | Currency of `DS-09.currency`; for gold, the unit its rate is quoted for |
+| Currency and its rate | `DS-09.currency`; `DS-05.currency_id` and `DS-05.fx_rate`; `DS-02.gold_code` and `DS-02.reporting_currency` | Reporting currency per unit |
 | Rate | `DS-02.fx_charge_rate` | Fraction |
 
 **Rules:**
@@ -475,7 +479,7 @@ options* column of `Results`.
 
 | Input | Dataset and field | Unit |
 | --- | --- | --- |
-| Charge per risk class | `DS-10.charge`, for each `DS-10.risk_class` | Reporting currency |
+| Charge per risk class | `DS-10.charge`, for each `DS-10.risk_class_id` | Reporting currency |
 
 **Rules:**
 
@@ -567,6 +571,8 @@ re-calculation; it validates nothing. See the
 
 | Date | Decision | Reason | Issue |
 | --- | --- | --- | --- |
+| 2026-11-16 | The default tolerances are those the test-case guide suggests: `1e-6` absolute and `1e-9` relative for a derived value, and half a unit of the last printed digit for a published one | `Double` arithmetic agrees to far more digits on these sums and products, so a difference above the bound is a difference of method; a printed value is known only to its last digit | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
+| 2026-11-16 | A value that `tests/derivations/ssa.py` computes is `illustrative`, and the script is not registered as an independent implementation | I wrote the script and the engine: the same reading of the text is in both, so their agreement cannot validate a rule. Only a value printed in `SRC-02`, or an implementation of another author, can | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | The calculations are numbered from `CALC-02` | `CALC-01` is the illustrative contract above, which the illustrative test cases still cite, and an ID is never reused | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |
 | 2026-11-16 | A residual term is in calendar days over 365, a month is a twelfth of a year, and a term equal to the upper limit of a time band belongs to that band | `SRC-02` gives its bands in months and years, and names neither a day count nor the band of a limit. The prototype was built so | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |
 | 2026-11-16 | The zones are offset in the order 1 and 2, 2 and 3, then 1 and 3 | MAR40.28 allows the offsetting between zones and gives its disallowances, not its order. The prototype was built so | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |

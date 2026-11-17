@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-option-charges",
+  "outputs": [
+    {
+      "quantity": "option_charge", "scope": {"dataset": "DS-10", "record": "IR"}, "rule": "CALC-07.1", "value": 120000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "option_charge", "scope": {"dataset": "DS-10", "record": "EQ"}, "rule": "CALC-07.1", "value": 45000.5, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "option_charge", "scope": {"dataset": "DS-10", "record": "CO"}, "rule": "CALC-07.1", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "option_charge", "scope": {"dataset": "DS-10", "record": "FX"}, "rule": "CALC-07.1", "value": 8000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    }
+  ]
+}

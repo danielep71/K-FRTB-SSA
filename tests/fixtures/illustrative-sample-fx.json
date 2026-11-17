@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-sample-fx",
+  "synthetic": true,
+  "description": "The synthetic sample portfolio of the template, which exercises each rule of the calculation and describes no real book: the net position per currency, the overall net open position and the FX requirement",
+  "category": "nominal",
+  "calculation": "CALC-06",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "JPY", "inputs": {"fx_rate": 0.0058}},
+      {"id": "CAD", "inputs": {"fx_rate": 0.625}},
+      {"id": "SEK", "inputs": {"fx_rate": 0.1}},
+      {"id": "NOK", "inputs": {"fx_rate": 0.08}},
+      {"id": "DKK", "inputs": {"fx_rate": 0.134}},
+      {"id": "AUD", "inputs": {"fx_rate": 0.56}},
+      {"id": "PLN", "inputs": {"fx_rate": 0.235}},
+      {"id": "CZK", "inputs": {"fx_rate": 0.041}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-09": [
+      {"id": "FX-001", "inputs": {"currency_code": "CAD", "direction_code": "Long", "net_position_amount": 80000000}},
+      {"id": "FX-002", "inputs": {"currency_code": "SEK", "direction_code": "Long", "net_position_amount": 1000000000}},
+      {"id": "FX-003", "inputs": {"currency_code": "GBP", "direction_code": "Long", "net_position_amount": 125000000}},
+      {"id": "FX-004", "inputs": {"currency_code": "NOK", "direction_code": "Short", "net_position_amount": 250000000}},
+      {"id": "FX-005", "inputs": {"currency_code": "USD", "direction_code": "Short", "net_position_amount": 200000000}},
+      {"id": "FX-006", "inputs": {"currency_code": "XAU", "direction_code": "Short", "net_position_amount": 10000}}
+    ]
+  }
+}

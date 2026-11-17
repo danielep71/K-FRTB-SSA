@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-ir-specific-risk-maturity-limits",
+  "synthetic": true,
+  "description": "Residual terms to final maturity on the limits of table 1 and one day beyond them, 6 and 24 months, an issue whose positions offset in full, a position without specific risk and a government position at 0%",
+  "category": "boundary",
+  "calculation": "CALC-02",
+  "reporting_date": "2026-12-31",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "S-182D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-07-01", "next_repricing_date": null, "sr_category_code": "GOV", "rating_grade_code": "A+ to BBB-", "issue_id": "ISS-A"}},
+      {"id": "S-183D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-07-02", "next_repricing_date": null, "sr_category_code": "GOV", "rating_grade_code": "A+ to BBB-", "issue_id": "ISS-B"}},
+      {"id": "S-730D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-12-30", "next_repricing_date": null, "sr_category_code": "QUAL", "rating_grade_code": "AAA to AA-", "issue_id": "ISS-C"}},
+      {"id": "S-731D", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-12-31", "next_repricing_date": null, "sr_category_code": "QUAL", "rating_grade_code": "AAA to AA-", "issue_id": "ISS-D"}},
+      {"id": "S-OFF-1", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 2500000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-02-08", "next_repricing_date": null, "sr_category_code": "OTHER", "rating_grade_code": "BB+ to BB-", "issue_id": "ISS-E"}},
+      {"id": "S-OFF-2", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 2500000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-02-08", "next_repricing_date": null, "sr_category_code": "OTHER", "rating_grade_code": "BB+ to BB-", "issue_id": "iss-e"}},
+      {"id": "S-NONE", "inputs": {"instrument_code": "Swap leg", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-02-08", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "S-AAA", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-02-08", "next_repricing_date": null, "sr_category_code": "GOV", "rating_grade_code": "AAA to AA-", "issue_id": null}}
+    ]
+  }
+}

@@ -27,6 +27,8 @@ It needs LibreOffice and openpyxl. The steps:
    for a cell that holds an error value, so the two cannot be compared here.
 6. Make two Params values unusable: the run stops and lists both.
 7. Run TEST_Suite.Test_RunAll: no assertion fails.
+8. Run the registered test cases, as run_cases.py does: the workbook holds
+   every expected value.
 
 Every macro runs through tools/devbuild/lo_macro.py, on the workbook the
 build produces. --uno-python names the Python that provides LibreOffice's
@@ -377,6 +379,16 @@ def test_suite(run: Run) -> str:
     return result
 
 
+def test_cases(run: Run) -> str:
+    # Imported here: run_cases imports this module.
+    import run_cases
+
+    count, compared, report = run_cases.check(run, [])
+    if count == 0 or any(line.startswith("  ") for line in report):
+        raise Failure("\n".join(report) or "no test case found")
+    return f"{count} case(s), {compared} expected value(s), all in the workbook"
+
+
 STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Build the formula workbook and the development workbook", build),
     ("Recalculate the formula workbook", formula_tests),
@@ -385,6 +397,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
     ("TEST_Suite.Test_RunAll", test_suite),
+    ("The registered test cases on the engine", test_cases),
 )
 
 

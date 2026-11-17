@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-invalid-eq-positions",
+  "synthetic": true,
+  "description": "Equity rows that each break one input rule of DS-07, in the order of the contract's list",
+  "category": "invalid",
+  "calculation": "CALC-04",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "JPY", "inputs": {"fx_rate": 0.0058}},
+      {"id": "CAD", "inputs": {"fx_rate": 0.625}},
+      {"id": "SEK", "inputs": {"fx_rate": 0.1}},
+      {"id": "NOK", "inputs": {"fx_rate": 0.08}},
+      {"id": "DKK", "inputs": {"fx_rate": 0.134}},
+      {"id": "AUD", "inputs": {"fx_rate": 0.56}},
+      {"id": "PLN", "inputs": {"fx_rate": 0.235}},
+      {"id": "CZK", "inputs": {"fx_rate": 0.041}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-07": [
+      {"id": "X-DUP", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "x-dup", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-MKT", "inputs": {"market_code": "", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-TYPE", "inputs": {"market_code": "IT", "type_code": "Basket", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-ID", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "  ", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-CCY", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "ZAR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-GOLD", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "XAU", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-DIR", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "", "market_value_amount": 1}},
+      {"id": "X-TEXT", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": "1"}},
+      {"id": "X-NEG", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": -5}},
+      {"id": "X-OK", "inputs": {"market_code": "IT", "type_code": "Index", "identifier_code": "FTSE MIB", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 1}}
+    ]
+  }
+}

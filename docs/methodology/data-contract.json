@@ -474,12 +474,12 @@
       "decimal_separator": null,
       "fields": [
         {
-          "name": "currency",
-          "type": "currency",
+          "name": "currency_id",
+          "type": "text",
           "unit": null,
           "required": true,
           "allowed": null,
-          "notes": "Name FX_Ccy. Listed once. The reporting currency is listed, and gold under the gold code"
+          "notes": "Name FX_Ccy. The currency code: three letters of ISO 4217, and the gold code for gold. Listed once. The reporting currency is listed"
         },
         {
           "name": "description",
@@ -490,7 +490,7 @@
           "notes": "Not read"
         },
         {
-          "name": "rate",
+          "name": "fx_rate",
           "type": "decimal",
           "unit": "Units of reporting currency per unit",
           "required": true,
@@ -920,7 +920,7 @@
           "notes": "Column Direction"
         },
         {
-          "name": "amount",
+          "name": "net_position",
           "type": "decimal",
           "unit": {
             "currency_field": "currency"
@@ -954,7 +954,7 @@
       "decimal_separator": null,
       "fields": [
         {
-          "name": "risk_class",
+          "name": "risk_class_id",
           "type": "text",
           "unit": null,
           "required": true,

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "mar40-61-table-9",
+  "outputs": [
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-JPY"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-EUR"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-GBP"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-CAD"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-USD"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-XAU"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "CAD"}, "rule": "CALC-06.1", "value": -20.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-06.1", "value": 100.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "GBP"}, "rule": "CALC-06.1", "value": 150.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "JPY"}, "rule": "CALC-06.1", "value": 50.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-06.1", "value": -180.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "XAU"}, "rule": "CALC-06.1", "value": -35.0, "unit": "CHF", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_overall_net_open_position", "scope": null, "rule": "CALC-06.2", "value": 335.0, "unit": "CHF", "tolerance": {"absolute": 0.5, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-02", "locator": "MAR40.61, table 9", "derivation": "Printed in the example of table 9 of MAR40.61. The table gives the net position per currency already in the reporting currency, which it does not name: the fixture uses CHF and a rate of 1 for every currency. tests/derivations/ssa.py gives the same value", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    },
+    {
+      "quantity": "fx_charge", "scope": null, "rule": "CALC-06.3", "value": 26.8, "unit": "CHF", "tolerance": {"absolute": 0.05, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-02", "locator": "MAR40.61, table 9", "derivation": "Printed in the example of table 9 of MAR40.61. The table gives the net position per currency already in the reporting currency, which it does not name: the fixture uses CHF and a rate of 1 for every currency. tests/derivations/ssa.py gives the same value", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-16"}
+    }
+  ]
+}

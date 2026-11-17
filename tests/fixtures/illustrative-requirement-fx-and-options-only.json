@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-requirement-fx-and-options-only",
+  "synthetic": true,
+  "description": "Three risk classes without a position: the requirement is the scaled FX requirement plus the scaled option charges, one of them in a class that has no position",
+  "category": "boundary",
+  "calculation": "CALC-08",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}}
+    ],
+    "DS-09": [
+      {"id": "R-1", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 2000000}}
+    ],
+    "DS-10": [
+      {"id": "IR", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "EQ", "inputs": {"charge_amount": 10000, "currency_code": "EUR"}},
+      {"id": "CO", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "FX", "inputs": {"charge_amount": 2500, "currency_code": "EUR"}}
+    ]
+  }
+}

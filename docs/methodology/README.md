@@ -36,7 +36,7 @@ The workbook's scope, feature by feature:
 | Non-delta charges for options: the simplified approach, the gamma and vega charges of the delta-plus method, the scenario approach | Entered by the user | `CALC-07`; `DS-10.charge` | One value per risk class, added before scaling |
 | Conversion of derivatives into positions in the underlying, and the delta-equivalent of an option | Entered by the user | The rows of `DS-06` to `DS-09` | The workbook converts nothing: each leg is a row |
 | The category and the rating grade of an issuer | Entered by the user | `DS-06.sr_category` and `DS-06.rating_grade` | The workbook does not apply the qualifying criteria |
-| The net open position in each currency, from its components | Entered by the user | `DS-09.amount` | The workbook derives no FX position from the other sheets |
+| The net open position in each currency, from its components | Entered by the user | `DS-09.net_position` | The workbook derives no FX position from the other sheets |
 | Interest rate risk by the duration method | Not supported | `CALC-03` | No input selects it: the maturity method always applies |
 | Securitisation positions, credit derivatives and the correlation trading portfolio | Not supported | `CALC-02` | No input identifies one: entered as a debt position, it is calculated as one. Do not enter it |
 | Commodities risk by the maturity ladder approach | Not supported | `CALC-05` | The maturity date of a commodity position is not used |

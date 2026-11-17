@@ -141,9 +141,9 @@ Read from the sheet `Params`.
 
 | Field | Type | Unit or currency | Required | Allowed values or range | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `currency` | Currency code, ISO 4217 | — | Yes | Any | Name FX_Ccy. Listed once. The reporting currency is listed, and gold under the gold code |
+| `currency_id` | Text | — | Yes | Any | Name FX_Ccy. The currency code: three letters of ISO 4217, and the gold code for gold. Listed once. The reporting currency is listed |
 | `description` | Text | — | No | Any | Not read |
-| `rate` | Decimal | Units of reporting currency per unit | Yes | ≥ 0 | Name FX_Rate. Greater than 0. The spot rate of the reporting date; 1 for the reporting currency |
+| `fx_rate` | Decimal | Units of reporting currency per unit | Yes | ≥ 0 | Name FX_Rate. Greater than 0. The spot rate of the reporting date; 1 for the reporting currency |
 
 ### `DS-06` Interest rate positions
 
@@ -209,7 +209,7 @@ Read from the sheet `FXPositions`.
 | `portfolio` | Text | — | No | Any | Column Portfolio. Not read |
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code included. A row in the reporting currency is excluded |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
-| `amount` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign |
+| `net_position` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
 ### `DS-10` Non-delta option charges
@@ -218,7 +218,7 @@ Read from the sheet `OptionCharges`.
 
 | Field | Type | Unit or currency | Required | Allowed values or range | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `risk_class` | Text | — | Yes | `IR`, `EQ`, `CO`, `FX` | Column Risk class. A label of the template, not typed |
+| `risk_class_id` | Text | — | Yes | `IR`, `EQ`, `CO`, `FX` | Column Risk class. A label of the template, not typed |
 | `description` | Text | — | No | Any | Column Description. A label of the template; not read |
 | `method` | Text | — | No | Any | Column Method. The method the charge was calculated by; not read |
 | `charge` | Decimal | Reporting currency | No | ≥ 0 | Column Charge (rep ccy), names OptionsIR, OptionsEQ, OptionsCO and OptionsFX. Empty: zero |
@@ -257,6 +257,31 @@ reads a cell this way:
 - **Nothing is corrected.** A value that fails a test is reported as below,
   never rounded, replaced or defaulted. An empty option charge is the one
   default: it is zero.
+
+### In a test fixture
+
+A [test fixture](TEST_CASES.md#fixture-format) gives the inputs of a case
+as records of these datasets:
+
+- **Reporting date and currency** are in the fixture's envelope,
+  `reporting_date` and `reporting_currency_code`: they are `as_of_date` and
+  `reporting_currency` of `DS-02`.
+- **FX rates** are records of `DS-05`: the record's `id` is the currency
+  code, and its input is `fx_rate`. The reporting currency is listed with
+  rate 1, as on the sheet.
+- **Positions** are records of `DS-06` to `DS-09`, whose `id` is the
+  `position_id`. **Option charges** are records of `DS-10`, whose `id` is
+  the risk class.
+- **An input key** is the field's name with the suffix of its unit, unless
+  the name already ends in one: `position_value_amount`, `coupon_rate`,
+  `currency_code`, `direction_code`, `final_maturity_date`, `issue_id`.
+  A quantity of `DS-08` is `quantity_count`, a whole number: a fixture
+  cannot hold a fractional quantity.
+- **Every other parameter**, and the tables `DS-03` and `DS-04`, have their
+  reference values: a fixture cannot change them. A what-if on a parameter
+  is not a test case.
+- A result per currency is scoped to a record of `DS-05`, and a result per
+  risk class to a record of `DS-10`.
 
 A dataset's identifier field is its required `text` field whose name ends in
 `_id`, such as the illustrative `position_id`. A dataset whose records a
@@ -458,4 +483,6 @@ no portfolio.
 | 2026-11-16 | The contract accepts what the engine accepts: a code without regard to case and without the blanks at its ends, and any currency that `DS-05` lists | The inputs are typed by hand, and rejecting ` eur` would add findings without removing a risk. The types of the field tables are what a fixture holds | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |
 | 2026-11-16 | An unsupported instrument entered as a supported one is a stated limit; `instrument` has allowed values, and gold is never a commodity | No field can make the workbook recognise what is entered under another name. What a field can exclude, the engine is to reject | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19), [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
 | 2026-11-16 | A position sheet holds at most 500 rows, and a run on more is to stop | The sheets, the formula workbook and the comparison cover 500 rows; results beyond them would have no format and no check | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19), [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
+| 2026-11-16 | `DS-05` and `DS-10` have an identifier field, `currency_id` and `risk_class_id`, and the rate of `DS-05` is `fx_rate`; the amount of `DS-09` is `net_position` | A fixture lists the FX rates as records, and a result per currency or per risk class needs a record to be scoped to. A fixture's key needs a unit suffix, which `amount` alone cannot take | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
+| 2026-11-16 | A fixture gives the reporting date and currency, the FX rates, the positions and the option charges; every other parameter has its reference value | The cases test the rules of `SRC-02`. A changed parameter is a what-if, which the workbook reports and no case needs | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | The project's datasets are numbered from `DS-02` | `DS-01` is the illustrative dataset, which the illustrative test cases still use, and an ID is never reused | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |

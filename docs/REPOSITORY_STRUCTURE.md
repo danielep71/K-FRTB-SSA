@@ -30,9 +30,9 @@ them are already set in `.gitattributes`, `.editorconfig` and `.gitignore`.
 | `src/forms/` | UserForms, each `.frm` with its `.frx` | Reserved |
 | `tests/` | Python tests of the repository tooling (`test_*.py`) | Present |
 | `tests/modules/` | VBA test modules: the [test harness](methodology/TEST_HARNESS.md), its example suite, relation tests, case runners and volume benchmarks | Present, with the harness, the example suite, the illustrative relation tests and `TEST_Suite`, the prototype's tests, which have their own runner |
-| `tests/fixtures/`, `tests/expected/` | Synthetic inputs and expected results in the [test-case format](methodology/TEST_CASES.md) | Present, with one illustrative case of each form |
-| `tests/derivations/` | Scripts that compute expected values from the documented method ([derivation scripts](methodology/TEST_CASES.md#derivation-scripts)) | Present, with one illustrative script for each case |
-| `tests/accuracy/` | The [accuracy contracts](methodology/TEST_CASES.md#accuracy-contracts) of the calculations | Present, with the illustrative draft contract `ACC-01` |
+| `tests/fixtures/`, `tests/expected/` | Synthetic inputs and expected results in the [test-case format](methodology/TEST_CASES.md) | Present: the project's 18 cases, and one illustrative case of each form |
+| `tests/derivations/` | Scripts that compute expected values from the documented method ([derivation scripts](methodology/TEST_CASES.md#derivation-scripts)) | Present: `ssa.py`, which derives the values of the project's cases, and one illustrative script for each illustrative case |
+| `tests/accuracy/` | The [accuracy contracts](methodology/TEST_CASES.md#accuracy-contracts) of the calculations | Present, with the illustrative draft contract `ACC-01`. The project has none yet: a contract's results are recorded by a suite of the test harness |
 | `tests/independent/` | The adapters that run an [independent implementation](methodology/TEST_CASES.md#independent-implementations) on the test cases, and their registry `adapters.json` | Reserved |
 | `tools/` | Repository checks, setup and build tooling, in Python; `tools/devbuild/` builds a workbook from source ([building a workbook from source](../INSTALLATION.md#building-a-workbook-from-source)); `tools/prototype/` writes the template and the formula workbook, holds the sample data with their Python re-calculation, and compares the engine with the formula workbook in LibreOffice | Present |
 | `examples/modules/` | Synthetic VBA examples that use only the supported API | Reserved |

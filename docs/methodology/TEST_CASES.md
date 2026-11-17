@@ -40,7 +40,31 @@ two forms:
 
 `illustrative-format-example` and `illustrative-file-import-example` show the
 two forms and hold no regulatory value. They use the illustrative entries of
-the methodology guides; remove them when you replace those.
+the methodology guides; remove them when you replace those. Here they stay
+until the example suite of the test harness, which reads them, is replaced
+([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)).
+
+The project's cases are 18 JSON fixtures, on the calculations `CALC-02` to
+`CALC-08`:
+
+| Cases | Category | Expected values |
+| --- | --- | --- |
+| `mar40-61-table-9` | `nominal` | `published`: the overall net open position and the requirement of the example of table 9 of MAR40.61 of `SRC-02`. Its other values are `illustrative` |
+| `illustrative-sample-…`, six cases, and `illustrative-option-charges` | `nominal` | `illustrative`: the template's sample portfolio, one case per calculation |
+| `illustrative-ir-time-band-limits`, `illustrative-ir-specific-risk-maturity-limits`, `illustrative-eq-matched-positions`, `illustrative-co-matched-positions`, `illustrative-fx-one-sided-positions`, `illustrative-requirement-fx-and-options-only` | `boundary` | `illustrative`: the limits of the bands, positions that offset in full, a zero amount, a risk class without positions |
+| `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break |
+
+`tests/derivations/ssa.py` computes every expected value from the
+calculation contracts, and `python3 tools/prototype/run_cases.py` runs the
+cases on the engine in LibreOffice and looks each expected value up in the
+workbook. Neither validates a rule: the first is the project's own
+derivation, and LibreOffice is not a supported host.
+
+No [accuracy contract](#accuracy-contracts) covers a calculation of the
+project yet. A contract's results are those a suite of the test harness
+records in an Excel run, and the prototype's tests do not run under the
+harness yet
+([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)).
 
 <a id="fixture-format"></a>
 
