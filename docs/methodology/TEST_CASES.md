@@ -40,9 +40,10 @@ two forms:
 
 `illustrative-format-example` and `illustrative-file-import-example` show the
 two forms and hold no regulatory value. They use the illustrative entries of
-the methodology guides; remove them when you replace those. Here they stay
-until the example suite of the test harness, which reads them, is replaced
-([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)).
+the methodology guides; remove them when you replace those. Here they stay:
+the example suite of the test harness reads them, and I keep that suite as
+the test of the harness itself
+([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
 The project's cases are 18 JSON fixtures, on the calculations `CALC-02` to
 `CALC-08`:
@@ -62,8 +63,8 @@ derivation, and LibreOffice is not a supported host.
 
 No [accuracy contract](#accuracy-contracts) covers a calculation of the
 project yet. A contract's results are those a suite of the test harness
-records in an Excel run, and the prototype's tests do not run under the
-harness yet
+records in an Excel run, and no suite runs the project's cases yet: the two
+suites of the project hold their own inputs
 ([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)).
 
 <a id="fixture-format"></a>

@@ -9,7 +9,26 @@
     "expected_cases": 14,
     "expected_assertions": 34
   },
-  "suites": [],
+  "suites": [
+    {
+      "name": "core",
+      "source": "tests/modules/TEST_Suite.bas",
+      "certification_entry_point": "CertifyCore",
+      "expected_cases": 11,
+      "expected_assertions": 90,
+      "log": "core.log",
+      "certification_log": "core-certification.log"
+    },
+    {
+      "name": "workbook",
+      "source": "tests/modules/TEST_Workbook.bas",
+      "certification_entry_point": "CertifyWorkbook",
+      "expected_cases": 3,
+      "expected_assertions": 34,
+      "log": "workbook.log",
+      "certification_log": "workbook-certification.log"
+    }
+  ],
   "modes": [
     {"mode": "NORMAL", "log": "examples.log", "must_pass": true},
     {"mode": "INJECTED_FAILURE", "log": "injected.log", "must_pass": false},

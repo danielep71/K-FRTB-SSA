@@ -3,40 +3,52 @@ Attribute VB_Name = "TEST_Suite"
 ' MODULE: TEST_Suite
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Unit tests of the K-FRTB-SSA core and facade on hand-checked cases, and
-'   tests of the whole workbook on the shipped sample data: a regression of
-'   its results, runs that fail and inputs changed after a run.
+'   The core suite of the workbook's tests: the K-FRTB-SSA core and facade
+'   on hand-checked inputs, as cases and assertions of TEST_Harness. No case
+'   reads or writes a sheet; the tests of the whole workbook are in
+'   TEST_Workbook.
 '
 ' PUBLIC SURFACE
-'   Test_RunAll (core, facade and workbook), Test_RunCore (no workbook
-'   access). Never part of the production import set.
+'   RunCoreTests is the documented test entry point. Test_RunCore runs the
+'   same suite and returns its result line where a caller cannot read an
+'   error, as tools/devbuild/lo_macro.py. CertifyCore certifies the run and
+'   saves its log and its certification log as evidence of an Excel run.
+'   Option Private Module keeps them out of the workbook's external surface.
+'   Never part of the production import set.
 '
 ' DEPENDENCIES
-'   CORE_Config, CORE_Util, CORE_Parameters, CORE_InterestRate,
-'   CORE_Equity, CORE_Commodity, CORE_ForeignExchange, FRTBSSA_Formulas, and
-'   M_Main for the workbook test.
+'   TEST_Harness; CORE_Config, CORE_Util, CORE_Parameters,
+'   CORE_InterestRate, CORE_Equity, CORE_Commodity, CORE_ForeignExchange and
+'   FRTBSSA_Formulas.
 '
 ' STATE OWNERSHIP
-'   mPassed, mFailed and mReport accumulate one run's results. The workbook
-'   tests run RunSSA_Silent, which rewrites the output sheets; two of them
-'   change a cell or a workbook name for one operation and put it back.
+'   None of its own. The harness holds the run's state.
 '
 ' ERROR POLICY
-'   An unexpected error inside a test is recorded as a failure of that
-'   test; the run continues.
+'   As TEST_Harness.EndRun: a run that does not pass raises ERR_TEST_FAILED,
+'   or the unexpected error that escaped the runner. A refused start raises
+'   TEST_Harness.ERR_TEST_DIRTY_START. An unexpected error inside a case is
+'   recorded as a failure of that case, and the run continues. Test_RunCore
+'   contains those errors; CertifyCore records them, saves the log, and
+'   raises only when the certification did not pass.
+'
+' USAGE
+'   In a development workbook, type TEST_Suite.RunCoreTests in the Immediate
+'   window. To record an Excel run, type
+'   TEST_Suite.CertifyCore "<folder>", "<checkout>\tests\fixtures"
+'   (INSTALLATION.md, Recording an Excel run).
 '
 ' COMPATIBILITY
-'   Excel VBA; also runs under LibreOffice's VBA mode through the harness
-'   in tools/.
+'   Excel VBA; also runs under LibreOffice's VBA mode through the tools of
+'   tools/devbuild/, which is never Excel evidence.
 '
 ' REFERENCE
-'   Expected values: hand calculation (stated in each test), MAR40.61
-'   Table 9, and tools/prototype/ssa_reference.py for the sample data. The
-'   fingerprints of CheckFingerprint were calculated apart from the VBA
-'   code, from the rule its header states.
+'   Expected values: hand calculation, stated in each case, and MAR40.61
+'   table 9. The fingerprints of CaseFingerprint were calculated apart from
+'   the VBA code, from the rule its header states.
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-17
 '
 ' AUTHOR
 '   Daniele Penza
@@ -52,50 +64,41 @@ Attribute VB_Name = "TEST_Suite"
 '------------------------------------------------------------------------------
 ' MODULE CONSTANTS
 '------------------------------------------------------------------------------
-        Private Const TOLERANCE          As Double = 0.000001    'Absolute tolerance
-        Private Const SAMPLE_REQUIREMENT As Double = 48267441#   'Sample data, ssa_reference.py
-        Private Const SAMPLE_RWA         As Double = 603343012.5 'Sample data, ssa_reference.py
-        Private Const SAMPLE_POSITIONS   As Long = 35            'Sample rows with status OK
-
-'------------------------------------------------------------------------------
-' MODULE STATE
-'------------------------------------------------------------------------------
-        Private mPassed      As Long      'Assertions passed
-        Private mFailed      As Long      'Assertions failed
-        Private mReport      As String    'Failure messages
+    'A complete run starts every case and evaluates every assertion once.
+        Private Const SUITE_NAME          As String = "core"
+        Private Const EXPECTED_CASES      As Long = 11
+        Private Const EXPECTED_ASSERTIONS As Long = 90
+    'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
+    'Decisions).
+        Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
+        Private Const TOL_RELATIVE        As Double = 0.000000001   'Relative tolerance
 
 
+
 '------------------------------------------------------------------------------
-'                                    RUNNERS
+'                                 ENTRY POINTS
 '------------------------------------------------------------------------------
 
-Public Function Test_RunAll() As String
+Public Sub RunCoreTests()
 '
 '==============================================================================
-'                                  Test_RunAll
+'                                 RunCoreTests
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Run every test, including the workbook regression.
+'   Run the core suite. A passing run ends with
+'   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
+'   cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE.
 '
-' RETURNS
-'   "PASS=n; FAIL=m" followed by one line per failure.
-'
-' STATE OWNERSHIP
-'   Rewrites the output sheets through RunSSA_Silent.
+' ERROR POLICY
+'   As TEST_Harness.EndRun: raises when the run does not pass.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-        ResetResults
-        RunCoreTests
-        RunTest "FailedRun"
-        RunTest "OutdatedResults"
-        RunTest "Workbook"
-        Test_RunAll = ResultLine()
-        Debug.Print Test_RunAll
+        RunSuite
 
-End Function
+End Sub
 
 
 Public Function Test_RunCore() As String
@@ -104,206 +107,256 @@ Public Function Test_RunCore() As String
 '                                 Test_RunCore
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Run the core and facade tests only; the workbook is not touched.
+'   Run the core suite for a caller that reads a result and not an error.
 '
 ' RETURNS
-'   "PASS=n; FAIL=m" followed by one line per failure.
+'   The RESULT line of the run, as TEST_Harness.LastResult gives it.
+'
+' ERROR POLICY
+'   Contains the error of a run that does not pass, or of a refused start:
+'   the result line says so.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-        ResetResults
-        RunCoreTests
-        Test_RunCore = ResultLine()
-        Debug.Print Test_RunCore
+        On Error Resume Next
+        RunSuite
+        On Error GoTo 0
+        Test_RunCore = TEST_Harness.LastResult()
 
 End Function
 
 
-Private Sub RunCoreTests()
+Public Sub CertifyCore( _
+    ByVal Folder As String, _
+    ByVal Fixtures As String)
 '
 '==============================================================================
-'                                 RunCoreTests
+'                                  CertifyCore
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Run each core and facade test.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-        RunTest "TimeBand"
-        RunTest "LadderCharges"
-        RunTest "ForeignExchange"
-        RunTest "Equity"
-        RunTest "Commodity"
-        RunTest "InterestRateRows"
-        RunTest "IssueNetting"
-        RunTest "DateBounds"
-        RunTest "Parameters"
-        RunTest "Facade"
-        RunTest "Fingerprint"
-
-End Sub
-
-
-Private Sub RunTest( _
-    ByVal TestName As String)
-'
-'==============================================================================
-'                                    RunTest
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Run one test by name, recording an unexpected error as a failure.
+'   Certify the core suite's run as evidence of an Excel run: run it, save
+'   its log as core.log, and write core-certification.log.
 '
 ' INPUTS
-'   TestName   Name of the test procedure without the "Check" prefix.
+'   Folder: an existing folder for the logs, without a trailing separator.
+'   Fixtures: the full path of tests/fixtures/ in the checkout; not read,
+'   and taken so that every certification entry point has the same two
+'   arguments.
 '
 ' ERROR POLICY
-'   Contains any error raised by the test and records it.
+'   The error of the run is recorded, not raised, so that the log is always
+'   saved. Raises ERR_TEST_FAILED after writing the certification log when
+'   the certification did not pass. An error of BeginCertification or
+'   SaveLog propagates; run TEST_Harness.ResetTests before trying again.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-        On Error GoTo Failed
-        Select Case TestName
-            Case "TimeBand": CheckTimeBand
-            Case "LadderCharges": CheckLadderCharges
-            Case "ForeignExchange": CheckForeignExchange
-            Case "Equity": CheckEquity
-            Case "Commodity": CheckCommodity
-            Case "InterestRateRows": CheckInterestRateRows
-            Case "IssueNetting": CheckIssueNetting
-            Case "DateBounds": CheckDateBounds
-            Case "Parameters": CheckParameters
-            Case "Facade": CheckFacade
-            Case "Fingerprint": CheckFingerprint
-            Case "FailedRun": CheckFailedRun
-            Case "OutdatedResults": CheckOutdatedResults
-            Case "Workbook": CheckWorkbook
-        End Select
-        Exit Sub
+    Dim RunErrorNumber        As Long     'Error that ended the run; 0 for none
+    Dim RunErrorDescription   As String   'Its description
 
-Failed:
-        Record False, TestName & ": unexpected error " & Err.Number & " " & Err.Description
+        TEST_Harness.BeginCertification SUITE_NAME
+        On Error Resume Next
+        RunSuite
+        RunErrorNumber = Err.Number
+        RunErrorDescription = Err.Description
+        On Error GoTo 0
+        TEST_Harness.SaveLog Folder & "\core.log"
+        TEST_Harness.Echo "SAVED=" & Folder & "\core.log; mode=NORMAL; error=" & _
+            CStr(RunErrorNumber) & IIf(RunErrorNumber = 0, vbNullString, " " & RunErrorDescription)
+        TEST_Harness.CertifyRun "NORMAL", True, RunErrorNumber, RunErrorDescription
+        TEST_Harness.EndCertification Folder & "\core-certification.log"
 
 End Sub
 
 
 '------------------------------------------------------------------------------
-'                                     TESTS
+'                                    RUNNER
 '------------------------------------------------------------------------------
 
-Private Sub CheckTimeBand()
+Private Sub RunSuite()
 '
 '==============================================================================
-'                                 CheckTimeBand
+'                                   RunSuite
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Band boundaries of MAR40.26 Table 4 (upper bounds inclusive).
+'   Run every case in a fixed order between BeginRun and EndRun.
+'
+' ERROR POLICY
+'   An error escaping a case handler is passed to EndRun, which reports it
+'   and re-raises it unchanged. BeginRun's refusal propagates directly.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Ladder()    As Double    'MAR40 ladder
+    Dim ErrNumber        As Long     'Runner error number; 0 for none
+    Dim ErrSource        As String   'Runner error source
+    Dim ErrDescription   As String   'Runner error description
 
-        ReferenceLadder Ladder
-        AssertNear "TimeBand 0y", TimeBand(0#, True, Ladder), 1
-        AssertNear "TimeBand 1 month", TimeBand(1# / 12#, True, Ladder), 1
-        AssertNear "TimeBand 1 month + 1 day", TimeBand(1# / 12# + 1# / 365#, True, Ladder), 2
-        AssertNear "TimeBand 1y high", TimeBand(1#, True, Ladder), 4
-        AssertNear "TimeBand 1.5y high", TimeBand(1.5, True, Ladder), 5
-        AssertNear "TimeBand 20y high", TimeBand(20#, True, Ladder), 12
-        AssertNear "TimeBand 25y high", TimeBand(25#, True, Ladder), 13
-        AssertNear "TimeBand 1.95y low", TimeBand(1.95, False, Ladder), 6
-        AssertNear "TimeBand 12y low", TimeBand(12#, False, Ladder), 13
-        AssertNear "TimeBand 25y low", TimeBand(25#, False, Ladder), 15
+        TEST_Harness.BeginRun SUITE_NAME, "NORMAL", EXPECTED_CASES, EXPECTED_ASSERTIONS
+        On Error GoTo RunFailed
+        CaseTimeBand
+        CaseLadderCharges
+        CaseForeignExchange
+        CaseEquity
+        CaseCommodity
+        CaseInterestRateRows
+        CaseIssueNetting
+        CaseDateBounds
+        CaseParameters
+        CaseFacade
+        CaseFingerprint
+
+Finish:
+        On Error GoTo 0
+        TEST_Harness.EndRun ErrNumber, ErrSource, ErrDescription
+        Exit Sub
+
+RunFailed:
+        ErrNumber = Err.Number
+        ErrSource = Err.Source
+        ErrDescription = Err.Description
+        Resume Finish
 
 End Sub
 
 
-Private Sub CheckLadderCharges()
+'------------------------------------------------------------------------------
+'                                     CASES
+'------------------------------------------------------------------------------
+
+Private Sub CaseTimeBand()
 '
 '==============================================================================
-'                              CheckLadderCharges
+'                                 CaseTimeBand
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Band boundaries of MAR40.26 table 4: an upper bound belongs to its band.
+'
+' UPDATED
+'   2026-11-17
+'==============================================================================
+'
+    Dim Ladder()   As Double   'MAR40 ladder
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "time-band"
+        ReferenceLadder Ladder
+        TEST_Harness.AssertEqualDouble "at-zero", 1, TimeBand(0#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "at-one-month", 1, TimeBand(1# / 12#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "one-day-after-one-month", 2, _
+            TimeBand(1# / 12# + 1# / 365#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "one-year-high-coupon", 4, TimeBand(1#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "one-and-a-half-years-high-coupon", 5, _
+            TimeBand(1.5, True, Ladder)
+        TEST_Harness.AssertEqualDouble "twenty-years-high-coupon", 12, TimeBand(20#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "twenty-five-years-high-coupon", 13, TimeBand(25#, True, Ladder)
+        TEST_Harness.AssertEqualDouble "one-point-nine-five-years-low-coupon", 6, _
+            TimeBand(1.95, False, Ladder)
+        TEST_Harness.AssertEqualDouble "twelve-years-low-coupon", 13, TimeBand(12#, False, Ladder)
+        TEST_Harness.AssertEqualDouble "twenty-five-years-low-coupon", 15, TimeBand(25#, False, Ladder)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+
+Private Sub CaseLadderCharges()
+'
+'==============================================================================
+'                               CaseLadderCharges
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   General market risk of hand-calculated ladders.
 '
 ' REFERENCE
-'   Case A: band 4 long 100 / short 60, band 6 short 50, band 10 long 80.
+'   Ladder A: band 4 long 100 / short 60, band 6 short 50, band 10 long 80.
 '   Vertical 10% x 60 = 6; zones +40, -50, +80; offset 1-2 = 40, 2-3 = 10,
 '   1-3 = 0; between 40% x 50 = 20; net |70| = 70; total 96.
-'   Case B: band 1 long 10, band 2 short 4: within zone 1, 40% x 4 = 1.6;
+'   Ladder B: band 1 long 10, band 2 short 4: within zone 1, 40% x 4 = 1.6;
 '   net 6; total 7.6.
-'   Case C: band 3 long 30, band 12 short 50: offset 1-3 = 30 at 100%;
+'   Ladder C: band 3 long 30, band 12 short 50: offset 1-3 = 30 at 100%;
 '   net 20; total 50.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Ladder()     As Double    'MAR40 ladder
-    Dim Parameters() As Double    'MAR40 parameters
-    Dim Longs()      As Double    'Weighted longs
-    Dim Shorts()     As Double    'Weighted shorts
-    Dim Components() As Double    'Result
+    Dim Ladder()       As Double   'MAR40 ladder
+    Dim Parameters()   As Double   'MAR40 parameters
+    Dim Longs()        As Double   'Weighted longs
+    Dim Shorts()       As Double   'Weighted shorts
+    Dim Components()   As Double   'Result
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "ladder-charges"
         ReferenceLadder Ladder
         ReferenceParameters Parameters
         ReDim Longs(1 To BAND_COUNT)
         ReDim Shorts(1 To BAND_COUNT)
         Longs(4) = 100: Shorts(4) = 60: Shorts(6) = 50: Longs(10) = 80
         LadderCharges Longs, Shorts, Ladder, Parameters, Components
-        AssertNear "Ladder A vertical", Components(ZC_VERTICAL), 6
-        AssertNear "Ladder A between", Components(ZC_BETWEEN), 20
-        AssertNear "Ladder A net", Components(ZC_NET), 70
-        AssertNear "Ladder A total", Components(ZC_GENERAL), 96
+        TEST_Harness.AssertNear "a-vertical", 6, Components(ZC_VERTICAL), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "a-between-zones", 20, _
+            Components(ZC_BETWEEN), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "a-net", 70, Components(ZC_NET), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "a-total", 96, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
 
         ReDim Longs(1 To BAND_COUNT)
         ReDim Shorts(1 To BAND_COUNT)
         Longs(1) = 10: Shorts(2) = 4
         LadderCharges Longs, Shorts, Ladder, Parameters, Components
-        AssertNear "Ladder B zone 1 charge", Components(ZC_ZONE_FIRST + 3), 1.6
-        AssertNear "Ladder B total", Components(ZC_GENERAL), 7.6
+        TEST_Harness.AssertNear "b-within-zone-1", 1.6, _
+            Components(ZC_ZONE_FIRST + 3), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "b-total", 7.6, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
 
         ReDim Longs(1 To BAND_COUNT)
         ReDim Shorts(1 To BAND_COUNT)
         Longs(3) = 30: Shorts(12) = 50
         LadderCharges Longs, Shorts, Ladder, Parameters, Components
-        AssertNear "Ladder C offset 1-3", Components(ZC_MATCHED13), 30
-        AssertNear "Ladder C total", Components(ZC_GENERAL), 50
+        TEST_Harness.AssertNear "c-matched-zones-1-and-3", 30, _
+            Components(ZC_MATCHED13), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "c-total", 50, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckForeignExchange()
+Private Sub CaseForeignExchange()
 '
 '==============================================================================
-'                             CheckForeignExchange
+'                              CaseForeignExchange
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   MAR40.61 Table 9 at rate 1, plus an excluded and a duplicate row.
+'   MAR40.61 table 9 at rate 1, plus an excluded and a duplicate row.
 '
 ' REFERENCE
 '   Table 9: longs 50 + 100 + 150 = 300, shorts 20 + 180 = 200, gold 35;
 '   charge 8% x (300 + 35) = 26.8.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()        As Variant   'FXPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim RowOutput()   As Variant   'FXCalc
-    Dim Currencies()  As Variant   'Buckets FX block
-    Dim Totals()      As Double    'Totals
+    Dim InputRows()    As Variant   'FXPositions cells
+    Dim FxCodes()      As String    'FX table codes
+    Dim FxRates()      As Double    'FX table rates
+    Dim Parameters()   As Double    'MAR40 parameters
+    Dim RowOutput()    As Variant   'FXCalc
+    Dim Currencies()   As Variant   'Buckets FX block
+    Dim Totals()       As Double    'Totals
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "foreign-exchange"
         ReferenceParameters Parameters
         FxTable "EUR|CAD|SEK|GBP|NOK|USD|XAU", FxCodes, FxRates
         InputRows = RowsFrom(FX_INPUT_WIDTH, Array( _
@@ -318,45 +371,55 @@ Private Sub CheckForeignExchange()
             Array("f8", "", "USD", "Long", 1)))
         CalculateForeignExchange InputRows, Parameters, FxCodes, FxRates, "EUR", "XAU", _
                                  RowOutput, Currencies, Totals
-        AssertNear "FX sum of longs", Totals(TOT_LONG), 300
-        AssertNear "FX sum of shorts", Totals(TOT_SHORT), 200
-        AssertNear "FX gold", Totals(TOT_GOLD), 35
-        AssertNear "FX overall net open position", Totals(TOT_ONOP), 335
-        AssertNear "FX charge (Table 9)", Totals(TOT_GENERAL), 26.8
-        AssertNear "FX rows used", Totals(TOT_USED), 6
-        AssertNear "FX rows excluded", Totals(TOT_EXCLUDED), 1
-        AssertNear "FX rows rejected", Totals(TOT_REJECTED), 2
-        AssertText "FX reporting-currency status", CStr(RowOutput(7, 2)), _
-                   ST_EXCLUDED & "reporting currency carries no FX risk"
-        AssertText "FX duplicate status", CStr(RowOutput(9, 2)), ST_INVALID & "duplicate PositionID"
+        TEST_Harness.AssertNear "sum-of-longs", 300, Totals(TOT_LONG), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "sum-of-shorts", 200, Totals(TOT_SHORT), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "gold", 35, Totals(TOT_GOLD), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "overall-net-open-position", 335, _
+            Totals(TOT_ONOP), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "charge-of-table-9", 26.8, _
+            Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "rows-used", 6, Totals(TOT_USED)
+        TEST_Harness.AssertEqualDouble "rows-excluded", 1, Totals(TOT_EXCLUDED)
+        TEST_Harness.AssertEqualDouble "rows-rejected", 2, Totals(TOT_REJECTED)
+        TEST_Harness.AssertEqualText "reporting-currency-status", _
+            ST_EXCLUDED & "reporting currency carries no FX risk", CStr(RowOutput(7, 2))
+        TEST_Harness.AssertEqualText "duplicate-status", _
+            ST_INVALID & "duplicate PositionID", CStr(RowOutput(9, 2))
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckEquity()
+Private Sub CaseEquity()
 '
 '==============================================================================
-'                                  CheckEquity
+'                                  CaseEquity
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Netting of the same stock (case-insensitive) and index treatment.
+'   Netting of the same stock, whatever the case of its codes, and the
+'   treatment of an index.
 '
 ' REFERENCE
 '   Stock X: +100 - 40 = 60, specific 8% x 60 = 4.8; index +50, 2% = 1;
 '   general 8% x |60 + 50| = 8.8 (MAR40.43, 40.46, 40.47).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()        As Variant   'EQPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim RowOutput()   As Variant   'EQCalc
-    Dim Markets()     As Variant   'Buckets equity block
-    Dim Totals()      As Double    'Totals
+    Dim InputRows()    As Variant   'EQPositions cells
+    Dim FxCodes()      As String    'FX table codes
+    Dim FxRates()      As Double    'FX table rates
+    Dim Parameters()   As Double    'MAR40 parameters
+    Dim RowOutput()    As Variant   'EQCalc
+    Dim Markets()      As Variant   'Buckets equity block
+    Dim Totals()       As Double    'Totals
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "equity"
         ReferenceParameters Parameters
         FxTable "EUR|XAU", FxCodes, FxRates
         InputRows = RowsFrom(EQ_INPUT_WIDTH, Array( _
@@ -366,21 +429,27 @@ Private Sub CheckEquity()
             Array("E4", "", "IT", "Basket", "B", "EUR", "Long", 50), _
             Array("E5", "", "IT", "Single name", "Y", "XAU", "Long", 50)))
         CalculateEquity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, Markets, Totals
-        AssertNear "EQ specific", Totals(TOT_SPECIFIC), 4.8
-        AssertNear "EQ index", Totals(TOT_OTHER), 1
-        AssertNear "EQ general", Totals(TOT_GENERAL), 8.8
-        AssertNear "EQ markets", Totals(TOT_BUCKETS), 1
-        AssertNear "EQ rejected", Totals(TOT_REJECTED), 2
-        AssertText "EQ type status", CStr(RowOutput(4, 2)), ST_INVALID & "Type must be Single name or Index"
-        AssertText "EQ gold status", CStr(RowOutput(5, 2)), ST_INVALID & "currency not in FX_Table"
+        TEST_Harness.AssertNear "specific", 4.8, Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "index", 1, Totals(TOT_OTHER), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "general", 8.8, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "markets", 1, Totals(TOT_BUCKETS)
+        TEST_Harness.AssertEqualDouble "rows-rejected", 2, Totals(TOT_REJECTED)
+        TEST_Harness.AssertEqualText "type-status", _
+            ST_INVALID & "Type must be Single name or Index", CStr(RowOutput(4, 2))
+        TEST_Harness.AssertEqualText "gold-currency-status", _
+            ST_INVALID & "currency not in FX_Table", CStr(RowOutput(5, 2))
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckCommodity()
+Private Sub CaseCommodity()
 '
 '==============================================================================
-'                                CheckCommodity
+'                                 CaseCommodity
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Simplified approach on one commodity entered in two cases.
@@ -389,36 +458,44 @@ Private Sub CheckCommodity()
 '   Oil +100, -30 at spot: 15% x 70 = 10.5; 3% x 130 = 3.9 (MAR40.72-40.73).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()        As Variant   'COPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim RowOutput()   As Variant   'COCalc
-    Dim Commodities() As Variant   'Buckets commodity block
-    Dim Totals()      As Double    'Totals
+    Dim InputRows()     As Variant   'COPositions cells
+    Dim FxCodes()       As String    'FX table codes
+    Dim FxRates()       As Double    'FX table rates
+    Dim Parameters()    As Double    'MAR40 parameters
+    Dim RowOutput()     As Variant   'COCalc
+    Dim Commodities()   As Variant   'Buckets commodity block
+    Dim Totals()        As Double    'Totals
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "commodity"
         ReferenceParameters Parameters
         FxTable "EUR|XAU", FxCodes, FxRates
         InputRows = RowsFrom(CO_INPUT_WIDTH, Array( _
             Array("C1", "", "Oil", "Long", 10, "bbl", 10, "EUR"), _
             Array("C2", "", "OIL ", "Short", 3, "bbl", 10, "EUR"), _
             Array("C3", "", "Oil", "Long", "ten", "bbl", 10, "EUR")))
-        CalculateCommodity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, Commodities, Totals
-        AssertNear "CO directional", Totals(TOT_GENERAL), 10.5
-        AssertNear "CO gross", Totals(TOT_OTHER), 3.9
-        AssertNear "CO commodities", Totals(TOT_BUCKETS), 1
-        AssertText "CO quantity status", CStr(RowOutput(3, 2)), ST_INVALID & "Quantity must be a number"
+        CalculateCommodity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, Commodities, _
+                           Totals
+        TEST_Harness.AssertNear "directional", 10.5, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "gross", 3.9, Totals(TOT_OTHER), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "commodities", 1, Totals(TOT_BUCKETS)
+        TEST_Harness.AssertEqualText "quantity-status", _
+            ST_INVALID & "Quantity must be a number", CStr(RowOutput(3, 2))
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckInterestRateRows()
+Private Sub CaseInterestRateRows()
 '
 '==============================================================================
-'                             CheckInterestRateRows
+'                             CaseInterestRateRows
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Row validation, slotting and specific risk of interest rate rows.
@@ -429,23 +506,25 @@ Private Sub CheckInterestRateRows()
 '   16,000 (MAR40.6, 40.26).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()        As Variant   'IRPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim Ladder()      As Double    'MAR40 ladder
-    Dim Labels()      As String    'Ladder labels
-    Dim SrKeys()      As String    'Specific-risk keys
-    Dim SrCharges()   As Double    'Specific-risk charges
-    Dim RowOutput()   As Variant   'IRCalc
-    Dim LadderOutput() As Variant  'IR_Ladder
-    Dim ZoneOutput()  As Variant   'IR_Zones
-    Dim Totals()      As Double    'Totals
-    Dim AsOfDate      As Double    'Reporting date
+    Dim InputRows()      As Variant   'IRPositions cells
+    Dim FxCodes()        As String    'FX table codes
+    Dim FxRates()        As Double    'FX table rates
+    Dim Parameters()     As Double    'MAR40 parameters
+    Dim Ladder()         As Double    'MAR40 ladder
+    Dim Labels()         As String    'Ladder labels
+    Dim SrKeys()         As String    'Specific-risk keys
+    Dim SrCharges()      As Double    'Specific-risk charges
+    Dim RowOutput()      As Variant   'IRCalc
+    Dim LadderOutput()   As Variant   'IR_Ladder
+    Dim ZoneOutput()     As Variant   'IR_Zones
+    Dim Totals()         As Double    'Totals
+    Dim AsOfDate         As Double    'Reporting date
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "interest-rate-rows"
         ReferenceParameters Parameters
         ReferenceLadder Ladder
         ReDim Labels(1 To BAND_COUNT, 1 To 2)
@@ -468,29 +547,36 @@ Private Sub CheckInterestRateRows()
                   Empty, "GOV", "AAA to AA-", "")))
         CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
                               SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
-        AssertText "IR row 1 status", CStr(RowOutput(1, 2)), ST_OK
-        AssertNear "IR row 1 band", RowOutput(1, 9), 9
-        AssertNear "IR row 1 weighted", RowOutput(1, 12), 32500
-        AssertNear "IR row 1 specific", RowOutput(1, 20), 16000
-        AssertText "IR row 2 status", CStr(RowOutput(2, 2)), _
-                   ST_INVALID & "Coupon required for a fixed-rate position"
-        AssertText "IR row 3 status", CStr(RowOutput(3, 2)), _
-                   ST_INVALID & "repricing date outside AsOfDate to final maturity"
-        AssertText "IR row 4 status", CStr(RowOutput(4, 2)), _
-                   ST_INVALID & "no MAR40.6 charge for this category and rating grade"
-        AssertText "IR row 5 status", CStr(RowOutput(5, 2)), _
-                   ST_INVALID & "gold is FX risk; enter it on FXPositions"
-        AssertNear "IR specific total", Totals(TOT_SPECIFIC), 16000
-        AssertNear "IR general total (net 32,500)", Totals(TOT_GENERAL), 32500
-        AssertNear "IR rejected", Totals(TOT_REJECTED), 4
+        TEST_Harness.AssertEqualText "row-1-status", ST_OK, CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualDouble "row-1-band", 9, NumberOf(RowOutput(1, 9))
+        TEST_Harness.AssertNear "row-1-weighted", 32500, _
+            NumberOf(RowOutput(1, 12)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "row-1-specific", 16000, _
+            NumberOf(RowOutput(1, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualText "row-2-status", _
+            ST_INVALID & "Coupon required for a fixed-rate position", CStr(RowOutput(2, 2))
+        TEST_Harness.AssertEqualText "row-3-status", _
+            ST_INVALID & "repricing date outside AsOfDate to final maturity", CStr(RowOutput(3, 2))
+        TEST_Harness.AssertEqualText "row-4-status", _
+            ST_INVALID & "no MAR40.6 charge for this category and rating grade", CStr(RowOutput(4, 2))
+        TEST_Harness.AssertEqualText "row-5-status", _
+            ST_INVALID & "gold is FX risk; enter it on FXPositions", CStr(RowOutput(5, 2))
+        TEST_Harness.AssertNear "specific-total", 16000, _
+            Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "general-total", 32500, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "rows-rejected", 4, Totals(TOT_REJECTED)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckIssueNetting()
+Private Sub CaseIssueNetting()
 '
 '==============================================================================
-'                               CheckIssueNetting
+'                               CaseIssueNetting
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Specific-risk netting: rows net only through an entered Issue ID, and a
@@ -505,23 +591,25 @@ Private Sub CheckIssueNetting()
 '   so the three rows are flagged MIXED (MAR40.6).
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()   As Variant   'IRPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim Ladder()      As Double    'MAR40 ladder
-    Dim Labels()      As String    'Ladder labels
-    Dim SrKeys()      As String    'Specific-risk keys
-    Dim SrCharges()   As Double    'Specific-risk charges
-    Dim RowOutput()   As Variant   'IRCalc
-    Dim LadderOutput() As Variant  'IR_Ladder
-    Dim ZoneOutput()  As Variant   'IR_Zones
-    Dim Totals()      As Double    'Totals
-    Dim AsOfDate      As Double    'Reporting date
+    Dim InputRows()      As Variant   'IRPositions cells
+    Dim FxCodes()        As String    'FX table codes
+    Dim FxRates()        As Double    'FX table rates
+    Dim Parameters()     As Double    'MAR40 parameters
+    Dim Ladder()         As Double    'MAR40 ladder
+    Dim Labels()         As String    'Ladder labels
+    Dim SrKeys()         As String    'Specific-risk keys
+    Dim SrCharges()      As Double    'Specific-risk charges
+    Dim RowOutput()      As Variant   'IRCalc
+    Dim LadderOutput()   As Variant   'IR_Ladder
+    Dim ZoneOutput()     As Variant   'IR_Zones
+    Dim Totals()         As Double    'Totals
+    Dim AsOfDate         As Double    'Reporting date
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "issue-netting"
         ReferenceParameters Parameters
         ReferenceLadder Ladder
         ReDim Labels(1 To BAND_COUNT, 1 To 2)
@@ -544,64 +632,71 @@ Private Sub CheckIssueNetting()
                   Empty, "GOV", "AAA to AA-", "Iss9")))
         CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
                               SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
-        AssertText "Issue key without an Issue ID", CStr(RowOutput(1, 17)), "POS:R1"
-        AssertText "Issue key of an entered Issue ID", CStr(RowOutput(2, 17)), "R1"
-        AssertNear "Issue net, row without an Issue ID", RowOutput(1, 18), 1000000
-        AssertNear "Issue net, Issue ID equal to that PositionID", RowOutput(2, 18), -1000000
-        AssertNear "Specific risk, row without an Issue ID", RowOutput(1, 20), 16000
-        AssertNear "Specific risk, Issue ID equal to that PositionID", RowOutput(2, 20), 16000
-        AssertText "Issue key ignores case", CStr(RowOutput(3, 17)), "ISS9"
-        AssertNear "Issue net, same Issue ID in two cases", RowOutput(3, 18), 401000
-        AssertNear "Specific risk on the first row of the issue", RowOutput(3, 20), 6416
-        AssertNear "No specific risk on a later row of the issue", RowOutput(4, 20), 0
-        AssertNear "Rows of an issue that mixes SR keys", Totals(TOT_MIXED), 3
-        AssertNear "IR specific total, issue netting", Totals(TOT_SPECIFIC), 38416
-        AssertNear "IR rows used, issue netting", Totals(TOT_USED), 5
+        TEST_Harness.AssertEqualText "key-without-an-issue-id", "POS:R1", CStr(RowOutput(1, 17))
+        TEST_Harness.AssertEqualText "key-of-an-entered-issue-id", "R1", CStr(RowOutput(2, 17))
+        TEST_Harness.AssertNear "net-without-an-issue-id", 1000000, _
+            NumberOf(RowOutput(1, 18)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "net-of-issue-id-equal-to-that-position-id", -1000000, _
+            NumberOf(RowOutput(2, 18)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "specific-without-an-issue-id", 16000, _
+            NumberOf(RowOutput(1, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "specific-of-issue-id-equal-to-that-position-id", 16000, _
+            NumberOf(RowOutput(2, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualText "key-ignores-case", "ISS9", CStr(RowOutput(3, 17))
+        TEST_Harness.AssertNear "net-of-one-issue-id-in-two-cases", 401000, _
+            NumberOf(RowOutput(3, 18)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "specific-on-the-first-row-of-the-issue", 6416, _
+            NumberOf(RowOutput(3, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "no-specific-on-a-later-row-of-the-issue", 0, _
+            NumberOf(RowOutput(4, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "rows-of-an-issue-that-mixes-keys", 3, Totals(TOT_MIXED)
+        TEST_Harness.AssertNear "specific-total", 38416, _
+            Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "rows-used", 5, Totals(TOT_USED)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckDateBounds()
+Private Sub CaseDateBounds()
 '
 '==============================================================================
-'                                CheckDateBounds
+'                                CaseDateBounds
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   A number that is not the serial of a date is not a date: such a final
-'   maturity or next repricing date rejects its row and the run goes on,
-'   and such a reporting date is an unusable parameter.
-'
-' REFERENCE
-'   Row 1: maturity typed as the number 20311231, above the serial of 31
-'   December 9999 (2,958,465). Row 2: floating, repricing date typed as
-'   20290101. Row 3: maturity on 31 December 9999, the last date. Row 4:
-'   an ordinary row.
+'   A date typed as a number is not a date, on a row and as the reporting
+'   date; the last date Excel holds is one.
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-17
 '==============================================================================
 '
-    Dim InputRows()   As Variant   'IRPositions cells
-    Dim FxCodes()     As String    'FX table codes
-    Dim FxRates()     As Double    'FX table rates
-    Dim Parameters()  As Double    'MAR40 parameters
-    Dim Ladder()      As Double    'MAR40 ladder
-    Dim Labels()      As String    'Ladder labels
-    Dim SrKeys()      As String    'Specific-risk keys
-    Dim SrCharges()   As Double    'Specific-risk charges
-    Dim RowOutput()   As Variant   'IRCalc
-    Dim LadderOutput() As Variant  'IR_Ladder
-    Dim ZoneOutput()  As Variant   'IR_Zones
-    Dim Totals()      As Double    'Totals
-    Dim AsOfDate      As Double    'Reporting date
-    Dim Raw()         As Variant   'Raw numeric parameters
-    Dim Validated()   As Double    'Validated parameters
-    Dim Findings()    As String    'Findings
-    Dim FindingCount  As Long      'Findings in use
-    Dim ReportingCcy  As String    'Reporting currency
-    Dim GoldCode      As String    'Gold code
-    Dim i             As Long      'Parameter
+    Dim InputRows()      As Variant   'IRPositions cells
+    Dim FxCodes()        As String    'FX table codes
+    Dim FxRates()        As Double    'FX table rates
+    Dim Parameters()     As Double    'MAR40 parameters
+    Dim Ladder()         As Double    'MAR40 ladder
+    Dim Labels()         As String    'Ladder labels
+    Dim SrKeys()         As String    'Specific-risk keys
+    Dim SrCharges()      As Double    'Specific-risk charges
+    Dim RowOutput()      As Variant   'IRCalc
+    Dim LadderOutput()   As Variant   'IR_Ladder
+    Dim ZoneOutput()     As Variant   'IR_Zones
+    Dim Totals()         As Double    'Totals
+    Dim AsOfDate         As Double    'Reporting date
+    Dim Raw()            As Variant   'Raw numeric parameters
+    Dim Validated()      As Double    'Validated parameters
+    Dim Findings()       As String    'Findings
+    Dim FindingCount     As Long      'Findings in use
+    Dim ReportingCcy     As String    'Reporting currency
+    Dim GoldCode         As String    'Gold code
+    Dim i                As Long      'Parameter
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "date-bounds"
         ReferenceParameters Parameters
         ReferenceLadder Ladder
         ReDim Labels(1 To BAND_COUNT, 1 To 2)
@@ -621,128 +716,151 @@ Private Sub CheckDateBounds()
                   Empty, "GOV", "AAA to AA-", "")))
         CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
                               SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
-        AssertText "Maturity typed as a number is not a date", CStr(RowOutput(1, 2)), _
-                   ST_INVALID & "Final maturity date is not a date"
-        AssertText "Repricing date typed as a number is not a date", CStr(RowOutput(2, 2)), _
-                   ST_INVALID & "Next repricing date is not a date"
-        AssertText "Maturity on the last date is a date", CStr(RowOutput(3, 2)), ST_OK
-        AssertText "A row after a rejected date is used", CStr(RowOutput(4, 2)), ST_OK
-        AssertNear "IR rows used, date bounds", Totals(TOT_USED), 2
-        AssertNear "IR rows rejected, date bounds", Totals(TOT_REJECTED), 2
-
+        TEST_Harness.AssertEqualText "maturity-typed-as-a-number", _
+            ST_INVALID & "Final maturity date is not a date", CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualText "repricing-date-typed-as-a-number", _
+            ST_INVALID & "Next repricing date is not a date", CStr(RowOutput(2, 2))
+        TEST_Harness.AssertEqualText "maturity-on-the-last-date", ST_OK, CStr(RowOutput(3, 2))
+        TEST_Harness.AssertEqualText "row-after-a-rejected-date", ST_OK, CStr(RowOutput(4, 2))
+        TEST_Harness.AssertEqualDouble "rows-used", 2, Totals(TOT_USED)
+        TEST_Harness.AssertEqualDouble "rows-rejected", 2, Totals(TOT_REJECTED)
         ReDim Raw(1 To PI_COUNT)
         For i = 1 To PI_COUNT
             Raw(i) = Parameters(i)
         Next i
-        AssertNear "Reporting date typed as a number is unusable", _
+        TEST_Harness.AssertEqualDouble "reporting-date-typed-as-a-number", 1, _
             BuildParameters(Raw, 20260930, "EUR", "XAU", Validated, AsOfDate, _
-                            ReportingCcy, GoldCode, Findings, FindingCount), 1
-        AssertNear "Reporting date of zero is unusable", _
+                            ReportingCcy, GoldCode, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "reporting-date-of-zero", 1, _
             BuildParameters(Raw, 0, "EUR", "XAU", Validated, AsOfDate, _
-                            ReportingCcy, GoldCode, Findings, FindingCount), 1
-        AssertNear "Reporting date on the last date is usable", _
+                            ReportingCcy, GoldCode, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "reporting-date-on-the-last-date", 0, _
             BuildParameters(Raw, DATE_SERIAL_MAX, "EUR", "XAU", Validated, AsOfDate, _
-                            ReportingCcy, GoldCode, Findings, FindingCount), 0
+                            ReportingCcy, GoldCode, Findings, FindingCount)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckParameters()
+Private Sub CaseParameters()
 '
 '==============================================================================
-'                                CheckParameters
+'                                CaseParameters
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Unusable parameters are counted; a changed constant is detected; the
-'   FX table must list the reporting currency at rate 1.
+'   The reference parameters are valid and unchanged; an unusable value and
+'   a faulty FX table are counted.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Reference()   As Double    'MAR40 parameters
-    Dim Raw()         As Variant   'Raw numeric parameters
-    Dim RawFx()       As Variant   'Raw FX table
-    Dim Parameters()  As Double    'Validated parameters
-    Dim FxCodes()     As String    'FX codes
-    Dim FxRates()     As Double    'FX rates
-    Dim Findings()    As String    'Findings
-    Dim FindingCount  As Long      'Findings in use
-    Dim AsOfDate      As Double    'Reporting date
-    Dim ReportingCcy  As String    'Reporting currency
-    Dim GoldCode      As String    'Gold code
-    Dim ReportingErrors As Long    'C05
-    Dim DuplicateErrors As Long    'C06
-    Dim RateErrors    As Long      'C07
-    Dim i             As Long      'Parameter
+    Dim Reference()       As Double    'MAR40 parameters
+    Dim Raw()             As Variant   'Raw numeric parameters
+    Dim RawFx()           As Variant   'Raw FX table
+    Dim Parameters()      As Double    'Validated parameters
+    Dim FxCodes()         As String    'FX codes
+    Dim FxRates()         As Double    'FX rates
+    Dim Findings()        As String    'Findings
+    Dim FindingCount      As Long      'Findings in use
+    Dim AsOfDate          As Double    'Reporting date
+    Dim ReportingCcy      As String    'Reporting currency
+    Dim GoldCode          As String    'Gold code
+    Dim ReportingErrors   As Long      'C05
+    Dim DuplicateErrors   As Long      'C06
+    Dim RateErrors        As Long      'C07
+    Dim i                 As Long      'Parameter
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "parameters"
         ReferenceParameters Reference
         ReDim Raw(1 To PI_COUNT)
         For i = 1 To PI_COUNT
             Raw(i) = Reference(i)
         Next i
-        AssertNear "Parameters: reference set is valid", _
+        TEST_Harness.AssertEqualDouble "reference-set-is-valid", 0, _
             BuildParameters(Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _
-                            ReportingCcy, GoldCode, Findings, FindingCount), 0
-        AssertNear "Parameters: reference set unchanged", ChangedParameterCount(Parameters, GoldCode), 0
+                            ReportingCcy, GoldCode, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "reference-set-unchanged", 0, _
+            ChangedParameterCount(Parameters, GoldCode)
         Raw(PI_DAYS_PER_YEAR) = 360
         Raw(PI_VERTICAL) = "ten"
         Raw(PI_ZONE1) = 1.5
-        AssertNear "Parameters: two unusable values", _
+        TEST_Harness.AssertEqualDouble "two-unusable-values", 2, _
             BuildParameters(Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _
-                            ReportingCcy, GoldCode, Findings, FindingCount), 2
-
+                            ReportingCcy, GoldCode, Findings, FindingCount)
         ReDim RawFx(1 To 3, 1 To 2)
         RawFx(1, 1) = "USD": RawFx(1, 2) = 0.9
         RawFx(2, 1) = "usd": RawFx(2, 2) = 0.9
         RawFx(3, 1) = "EUR": RawFx(3, 2) = 1.1
         BuildFxTable RawFx, "EUR", FxCodes, FxRates, ReportingErrors, DuplicateErrors, RateErrors, _
                      Findings, FindingCount
-        AssertNear "FX table: reporting currency not at 1", ReportingErrors, 1
-        AssertNear "FX table: duplicate code", DuplicateErrors, 1
-        AssertNear "FX table: no rate error", RateErrors, 0
+        TEST_Harness.AssertEqualDouble "reporting-currency-not-at-1", 1, ReportingErrors
+        TEST_Harness.AssertEqualDouble "duplicate-code", 1, DuplicateErrors
+        TEST_Harness.AssertEqualDouble "no-rate-error", 0, RateErrors
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckFacade()
+Private Sub CaseFacade()
 '
 '==============================================================================
-'                                  CheckFacade
+'                                  CaseFacade
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   The worksheet functions return the core results and worksheet errors
-'   outside their domain.
+'   The worksheet functions on the inputs of the cases above, and the error
+'   value each gives for an input outside its domain.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Longs(1 To 15)  As Variant   'Weighted longs, ladder case A
-    Dim Shorts(1 To 15) As Variant   'Weighted shorts, ladder case A
-    Dim b               As Long      'Band
+    Dim Longs(1 To 15)    As Variant   'Weighted longs, ladder A
+    Dim Shorts(1 To 15)   As Variant   'Weighted shorts, ladder A
+    Dim b                 As Long      'Band
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "facade"
         For b = 1 To BAND_COUNT
             Longs(b) = 0
             Shorts(b) = 0
         Next b
         Longs(4) = 100: Shorts(4) = 60: Shorts(6) = 50: Longs(10) = 80
-        AssertNear "FRTBSSA_TimeBand 6 months, 5%", FRTBSSA_TimeBand(0.5, 0.05), 3
-        AssertNear "FRTBSSA_TimeBand 25 years, 1%", FRTBSSA_TimeBand(25, 0.01), 15
-        AssertNear "FRTBSSA_TimeBand floating 2.5 years", FRTBSSA_TimeBand(2.5, Empty, True), 6
-        AssertText "FRTBSSA_TimeBand negative maturity", CStr(IsError(FRTBSSA_TimeBand(-1, 0.05))), "True"
-        AssertNear "FRTBSSA_LadderCharge case A", FRTBSSA_LadderCharge(Longs, Shorts), 96
-        AssertNear "FRTBSSA_FXCharge Table 9", FRTBSSA_FXCharge(300, 200, -35), 26.8
-        AssertNear "FRTBSSA_CommodityCharge", FRTBSSA_CommodityCharge(70, 130), 14.4
-        AssertText "FRTBSSA_CommodityCharge gross below net", CStr(IsError(FRTBSSA_CommodityCharge(70, 10))), "True"
+        TEST_Harness.AssertEqualDouble "time-band-six-months-at-5-percent", 3, _
+            NumberOf(FRTBSSA_TimeBand(0.5, 0.05))
+        TEST_Harness.AssertEqualDouble "time-band-25-years-at-1-percent", 15, _
+            NumberOf(FRTBSSA_TimeBand(25, 0.01))
+        TEST_Harness.AssertEqualDouble "time-band-floating-2-and-a-half-years", 6, _
+            NumberOf(FRTBSSA_TimeBand(2.5, Empty, True))
+        TEST_Harness.AssertTrue "time-band-negative-maturity", IsError(FRTBSSA_TimeBand(-1, 0.05)), _
+            "a negative maturity must give an error value"
+        TEST_Harness.AssertNear "ladder-charge-of-ladder-a", 96, _
+            NumberOf(FRTBSSA_LadderCharge(Longs, Shorts)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "fx-charge-of-table-9", 26.8, _
+            NumberOf(FRTBSSA_FXCharge(300, 200, -35)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "commodity-charge", 14.4, _
+            NumberOf(FRTBSSA_CommodityCharge(70, 130)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertTrue "commodity-charge-gross-below-net", _
+            IsError(FRTBSSA_CommodityCharge(70, 10)), "a gross below the net must give an error value"
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
 
-Private Sub CheckFingerprint()
+Private Sub CaseFingerprint()
 '
 '==============================================================================
-'                               CheckFingerprint
+'                                CaseFingerprint
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   The fingerprint of a vector is the one its rule gives, and a changed
@@ -756,13 +874,15 @@ Private Sub CheckFingerprint()
 '   modulo 2^31 - 1 (base 131) and 2^31 - 19 (base 137).
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-17
 '==============================================================================
 '
-    Dim Values(1 To 6)       As Variant   'Vector: scalars, a table and a column
-    Dim Table(1 To 2, 1 To 2) As Variant  'Table; its last cell stays empty
-    Dim Column(1 To 3)       As Variant   'Array of one dimension
+    Dim Values(1 To 6)          As Variant   'Vector: scalars, a table and a column
+    Dim Table(1 To 2, 1 To 2)   As Variant   'Table; its last cell stays empty
+    Dim Column(1 To 3)          As Variant   'Array of one dimension
 
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "fingerprint"
         Values(1) = 1.5
         Values(2) = "EUR"
         Values(4) = True
@@ -774,164 +894,23 @@ Private Sub CheckFingerprint()
         Column(2) = "b"
         Column(3) = 3
         Values(6) = Column
-        AssertText "Fingerprint of a known vector", Fingerprint(Values), "F1-68BD702560607F96"
-        AssertText "Fingerprint, the same vector again", Fingerprint(Values), "F1-68BD702560607F96"
+        TEST_Harness.AssertEqualText "known-vector", "F1-68BD702560607F96", Fingerprint(Values)
+        TEST_Harness.AssertEqualText "same-vector-again", "F1-68BD702560607F96", Fingerprint(Values)
         Column(2) = "B"
         Values(6) = Column
-        AssertText "Fingerprint, a text in another case", Fingerprint(Values), "F1-7833FF864C712519"
+        TEST_Harness.AssertEqualText "text-in-another-case", "F1-7833FF864C712519", _
+            Fingerprint(Values)
         Column(2) = "b"
         Values(6) = Column
         Table(1, 2) = -2
         Table(2, 1) = "a"
         Values(5) = Table
-        AssertText "Fingerprint, two values change places", Fingerprint(Values), "F1-4BF78E8A19460933"
+        TEST_Harness.AssertEqualText "two-values-change-places", "F1-4BF78E8A19460933", _
+            Fingerprint(Values)
+        Exit Sub
 
-End Sub
-
-
-Private Sub CheckFailedRun()
-'
-'==============================================================================
-'                                CheckFailedRun
-'------------------------------------------------------------------------------
-' PURPOSE
-'   A run that raises an error, while it writes or before, leaves no result
-'   of that run or of the one before, and a status line that says FAILED.
-'
-' STATE OWNERSHIP
-'   Rewrites the output sheets. Changes the first rule identifier of Checks
-'   for one run, and the range of the name Ladder_RW for another, and puts
-'   both back.
-'
-' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-    Dim Target      As Range     'Cell changed to make a run fail
-    Dim Saved       As Variant   'Its value before the test
-    Dim Ladder      As Object    'Workbook name changed to make a run fail
-    Dim SavedRange  As String    'What the name referred to
-    Dim ErrNumber   As Long      'Error number of the failed run
-
-        'While writing: the rules of Checks are written after every result
-        'table, and the first rule is not found under its header.
-        AssertText "Run before the failure while writing", Left$(RunSSA_Silent(), 9), "RESULT=OK"
-        Set Target = ThisWorkbook.Names(NM_CHECKS_HEADER).RefersToRange.Offset(1, 0)
-        Saved = Target.Value
-        Target.Value = "X01"
-        ErrNumber = RunError()
-        Target.Value = Saved
-        AssertNear "Failure while writing: error number", ErrNumber, ERR_LAYOUT
-        AssertNoResult "Failure while writing"
-
-        'Before writing: a column of the maturity ladder is one row short.
-        AssertText "Run before the failure while reading", Left$(RunSSA_Silent(), 9), "RESULT=OK"
-        Set Ladder = ThisWorkbook.Names(NM_LADDER_RW)
-        SavedRange = Ladder.RefersTo
-        Set Target = Ladder.RefersToRange
-        Ladder.RefersTo = "='" & Target.Worksheet.Name & "'!" & _
-                          Target.Resize(Target.Rows.Count - 1, 1).Address
-        ErrNumber = RunError()
-        Ladder.RefersTo = SavedRange
-        AssertNear "Failure while reading: error number", ErrNumber, ERR_LAYOUT
-        AssertNoResult "Failure while reading"
-        AssertText "Run after the failures", Left$(RunSSA_Silent(), 9), "RESULT=OK"
-
-End Sub
-
-
-Private Sub CheckOutdatedResults()
-'
-'==============================================================================
-'                             CheckOutdatedResults
-'------------------------------------------------------------------------------
-' PURPOSE
-'   After a run, a changed parameter or position makes the check mark the
-'   results OUTDATED; the value put back makes it take the mark away.
-'
-' STATE OWNERSHIP
-'   Rewrites the output sheets. Changes the IR scaling factor and the value
-'   of the first interest rate position for one check each, and puts both
-'   back.
-'
-' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-    Dim Target      As Range     'Input cell changed
-    Dim Saved       As Variant   'Its value before the test
-
-        AssertText "Run before the changes", Left$(RunSSA_Silent(), 9), "RESULT=OK"
-        AssertText "Check after the run", CheckOutcome(), "RESULT=CURRENT; cleanup=PASS"
-        AssertText "Status after the run", Left$(StatusLine(), 4), "OK: "
-
-        'A parameter.
-        Set Target = ThisWorkbook.Names("ScalingIR").RefersToRange
-        Saved = Target.Value
-        Target.Value = Saved + 0.1
-        AssertText "Check after a parameter changed", CheckOutcome(), "RESULT=OUTDATED; cleanup=PASS"
-        AssertText "Status after a parameter changed", Left$(StatusLine(), 14), "OUTDATED: OK: "
-        AssertText "Check again, still changed", CheckOutcome(), "RESULT=OUTDATED; cleanup=PASS"
-        AssertText "Status is marked once", Left$(StatusLine(), 14), "OUTDATED: OK: "
-        Target.Value = Saved
-        AssertText "Check after the parameter is put back", CheckOutcome(), "RESULT=CURRENT; cleanup=PASS"
-        AssertText "Status after the parameter is put back", Left$(StatusLine(), 4), "OK: "
-
-        'A position, through the entry point of the event procedures.
-        Set Target = ThisWorkbook.Names(NM_IR_POS_HEADER).RefersToRange.Offset(1, IR_VALUE - 1)
-        Saved = Target.Value
-        Target.Value = Saved + 1
-        CheckStatus_OnEvent
-        AssertText "Status after a position changed", Left$(StatusLine(), 14), "OUTDATED: OK: "
-        Target.Value = Saved
-        CheckStatus_OnEvent
-        AssertText "Status after the position is put back", Left$(StatusLine(), 4), "OK: "
-
-        'No result to check.
-        ClearOutputs_Silent
-        AssertText "Check without results", CheckOutcome(), "RESULT=NOT_CALCULATED; cleanup=PASS"
-
-End Sub
-
-
-Private Sub CheckWorkbook()
-'
-'==============================================================================
-'                                 CheckWorkbook
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Run the workbook on the shipped sample data and compare the totals with
-'   the independent re-calculation; every TestCatalogue test must PASS.
-'
-' STATE OWNERSHIP
-'   Rewrites the output sheets.
-'
-' REFERENCE
-'   tools/prototype/ssa_reference.py (requirement 48,267,441; RWA
-'   603,343,012.5; 35 positions used).
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-    Dim ResultText  As String    'RunSSA_Silent result line
-    Dim Results     As Variant   'TestCatalogue Result column
-    Dim Failures    As Long      'FAIL count
-    Dim Item        As Variant   'One result
-
-        ResultText = RunSSA_Silent()
-        AssertText "Workbook run outcome", Left$(ResultText, 9), "RESULT=OK"
-        AssertNear "Workbook requirement", ThisWorkbook.Names("SSA_Requirement").RefersToRange.Value, _
-                   SAMPLE_REQUIREMENT
-        AssertNear "Workbook RWA", ThisWorkbook.Names("SSA_RWA").RefersToRange.Value, SAMPLE_RWA
-        AssertNear "Workbook positions used", Val(Split(Split(ResultText, "positions_used=")(1), ";")(0)), _
-                   SAMPLE_POSITIONS
-        Application.Calculate
-        Results = ThisWorkbook.Names("Tests_Result").RefersToRange.Value
-        For Each Item In Results
-            If CStr(Item) <> "PASS" Then Failures = Failures + 1
-        Next Item
-        AssertNear "TestCatalogue tests not PASS", Failures, 0
+CaseFailed:
+        TEST_Harness.RecordCaseError
 
 End Sub
 
@@ -940,115 +919,34 @@ End Sub
 '                                    HELPERS
 '------------------------------------------------------------------------------
 
-Private Function RunError() As Long
+Private Function NumberOf( _
+    ByVal Value As Variant) _
+    As Double
 '
 '==============================================================================
-'                                   RunError
+'                                   NumberOf
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Run RunSSA_Silent where it is expected to raise an error.
-'
-' RETURNS
-'   The error number; 0 when the run raised none.
-'
-' ERROR POLICY
-'   Contains the error of the run, so that the caller can put back what it
-'   changed.
-'
-' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-    Dim ResultText  As String    'Result line, not used
-
-        On Error GoTo Failed
-        ResultText = RunSSA_Silent()
-        RunError = 0
-        Exit Function
-
-Failed:
-        RunError = Err.Number
-
-End Function
-
-
-Private Function CheckOutcome() As String
-'
-'==============================================================================
-'                                 CheckOutcome
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Run CheckStatus_Silent between a change of an input and its undoing.
-'
-' RETURNS
-'   The result line, or "ERROR", the number and the description.
-'
-' ERROR POLICY
-'   Contains the error of the check, so that the caller can put back what
-'   it changed.
-'
-' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-        On Error GoTo Failed
-        CheckOutcome = CheckStatus_Silent()
-        Exit Function
-
-Failed:
-        CheckOutcome = "ERROR " & Err.Number & " " & Err.Description
-
-End Function
-
-
-Private Function StatusLine() As String
-'
-'==============================================================================
-'                                  StatusLine
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Return the status line of Results.
-'
-' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-        StatusLine = PlainText(ThisWorkbook.Names(NM_RESULTS_STATUS).RefersToRange.Value)
-
-End Function
-
-
-Private Sub AssertNoResult( _
-    ByVal Label As String)
-'
-'==============================================================================
-'                                AssertNoResult
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Assert that the sheets show a failed run and no result: the status line,
-'   the requirement, the first calculation row, the error count of Checks,
-'   the fingerprint and what the check returns.
+'   The number a result holds, for an assertion that compares numbers.
 '
 ' INPUTS
-'   Label   Start of each assertion's label.
+'   Value   A cell of an output table, or what a worksheet function
+'           returned.
+'
+' ERROR POLICY
+'   Raises error 13 when Value is not a number, so that an empty cell, a
+'   text or an error value is never compared as 0; the case records it.
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-17
 '==============================================================================
 '
-        AssertText Label & ": status line", Left$(StatusLine(), 8), "FAILED: "
-        AssertText Label & ": requirement", _
-                   PlainText(ThisWorkbook.Names("SSA_Requirement").RefersToRange.Value), vbNullString
-        AssertText Label & ": first calculation row", _
-                   PlainText(ThisWorkbook.Names(NM_IR_CALC_HEADER).RefersToRange.Offset(1, 0).Value), _
-                   vbNullString
-        AssertText Label & ": error count of Checks", _
-                   PlainText(ThisWorkbook.Names(NM_CHECKS_ERRORS).RefersToRange.Value), vbNullString
-        AssertText Label & ": fingerprint", _
-                   PlainText(ThisWorkbook.Names(NM_FINGERPRINT).RefersToRange.Value), vbNullString
-        AssertText Label & ": check", CheckOutcome(), "RESULT=FAILED; cleanup=PASS"
+        If Not IsNumberValue(Value) Then
+            Err.Raise 13, "TEST_Suite.NumberOf", "The result is not a number."
+        End If
+        NumberOf = CDbl(Value)
 
-End Sub
+End Function
 
 
 Private Function RowsFrom( _
@@ -1071,13 +969,13 @@ Private Function RowsFrom( _
 '   Variant (1 To n, 1 To Width).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Table()     As Variant   'Result
-    Dim Record      As Variant   'One record
-    Dim r           As Long      'Row
-    Dim c           As Long      'Field
+    Dim Table()   As Variant   'Result
+    Dim Record    As Variant   'One record
+    Dim r         As Long      'Row
+    Dim c         As Long      'Field
 
         ReDim Table(1 To UBound(Records) - LBound(Records) + 1, 1 To Width)
         For r = 1 To UBound(Table, 1)
@@ -1111,11 +1009,11 @@ Private Sub FxTable( _
 '   Codes and Rates, base 1.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-17
 '==============================================================================
 '
-    Dim Items()     As String    'Codes
-    Dim i           As Long      'Code
+    Dim Items()   As String   'Codes
+    Dim i         As Long     'Code
 
         Items = Split(CodeList, "|")
         ReDim Codes(1 To UBound(Items) + 1)
@@ -1126,132 +1024,3 @@ Private Sub FxTable( _
         Next i
 
 End Sub
-
-
-Private Sub AssertNear( _
-    ByVal Label As String, _
-    ByVal Actual As Variant, _
-    ByVal Expected As Double)
-'
-'==============================================================================
-'                                  AssertNear
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Record whether a number equals the expected value within TOLERANCE
-'   (relative for values above 1).
-'
-' INPUTS
-'   Label      What is checked.
-'   Actual     Value produced; a non-number fails.
-'   Expected   Expected value.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-    Dim Allowed     As Double    'Tolerance for this value
-
-        Allowed = TOLERANCE
-        If Abs(Expected) > 1 Then Allowed = TOLERANCE * Abs(Expected)
-        If Not IsNumberValue(Actual) Then
-            Record False, Label & ": expected " & Expected & ", got a non-number"
-        ElseIf Abs(CDbl(Actual) - Expected) > Allowed Then
-            Record False, Label & ": expected " & Expected & ", got " & CDbl(Actual)
-        Else
-            Record True, Label
-        End If
-
-End Sub
-
-
-Private Sub AssertText( _
-    ByVal Label As String, _
-    ByVal Actual As String, _
-    ByVal Expected As String)
-'
-'==============================================================================
-'                                  AssertText
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Record whether a text equals the expected text exactly.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-        If Actual = Expected Then
-            Record True, Label
-        Else
-            Record False, Label & ": expected """ & Expected & """, got """ & Actual & """"
-        End If
-
-End Sub
-
-
-Private Sub Record( _
-    ByVal Passed As Boolean, _
-    ByVal Message As String)
-'
-'==============================================================================
-'                                    Record
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Count one assertion and keep the message of a failure.
-'
-' STATE OWNERSHIP
-'   Updates mPassed, mFailed and mReport.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-        If Passed Then
-            mPassed = mPassed + 1
-        Else
-            mFailed = mFailed + 1
-            mReport = mReport & vbLf & "FAIL " & Message
-        End If
-
-End Sub
-
-
-Private Sub ResetResults()
-'
-'==============================================================================
-'                                 ResetResults
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Start a new run.
-'
-' STATE OWNERSHIP
-'   Resets mPassed, mFailed and mReport.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-        mPassed = 0
-        mFailed = 0
-        mReport = vbNullString
-
-End Sub
-
-
-Private Function ResultLine() As String
-'
-'==============================================================================
-'                                  ResultLine
-'------------------------------------------------------------------------------
-' PURPOSE
-'   Summarise the run.
-'
-' RETURNS
-'   "PASS=n; FAIL=m" and the failure messages.
-'
-' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-        ResultLine = "PASS=" & mPassed & "; FAIL=" & mFailed & mReport
-
-End Function

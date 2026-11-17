@@ -5,14 +5,16 @@ Usage: python3 tools/devbuild/lo_smoke.py [WORKBOOK]
 Without WORKBOOK it builds the development workbook first.
 
 It opens the workbook in LibreOffice with VBA compatibility and runs the
-example suite's certification entry point into a temporary folder, with the
-checkout's tests/fixtures as the folder of the test cases. The entry point,
-the run logs of the modes, the certification log and the results file are the
-names that .github/excel-evidence-policy.json gives. Then it prints a JSON
-summary: the modules LibreOffice loaded, the error the certification raised,
-each run log's RESULT and failures, the certification log, the results file,
-and the failures that LibreOffice is not known to cause. It exits 0 when there is none, 1 when
-there is one, the certification wrote no log, the build of the development
+certification entry point of the example suite, then that of each project
+suite, into a temporary folder, with the checkout's tests/fixtures as the
+folder of the test cases. The entry points, the run logs, the certification
+logs and the results files are the names that
+.github/excel-evidence-policy.json gives. Then it prints a JSON summary: the
+modules LibreOffice loaded, the error each certification raised, each run
+log's RESULT and failures, the certification logs, the results files, and the
+failures that LibreOffice is not known to cause: none is known in a project
+suite, whose run must pass. It exits 0 when there is none, 1 when
+there is one, a certification wrote no log, the build of the development
 workbook fails (lo-smoke: FAIL (build: ...)), or LibreOffice could not open
 the workbook or run it, and 2 when an option is unknown, WORKBOOK does not
 exist, the evidence policy is missing or malformed, or LibreOffice or its
@@ -70,14 +72,23 @@ DESIGNED = {"INJECTED_FAILURE": frozenset({"exact-double/half-plus-quarter"}),
             "SKIPPED_CASE": frozenset({"harness.completeness"})}
 
 
-def entry_point(policy: check_excel_run.Policy) -> str:
-    """The example suite's certification entry point, as Module.Procedure."""
-    return f"{Path(policy.suite_source).stem}.{policy.entry_point}"
+def entry_points(policy: check_excel_run.Policy) -> tuple[str, ...]:
+    """The certification entry points, as Module.Procedure: the example suite's,
+    then each project suite's."""
+    return (f"{Path(policy.suite_source).stem}.{policy.entry_point}",
+            *(f"{Path(item.source).stem}.{item.entry_point}" for item in policy.project_suites))
 
 
 def log_names(policy: check_excel_run.Policy) -> tuple[str, ...]:
-    """The run log of each mode, in run order, then the certification log."""
-    return (*policy.logs.values(), policy.certification)
+    """The run log of each mode, in run order, then the certification log; then
+    the run log and the certification log of each project suite."""
+    return (*policy.logs.values(), policy.certification,
+            *(name for item in policy.project_suites for name in (item.log, item.certification)))
+
+
+def certification_logs(policy: check_excel_run.Policy) -> frozenset[str]:
+    return frozenset({policy.certification,
+                      *(item.certification for item in policy.project_suites)})
 
 
 def designed(policy: check_excel_run.Policy) -> dict[str, frozenset[str]]:
@@ -122,13 +133,18 @@ def enable_vba(context: Any) -> None:
     access.commitChanges()
 
 
-def certify(context: Any, workbook: Path, folder: Path, procedure: str) -> dict[str, object]:
+def certify(context: Any, workbook: Path, folder: Path,
+            procedures: tuple[str, ...]) -> dict[str, object]:
+    """Open the workbook and run each certification entry point in turn; the summary
+    holds the modules loaded and, by entry point, the error it raised or None."""
     desktop = context.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop",
                                                               context)
     try:
+        # Not hidden: a suite that runs the workbook's entry points reads and sets
+        # Application properties that need a view. The office itself is headless.
         document = desktop.loadComponentFromURL(
             workbook.resolve().as_uri(), "_blank", 0,
-            (property_value("Hidden", True), property_value("MacroExecutionMode", 4)))
+            (property_value("Hidden", False), property_value("MacroExecutionMode", 4)))
     except Exception:
         # Let the office exit on its own; killing the launcher leaves it running.
         desktop.terminate()
@@ -137,13 +153,16 @@ def certify(context: Any, workbook: Path, folder: Path, procedure: str) -> dict[
     try:
         summary["modules"] = sorted(document.BasicLibraries.getByName("VBAProject")
                                     .getElementNames())
-        script = document.getScriptProvider().getScript(
-            f"vnd.sun.star.script:VBAProject.{procedure}?language=Basic&location=document")
-        try:
-            script.invoke((str(folder), str(ROOT / "tests" / "fixtures")), (), ())
-            summary["error"] = None
-        except Exception as error:  # noqa: BLE001 - reported, not raised
-            summary["error"] = str(error)
+        errors: dict[str, str | None] = {}
+        for procedure in procedures:
+            script = document.getScriptProvider().getScript(
+                f"vnd.sun.star.script:VBAProject.{procedure}?language=Basic&location=document")
+            try:
+                script.invoke((str(folder), str(ROOT / "tests" / "fixtures")), (), ())
+                errors[procedure] = None
+            except Exception as error:  # noqa: BLE001 - reported, not raised
+                errors[procedure] = str(error)
+        summary["errors"] = errors
     finally:
         document.close(True)
         try:
@@ -161,7 +180,7 @@ def read_logs(folder: Path, policy: check_excel_run.Policy) -> dict[str, object]
             found[name] = None
             continue
         lines = matches[0].read_text(encoding="utf-8", errors="replace").splitlines()
-        if name == policy.certification:
+        if name in certification_logs(policy):
             found[name] = lines
         else:
             found[name] = {"result": lines[-1] if lines else "",
@@ -227,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             context = connect(port)
             enable_vba(context)
-            summary = certify(context, workbook, folder, entry_point(policy))
+            summary = certify(context, workbook, folder, entry_points(policy))
         except Exception as error:  # noqa: BLE001 - a UNO error: reported, not raised
             failure = f"{type(error).__name__}: {error}"
         finally:
@@ -239,10 +258,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"lo-smoke: FAIL (LibreOffice could not run the workbook: {failure})")
             return 1
         summary["logs"] = read_logs(folder, policy)
-        summary["results"] = read_results(folder, policy.results)
-    summary["unexpected"] = unexpected(summary["logs"], designed(policy))  # type: ignore[arg-type]
-    if not isinstance(summary["results"], dict) or summary["results"].get("kind") != "test-results":
-        summary["unexpected"].append(f"{policy.results}: not written as a test-results file")  # type: ignore[attr-defined]
+        results = {name: read_results(folder, name)
+                   for name in check_excel_run.results_files(policy)}
+    summary["results"] = results[policy.results]
+    summary["project_results"] = {name: content for name, content in results.items()
+                                  if name != policy.results}
+    found = unexpected(summary["logs"], designed(policy))  # type: ignore[arg-type]
+    found += not_passed(summary["logs"], policy)  # type: ignore[arg-type]
+    found += [f"{name}: not written as a test-results file" for name, content in results.items()
+              if not isinstance(content, dict) or content.get("kind") != "test-results"]
+    summary["unexpected"] = found
     summary["note"] = "LibreOffice is not a supported host; this is never Excel evidence"
     print(json.dumps(summary, indent=1, default=str))
     return 1 if summary["unexpected"] else 0
@@ -262,6 +287,15 @@ def unexpected(logs: dict[str, Any], expected: Mapping[str, frozenset[str]]) -> 
                 if key == "ERROR" or identifier not in KNOWN_FAILURES | expected.get(name, set()):
                     found.append(f"{name}: {line}")
     return found
+
+
+def not_passed(logs: dict[str, Any], policy: check_excel_run.Policy) -> list[str]:
+    """The project suites whose run did not pass: no failure is known in one, so a
+    run that was refused, or that ended without a failure line, is reported too."""
+    return [f"{item.log}: {logs[item.log]['result'] or 'no RESULT'}"
+            for item in policy.project_suites
+            if isinstance(logs.get(item.log), dict)
+            and not logs[item.log]["result"].startswith("RESULT=PASS;")]
 
 
 if __name__ == "__main__":

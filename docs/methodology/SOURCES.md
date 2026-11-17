@@ -13,9 +13,9 @@ documented assumption, and its contract says so.
 | `SRC-02` | Basel Framework, chapter MAR40, *Simplified standardised approach* | Basel Committee on Banking Supervision, published by the Bank for International Settlements | In force from 2023-01-01; last update 2024-07-05; status *Current* when verified | <https://www.bis.org/committees/bcbs/basel-framework/standard/mar/40/inforce/2023-01-01/published/2024-07-05> | — | — | `verified` | Daniele Penza | 2026-11-16 |
 
 `SRC-02` is the only source a rule of the workbook relies on. The
-illustrative `SRC-01` stays until the illustrative test cases that cite it
-are replaced
-([issue 20](https://github.com/danielep71/K-FRTB-SSA/issues/20)); no rule of
+illustrative `SRC-01` stays with the illustrative test cases that cite it,
+which the example suite of the test harness reads
+([the project's suites](TEST_HARNESS.md#the-projects-suites)); no rule of
 the workbook cites it.
 
 - **ID:** `SRC-` followed by a number, never reused. An independent

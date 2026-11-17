@@ -123,6 +123,27 @@ class RenderTest(unittest.TestCase):
                         "tests/modules/TEST_Missing.bas: missing"])
         self.assertEqual((self.root / "GUIDE.md").read_text(encoding="utf-8").count("\nold\n"), 2)
 
+    def test_the_project_suites_block_without_a_suite_or_an_entry_point(self) -> None:
+        policy = json.loads((ROOT / check_excel_run.POLICY).read_text(encoding="utf-8"))
+        (self.root / check_excel_run.POLICY).parent.mkdir(parents=True)
+        suites = policy["suites"]
+        policy["suites"] = []
+        (self.root / check_excel_run.POLICY).write_text(json.dumps(policy), encoding="utf-8")
+        self.assertEqual(render_docs.project_suite_results(self.root),
+                         "The evidence policy lists no project suite.")
+        policy["suites"] = suites[:1]
+        (self.root / check_excel_run.POLICY).write_text(json.dumps(policy), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, f"{suites[0]['source']}: missing"):
+            render_docs.project_suite_results(self.root)
+        # A suite that only its certification entry point runs has nothing to type.
+        source = (ROOT / suites[0]["source"]).read_bytes().replace(
+            b"Public Sub RunCoreTests()", b"Private Sub RunCoreTests()")
+        (self.root / suites[0]["source"]).parent.mkdir(parents=True)
+        (self.root / suites[0]["source"]).write_bytes(source)
+        with self.assertRaisesRegex(ValueError, "has no public Sub without arguments that runs "
+                                    "RunSuite"):
+            render_docs.project_suite_results(self.root)
+
     def test_marker_problems(self) -> None:
         cases = {
             f"{begin('facts')}\n": "block facts is not closed",
@@ -269,6 +290,37 @@ class RepositoryTest(unittest.TestCase):
                       f"`cases={cases - 1}`, `assertions={assertions - last}`, `failures=1`",
                       text)
         self.assertIn("Two more entry points", text)
+
+    def test_the_project_suite_results_follow_the_policy_and_the_suites(self) -> None:
+        policy = check_excel_run.working_policy(ROOT)
+        self.assertTrue(policy.project_suites)
+        lines = render_docs.project_suite_results(ROOT).splitlines()[2:]
+        self.assertEqual(len(lines), len(policy.project_suites))
+        for item, line in zip(policy.project_suites, lines, strict=True):
+            with self.subTest(suite=item.name):
+                module = Path(item.source).stem
+                source = (ROOT / item.source).read_text("ascii").replace("\r\n", "\n")
+                entry = re.search(rf"`{module}\.(\w+)`", line)
+                assert entry is not None
+                # What the row says to type is a public Sub without arguments.
+                self.assertRegex(source, rf"(?m)^Public Sub {entry.group(1)}\(\)$")
+                self.assertIn(f"`RESULT=PASS; suite={item.name}; operation=PASS; "
+                              f"completeness=COMPLETE; cases={item.expected_cases}; "
+                              f"assertions={item.expected_assertions}; failures=0; "
+                              "cleanup=PASS; recovery=NONE`", line)
+
+    def test_the_entry_point_of_a_suite_is_its_public_runner_or_what_calls_it(self) -> None:
+        private = ("Public Sub RunProject()\n        RunSuite\n\nEnd Sub\n"
+                   "Public Sub Other()\n        RunSuiteTwice\nEnd Sub\n"
+                   "Private Sub RunSuite()\nEnd Sub\n")
+        self.assertEqual(render_docs.run_entry_point(private, "RunSuite"), "RunProject")
+        self.assertEqual(render_docs.run_entry_point(
+            "Public Sub RunRelationTests()\nEnd Sub\n", "RunRelationTests"), "RunRelationTests")
+        # An entry point with arguments, or a function, is not one to type as it is.
+        self.assertIsNone(render_docs.run_entry_point(
+            "Public Sub Certify(ByVal Folder As String)\n        RunSuite\nEnd Sub\n"
+            "Public Function Result() As String\n        RunSuite\nEnd Function\n"
+            "Private Sub RunSuite()\nEnd Sub\n", "RunSuite"))
 
     def test_every_check_is_listed_once_and_described(self) -> None:
         text = render_docs.integrity_checks(ROOT)
