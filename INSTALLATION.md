@@ -340,7 +340,7 @@ the whole calculation on the sample data the template ships: it rewrites the
 output sheets and leaves them cleared. The `cases` suite runs every
 registered [test case](docs/methodology/TEST_CASES.md): each case replaces
 the inputs of the workbook with its own, runs the calculation, puts back the
-inputs the workbook had and clears the output sheets. Run the last two in a
+inputs the workbook had, formulas included, and clears the output sheets. Run the last two in a
 development workbook whose results you do not need. Anything else than the
 line above, or the error *Suite core did not pass*, *Suite workbook did not
 pass* or *Suite cases did not pass*, is a failure, and the log names the

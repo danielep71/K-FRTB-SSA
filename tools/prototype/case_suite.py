@@ -325,7 +325,8 @@ FIXED_HEADER = """' PURPOSE
 '   and sheets.
 '
 ' STATE OWNERSHIP
-'   Owns the copy of the inputs a case keeps while it runs. Each case
+'   Owns the copy of the inputs a case keeps while it runs: their values and
+'   their formulas. Each case
 '   replaces the inputs of the workbook with those of its test case: the
 '   reporting date and currency, the FX table, the option charges and the
 '   four position sheets. It puts back the inputs the workbook had, on the
@@ -462,21 +463,25 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         '    Case 11: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "FX").RefersToRange',
         "End Select"]),
     (["Private Sub KeepInputs()"], [
-        ("PURPOSE", "Keep what every input area holds, before a case replaces it."),
-        ("STATE OWNERSHIP", "Sets mKept."),
+        ("PURPOSE", "Keep what every input area holds, before a case replaces it: its\n"
+                    "values and its formulas."),
+        ("STATE OWNERSHIP", "Sets mKept and mFormulas."),
     ], [("i", "Long", "Input area")], [
         "For i = 1 To INPUT_AREAS",
         "    mKept(i) = InputArea(i).Value",
+        "    mFormulas(i) = AsTable(InputArea(i).Formula)",
         "Next i"]),
     (["Private Function RestoreInputs() As String"], [
         ("PURPOSE", "Put the sheets back as they were before a case: write what "
-                    "KeepInputs\nkept, check that every input cell holds it, and clear the "
-                    "output\nsheets, which show the results of the test case."),
+                    "KeepInputs\nkept, values and then formulas, check that every input "
+                    "cell holds it, and\nclear the output sheets, which show the results of "
+                    "the test case."),
         ("RETURNS", "An empty text when the sheets are restored; otherwise what failed."),
         ("STATE OWNERSHIP", "Writes every input area and clears the output sheets."),
         ("ERROR POLICY", "Contains its own error and returns it, so that the case asserts "
                          "the\nresult on the success and the error path."),
-    ], [("i", "Long", "Input area"), ("Differences", "Long", "Input cells that differ"),
+    ], [("i", "Long", "Input area"), ("r", "Long", "Row"), ("c", "Long", "Column"),
+        ("Differences", "Long", "Input cells that differ"),
         ("Cleared", "String", "ClearOutputs_Silent result line")], [
         "On Error GoTo Failed",
         "'Emptied first: an empty value written over a cell that holds something",
@@ -484,6 +489,14 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         "For i = 1 To INPUT_AREAS",
         "    InputArea(i).ClearContents",
         "    InputArea(i).Value = mKept(i)",
+        "    'A cell that held a formula gets it back: the value above is its result.",
+        "    For r = 1 To UBound(mFormulas(i), 1)",
+        "        For c = 1 To UBound(mFormulas(i), 2)",
+        "            If IsFormula(mFormulas(i)(r, c)) Then",
+        "                InputArea(i).Cells(r, c).Formula = mFormulas(i)(r, c)",
+        "            End If",
+        "        Next c",
+        "    Next r",
         "Next i",
         "Differences = InputDifferences()",
         "Cleared = ClearOutputs_Silent()",
@@ -497,23 +510,47 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         "Failed:",
         'RestoreInputs = "error " & CStr(Err.Number) & " while restoring: " & Err.Description']),
     (["Private Function InputDifferences() As Long"], [
-        ("PURPOSE", "Count the input cells that do not hold what KeepInputs kept."),
+        ("PURPOSE", "Count the input cells that do not hold what KeepInputs kept: a value\n"
+                    "that differs, a formula that differs, a formula where the cell held "
+                    "none\nand none where it held one."),
         ("RETURNS", "The number of cells; 0 when the inputs are those kept."),
-    ], [("Current", "Variant", "What an area holds now"), ("i", "Long", "Input area"),
+    ], [("Current", "Variant", "What an area holds now: values"),
+        ("CurrentFormulas", "Variant", "What an area holds now: formulas"),
+        ("i", "Long", "Input area"),
         ("r", "Long", "Row"), ("c", "Long", "Column"), ("Count", "Long", "Cells that differ")], [
         "For i = 1 To INPUT_AREAS",
-        "    Current = InputArea(i).Value",
-        "    If IsArray(Current) Then",
-        "        For r = LBound(Current, 1) To UBound(Current, 1)",
-        "            For c = LBound(Current, 2) To UBound(Current, 2)",
-        "                If Not SameValue(Current(r, c), mKept(i)(r, c)) Then Count = Count + 1",
-        "            Next c",
-        "        Next r",
-        "    ElseIf Not SameValue(Current, mKept(i)) Then",
-        "        Count = Count + 1",
-        "    End If",
+        "    Current = AsTable(InputArea(i).Value)",
+        "    CurrentFormulas = AsTable(InputArea(i).Formula)",
+        "    For r = 1 To UBound(Current, 1)",
+        "        For c = 1 To UBound(Current, 2)",
+        "            If Not SameValue(Current(r, c), AsTable(mKept(i))(r, c)) Then",
+        "                Count = Count + 1",
+        "            ElseIf IsFormula(CurrentFormulas(r, c)) <> IsFormula(mFormulas(i)(r, c)) Then",
+        "                Count = Count + 1",
+        "            ElseIf IsFormula(CurrentFormulas(r, c)) Then",
+        "                If CurrentFormulas(r, c) <> mFormulas(i)(r, c) Then Count = Count + 1",
+        "            End If",
+        "        Next c",
+        "    Next r",
         "Next i",
         "InputDifferences = Count"]),
+    (["Private Function AsTable( _", "    ByVal Value As Variant) _", "    As Variant"], [
+        ("PURPOSE", "What a range returned as a table of one or more rows and columns: an\n"
+                    "area of one cell returns its value alone."),
+        ("RETURNS", "Value when it is an array, else a table of one cell holding it."),
+    ], [("Table(1 To 1, 1 To 1)", "Variant", "The table of one cell")], [
+        "If IsArray(Value) Then",
+        "    AsTable = Value",
+        "Else",
+        "    Table(1, 1) = Value",
+        "    AsTable = Table",
+        "End If"]),
+    (["Private Function IsFormula( _", "    ByVal Value As Variant) _", "    As Boolean"], [
+        ("PURPOSE", "Whether what a cell holds, as its Formula returns it, is a formula."),
+    ], [], [
+        "If VarType(Value) = vbString Then",
+        '    IsFormula = (Left$(Value, 1) = "=")',
+        "End If"]),
     (["Private Function SameValue( _", "    ByVal First As Variant, _",
       "    ByVal Second As Variant) _", "    As Boolean"], [
         ("PURPOSE", "Whether two cell values are the same value of the same type."),
@@ -713,7 +750,8 @@ def module() -> str:
             f"        Private Const FX_BLOCK_NET        As Long = "
             f"{run_cases.FX_BLOCK_NET - FIRST_COLUMN}     'Buckets FX block: net position",
             "", THIN, "' MODULE STATE", THIN,
-            "        Private mKept(1 To 11)   As Variant   'What each input area held",
+            "        Private mKept(1 To 11)   As Variant   'What each input area held: values",
+            "        Private mFormulas(1 To 11) As Variant 'What each input area held: formulas",
             "", ""]
     text += entry_points(len(pairs), assertions)
     text += runner(names)

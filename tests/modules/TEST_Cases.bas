@@ -24,7 +24,8 @@ Attribute VB_Name = "TEST_Cases"
 '   and sheets.
 '
 ' STATE OWNERSHIP
-'   Owns the copy of the inputs a case keeps while it runs. Each case
+'   Owns the copy of the inputs a case keeps while it runs: their values and
+'   their formulas. Each case
 '   replaces the inputs of the workbook with those of its test case: the
 '   reporting date and currency, the FX table, the option charges and the
 '   four position sheets. It puts back the inputs the workbook had, on the
@@ -86,7 +87,8 @@ Attribute VB_Name = "TEST_Cases"
 '------------------------------------------------------------------------------
 ' MODULE STATE
 '------------------------------------------------------------------------------
-        Private mKept(1 To 11)   As Variant   'What each input area held
+        Private mKept(1 To 11)   As Variant   'What each input area held: values
+        Private mFormulas(1 To 11) As Variant 'What each input area held: formulas
 
 
 
@@ -3280,10 +3282,11 @@ Private Sub KeepInputs()
 '                                  KeepInputs
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Keep what every input area holds, before a case replaces it.
+'   Keep what every input area holds, before a case replaces it: its
+'   values and its formulas.
 '
 ' STATE OWNERSHIP
-'   Sets mKept.
+'   Sets mKept and mFormulas.
 '
 ' UPDATED
 '   2026-11-17
@@ -3293,6 +3296,7 @@ Private Sub KeepInputs()
 
         For i = 1 To INPUT_AREAS
             mKept(i) = InputArea(i).Value
+            mFormulas(i) = AsTable(InputArea(i).Formula)
         Next i
 
 End Sub
@@ -3305,8 +3309,8 @@ Private Function RestoreInputs() As String
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Put the sheets back as they were before a case: write what KeepInputs
-'   kept, check that every input cell holds it, and clear the output
-'   sheets, which show the results of the test case.
+'   kept, values and then formulas, check that every input cell holds it, and
+'   clear the output sheets, which show the results of the test case.
 '
 ' RETURNS
 '   An empty text when the sheets are restored; otherwise what failed.
@@ -3323,6 +3327,8 @@ Private Function RestoreInputs() As String
 '==============================================================================
 '
     Dim i             As Long     'Input area
+    Dim r             As Long     'Row
+    Dim c             As Long     'Column
     Dim Differences   As Long     'Input cells that differ
     Dim Cleared       As String   'ClearOutputs_Silent result line
 
@@ -3332,6 +3338,14 @@ Private Function RestoreInputs() As String
         For i = 1 To INPUT_AREAS
             InputArea(i).ClearContents
             InputArea(i).Value = mKept(i)
+            'A cell that held a formula gets it back: the value above is its result.
+            For r = 1 To UBound(mFormulas(i), 1)
+                For c = 1 To UBound(mFormulas(i), 2)
+                    If IsFormula(mFormulas(i)(r, c)) Then
+                        InputArea(i).Cells(r, c).Formula = mFormulas(i)(r, c)
+                    End If
+                Next c
+            Next r
         Next i
         Differences = InputDifferences()
         Cleared = ClearOutputs_Silent()
@@ -3354,7 +3368,9 @@ Private Function InputDifferences() As Long
 '                               InputDifferences
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Count the input cells that do not hold what KeepInputs kept.
+'   Count the input cells that do not hold what KeepInputs kept: a value
+'   that differs, a formula that differs, a formula where the cell held none
+'   and none where it held one.
 '
 ' RETURNS
 '   The number of cells; 0 when the inputs are those kept.
@@ -3363,25 +3379,80 @@ Private Function InputDifferences() As Long
 '   2026-11-17
 '==============================================================================
 '
-    Dim Current   As Variant   'What an area holds now
-    Dim i         As Long      'Input area
-    Dim r         As Long      'Row
-    Dim c         As Long      'Column
-    Dim Count     As Long      'Cells that differ
+    Dim Current           As Variant   'What an area holds now: values
+    Dim CurrentFormulas   As Variant   'What an area holds now: formulas
+    Dim i                 As Long      'Input area
+    Dim r                 As Long      'Row
+    Dim c                 As Long      'Column
+    Dim Count             As Long      'Cells that differ
 
         For i = 1 To INPUT_AREAS
-            Current = InputArea(i).Value
-            If IsArray(Current) Then
-                For r = LBound(Current, 1) To UBound(Current, 1)
-                    For c = LBound(Current, 2) To UBound(Current, 2)
-                        If Not SameValue(Current(r, c), mKept(i)(r, c)) Then Count = Count + 1
-                    Next c
-                Next r
-            ElseIf Not SameValue(Current, mKept(i)) Then
-                Count = Count + 1
-            End If
+            Current = AsTable(InputArea(i).Value)
+            CurrentFormulas = AsTable(InputArea(i).Formula)
+            For r = 1 To UBound(Current, 1)
+                For c = 1 To UBound(Current, 2)
+                    If Not SameValue(Current(r, c), AsTable(mKept(i))(r, c)) Then
+                        Count = Count + 1
+                    ElseIf IsFormula(CurrentFormulas(r, c)) <> IsFormula(mFormulas(i)(r, c)) Then
+                        Count = Count + 1
+                    ElseIf IsFormula(CurrentFormulas(r, c)) Then
+                        If CurrentFormulas(r, c) <> mFormulas(i)(r, c) Then Count = Count + 1
+                    End If
+                Next c
+            Next r
         Next i
         InputDifferences = Count
+
+End Function
+
+
+Private Function AsTable( _
+    ByVal Value As Variant) _
+    As Variant
+'
+'==============================================================================
+'                                    AsTable
+'------------------------------------------------------------------------------
+' PURPOSE
+'   What a range returned as a table of one or more rows and columns: an
+'   area of one cell returns its value alone.
+'
+' RETURNS
+'   Value when it is an array, else a table of one cell holding it.
+'
+' UPDATED
+'   2026-11-17
+'==============================================================================
+'
+    Dim Table(1 To 1, 1 To 1)   As Variant   'The table of one cell
+
+        If IsArray(Value) Then
+            AsTable = Value
+        Else
+            Table(1, 1) = Value
+            AsTable = Table
+        End If
+
+End Function
+
+
+Private Function IsFormula( _
+    ByVal Value As Variant) _
+    As Boolean
+'
+'==============================================================================
+'                                   IsFormula
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Whether what a cell holds, as its Formula returns it, is a formula.
+'
+' UPDATED
+'   2026-11-17
+'==============================================================================
+'
+        If VarType(Value) = vbString Then
+            IsFormula = (Left$(Value, 1) = "=")
+        End If
 
 End Function
 

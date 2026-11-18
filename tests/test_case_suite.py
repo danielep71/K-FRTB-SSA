@@ -233,6 +233,25 @@ class CaseSuite(unittest.TestCase):
         for step in ("On Error GoTo Failed", "InputArea(i).Value = mKept(i)",
                      "Differences = InputDifferences()", "Cleared = ClearOutputs_Silent()"):
             self.assertIn(step, restore.group(0))
+        # A formula an input cell held is written back, and the check compares it: a
+        # run that left its result as a constant would otherwise pass.
+        self.assertIn("InputArea(i).Cells(r, c).Formula = mFormulas(i)(r, c)",
+                      restore.group(0))
+        self.assertLess(restore.group(0).index("InputArea(i).Value = mKept(i)"),
+                        restore.group(0).index(".Formula = mFormulas(i)(r, c)"))
+        for name, step in (("KeepInputs", "mFormulas(i) = AsTable(InputArea(i).Formula)"),
+                           ("InputDifferences",
+                            "CurrentFormulas = AsTable(InputArea(i).Formula)")):
+            kept = re.search(rf"^Private (?:Sub|Function) {name}\(.*?^End (?:Sub|Function)$",
+                             self.text, re.M | re.S)
+            assert kept is not None
+            self.assertIn(step, kept.group(0))
+        differences = re.search(r"^Private Function InputDifferences\(.*?^End Function$",
+                                self.text, re.M | re.S)
+        assert differences is not None
+        self.assertIn("IsFormula(CurrentFormulas(r, c)) <> IsFormula(mFormulas(i)(r, c))",
+                      differences.group(0))
+        self.assertIn("CurrentFormulas(r, c) <> mFormulas(i)(r, c)", differences.group(0))
         for name, body in self.bodies.items():
             if name.startswith("Inputs"):
                 self.assertRegex(body, r"'\n\s+ClearInputs\n", name)

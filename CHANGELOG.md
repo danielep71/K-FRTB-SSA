@@ -70,7 +70,8 @@ Use only the categories an entry needs.
   case per test case and one assertion per expected output, plus the
   restoration of the sheets. Each case types its inputs on the input sheets,
   runs `RunSSA_Silent`, compares every expected output within its tolerance,
-  records every number as a result, and puts the inputs back.
+  records every number as a result, and puts the inputs back, formulas
+  included.
   `tools/prototype/case_suite.py` writes the module from `tests/fixtures/`
   and `tests/expected/`, and a test fails while the tracked module is not
   what it writes. Its certification entry point is `CertifyCases`, and the
