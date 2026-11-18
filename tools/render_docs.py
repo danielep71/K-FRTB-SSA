@@ -12,6 +12,9 @@ Each NAME has a renderer here that computes the block from the repository:
 - example-suite-results, in INSTALLATION.md: what the example suite's runs
   end with, read from the suite that .github/excel-evidence-policy.json names
   by the same code that checks Excel-run evidence (tools/check_excel_run.py);
+- project-suite-results, in INSTALLATION.md: the entry point of each project
+  suite that the policy lists and what its passing run ends with, read the
+  same way;
 - integrity-checks, in CONTRIBUTING.md: the checks that
   tools/check_repository.py runs, in order, with what each runs, as CI runs
   it for the repository OWNER/REPOSITORY, the probe it must fail first, if
@@ -93,6 +96,40 @@ def example_suite_results(root: Path) -> str:
         f"{COUNTS.get(len(rows), str(len(rows)))} more entry points show the failure paths "
         "and are expected to fail:", "",
         "| Entry point | Expected end |", "| --- | --- |", *rows])
+
+
+def run_entry_point(text: str, runner: str) -> str | None:
+    """The procedure to type to run a suite: its runner when that is public,
+    else the public Sub without arguments that calls the runner alone on a line."""
+    if re.search(rf"^Public Sub {re.escape(runner)}\(", text, re.M):
+        return runner
+    for match in re.finditer(r"^Public Sub (\w+)\(\)\n(.*?)^End Sub", text, re.M | re.S):
+        if re.search(rf"^\s+{re.escape(runner)}$", match.group(2), re.M):
+            return match.group(1)
+    return None
+
+
+def project_suite_results(root: Path) -> str:
+    """One row per project suite: what to type and what a passing run ends with."""
+    policy = check_excel_run.working_policy(root)
+    if not policy.project_suites:
+        return "The evidence policy lists no project suite."
+    rows = []
+    for item in policy.project_suites:
+        path = root / item.source
+        if not path.is_file():
+            raise ValueError(f"{item.source}: missing")
+        source = path.read_bytes()
+        suite = check_excel_run.read_suite(source, policy.office, item.runner)
+        passing = check_excel_run.plans(suite, item.name, ("NORMAL",))[0]
+        text = source.decode("ascii", errors="replace").replace("\r\n", "\n")
+        entry = run_entry_point(text, item.runner)
+        if entry is None:
+            raise ValueError(f"{item.source} has no public Sub without arguments that runs "
+                             f"{item.runner}")
+        line = "; ".join(f"{key}={passing.result[key]}" for key in RESULT_ORDER)
+        rows.append(f"| `{item.name}` | `{Path(item.source).stem}.{entry}` | `{line}` |")
+    return "\n".join(["| Suite | Type | A passing run ends with |", "| --- | --- | --- |", *rows])
 
 
 def shown_command(command: Sequence[str]) -> str:
@@ -194,6 +231,7 @@ def data_contract_codes(root: Path) -> str:
 CONTRACT_GUIDE = "docs/methodology/DATA_CONTRACT.md"
 BLOCKS: dict[str, Block] = {
     "example-suite-results": Block("INSTALLATION.md", example_suite_results),
+    "project-suite-results": Block("INSTALLATION.md", project_suite_results),
     "integrity-checks": Block("CONTRIBUTING.md", integrity_checks),
     "data-contract-datasets": Block(CONTRACT_GUIDE, data_contract_datasets),
     "data-contract-fields": Block(CONTRACT_GUIDE, data_contract_fields),

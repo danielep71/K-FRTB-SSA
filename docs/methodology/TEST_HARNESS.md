@@ -15,8 +15,10 @@ records.
 | `tests/modules/TEST_Harness.bas` | The run lifecycle (`BeginRun`, `BeginCase`, `RecordCaseError`, `EndRun`), the assertions (`AssertEqualDouble`, `AssertNear`, `AssertEqualText`, `AssertTrue`, `AssertErrorValue`, `AssertRaised`, with `WithinTolerance` as the comparison rule), the log (`Say`, `Echo`, `SaveLog`, `LastResult`), the [results](#results) (`RecordResult`, `SaveResults`), recovery (`ResetTests`) and certification (`BeginCertification`, `CertifyRun`, `EndCertification`) |
 | `tests/modules/TEST_Examples.bas` | The example suite: one case per kind of assertion, one case that reads the illustrative [test cases](TEST_CASES.md) and records their totals, and the reference implementation of the [cleanup pattern](../VBA_HOUSE_STYLE.md#operation-and-cleanup-outcomes) with its failure paths. It holds no calculation of the workbook |
 | `tests/modules/TEST_Relations.bas` | The illustrative [relation tests](#relation-tests), `RunRelationTests`: four relations of a stand-in total, each with its corruption check. It is not certified, and holds no calculation of the workbook |
+| `tests/modules/TEST_Suite.bas` | The `core` suite, one of [the project's suites](#the-projects-suites): the engine's procedures and the worksheet functions on inputs written in each case. It reads and writes no sheet |
+| `tests/modules/TEST_Workbook.bas` | The `workbook` suite, the other one: the whole calculation through the workbook's entry points, on the sample data of the template. It rewrites the output sheets |
 
-All three use `Option Private Module`, so they never become part of the
+All five use `Option Private Module`, so they never become part of the
 workbook's external surface. A production workbook contains none of them.
 
 A project suite follows the example suite: one `Case` procedure per case,
@@ -125,6 +127,59 @@ A suite that records no result calls no `SaveResults` and names no results
 file. Each suite declares its counts for the Office bitness the policy
 supports: a case or assertion inside `#If Win64` counts only where that
 branch is compiled, and the check reads the suite the same way.
+
+<a id="the-projects-suites"></a>
+
+## The project's suites
+
+The example suite tests the harness: its two failure modes show that a
+failing assertion and a skipped case are reported, and it holds no
+calculation of the workbook. I keep it beside the project's suites for that
+reason, with the illustrative test cases it reads and the illustrative
+entries of the guides that those cases cite. The workbook's own tests are two
+suites, so that the tests of the core need no workbook:
+
+| Suite | Module | What it runs | What it needs and changes |
+| --- | --- | --- | --- |
+| `core` | `TEST_Suite.bas` | The core procedures and the worksheet functions, on inputs written in each case: time bands, ladders, the four risk classes, the validation of rows and parameters, the netting of issues and the fingerprint | The VBA project only. It reads and writes no sheet |
+| `workbook` | `TEST_Workbook.bas` | `RunSSA_Silent`, `CheckStatus_Silent` and `ClearOutputs_Silent` on the template's sample data: the totals of the sample portfolio, a run that fails while it writes or while it reads, and a parameter and a position changed after a run | The workbook with the template's sheets and sample data. It rewrites the output sheets and leaves them cleared. The cell and the name it changes for one operation are put back before it asserts |
+
+Each suite has three entry points:
+
+| Suite | Run | Run and return the result | Certify |
+| --- | --- | --- | --- |
+| `core` | `TEST_Suite.RunCoreTests` | `TEST_Suite.Test_RunCore` | `TEST_Suite.CertifyCore` |
+| `workbook` | `TEST_Workbook.RunWorkbookTests` | `TEST_Workbook.Test_RunWorkbook` | `TEST_Workbook.CertifyWorkbook` |
+
+- **Run.** Type it in the Immediate window. It ends as every run of the
+  harness does: `RESULT=PASS`, or the error *Suite core did not pass* after
+  the summary. [Running the harness](../../INSTALLATION.md#running-the-harness)
+  gives the line a passing run ends with.
+- **Run and return the result.** The same run for a caller that reads a
+  value and not an error, such as `tools/devbuild/lo_macro.py`: it returns
+  the `RESULT` line and raises nothing.
+- **Certify.** It takes the two arguments of `CertifyExamples`, and saves
+  `core.log` and `core-certification.log`, or `workbook.log` and
+  `workbook-certification.log`. Neither suite records results, so neither
+  saves a results file. The path of `tests/fixtures/` is not read.
+
+The expected values are written in the cases: hand calculations, each
+stated in the header of its case; the example of table 9 of MAR40.61; and,
+for the sample portfolio, the requirement and the risk-weighted assets of
+the test case `illustrative-sample-requirement`. An amount is compared
+within the default tolerances of the
+[calculation contracts](CALCULATION_CONTRACTS.md#decisions), a count, a time
+band and a text exactly. Where a number is expected, an empty cell, a text
+or an error value is an error of the case, never a zero.
+
+A pass shows that the engine gives those values in the host that ran the
+suite. It validates no rule: the hand calculations and the derived values
+are mine, as the engine is, and only the two figures of table 9 are
+published. The registered [test cases](TEST_CASES.md) do not run under the
+harness yet
+([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)), and
+neither suite has run in Excel
+([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
 ## Relation tests
 
@@ -439,8 +494,8 @@ host. A policy of version 1, which older commits hold, has no `suites`. The same
 by `tools/devbuild/excel_run.py`, for the harness, the certification entry
 point of each suite and the name of the host record, by
 `tools/devbuild/export_manifest.py`, for the names of the export folder and
-the manifest, by `tools/devbuild/lo_smoke.py`, for the example suite's
-certification entry point and the names of its logs and results file, and by
+the manifest, by `tools/devbuild/lo_smoke.py`, for the certification entry
+point of each suite and the names of their logs and results files, and by
 `tools/render_docs.py`, for the expected results in the installation guide. `tests/test_check_excel_run.py` keeps the policy equal to
 the suite, to the host policy of the installation guide and to the evidence
 files the guide names. To change a mode, a file name, a reference or the
@@ -465,7 +520,12 @@ Without Excel, `tests/test_vba_harness.py` checks what the source can show:
   files that exist;
 - the harness reads the stamp name the build writes;
 - the relation suite's counts equal its cases and assertions, and every
-  relation case asserts both `holds` and `detects-corruption`.
+  relation case asserts both `holds` and `detects-corruption`;
+- each project suite's counts equal its cases and assertions and those of the
+  evidence policy, every assertion has a literal name in the body of a case,
+  its certification entry point saves the logs the policy names, the `core`
+  suite touches no workbook, and the `workbook` suite puts back what it
+  changes and ends with the output sheets cleared.
 
 `check_excel_run.py` proves that an evidence folder is consistent with a
 commit, and measures the commit's accuracy contracts on its results files. It

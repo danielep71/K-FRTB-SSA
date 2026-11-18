@@ -65,6 +65,21 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The workbook's VBA tests run under the test harness, as two suites. The
+  `core` suite, 11 cases and 90 assertions in `tests/modules/TEST_Suite.bas`,
+  calls the engine's procedures and the worksheet functions and touches no
+  sheet. The `workbook` suite, 3 cases and 34 assertions in the new
+  `tests/modules/TEST_Workbook.bas`, runs the whole calculation on the
+  sample data and leaves the output sheets cleared. Each has an entry point
+  to type, `TEST_Suite.RunCoreTests` and `TEST_Workbook.RunWorkbookTests`,
+  and a certification entry point, `CertifyCore` and `CertifyWorkbook`, and
+  the evidence policy lists both, so an Excel run must now hold their logs.
+  The 124 assertions are those of the earlier module, with amounts now
+  compared within the default tolerances and counts exactly.
+  `tools/devbuild/lo_smoke.py` also certifies each project suite, whose run
+  must pass. Both suites pass in LibreOffice; neither has run in Excel
+  (#21).
+
 - The project's test cases: 18 JSON fixtures with their expected results,
   on the seven calculations. One holds the two values printed in the
   example of table 9 of MAR40.61, as `published`; the others hold the
@@ -126,6 +141,13 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- `TEST_Suite.Test_RunAll` no longer exists: run the two suites of the VBA
+  tests by their entry points. `TEST_Suite.Test_RunCore` now returns the
+  `RESULT` line of the harness, as `TEST_Workbook.Test_RunWorkbook` does,
+  and `tools/prototype/verify.py` runs both as its seventh step.
+  `tools/devbuild/lo_smoke.py` opens the workbook with a view, which the
+  workbook's entry points need, and reports the error of each certification
+  under `errors` (#21).
 - The workbook no longer shows results it cannot stand behind (#25):
   - A run that raises an error, while it reads, calculates or writes, clears
     every output area and writes a status line that begins with `FAILED`,
@@ -171,6 +193,9 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- Each calculation contract names its test cases and says which values are
+  published. Seven contracts still said that no test case existed, after the
+  cases were registered (#49).
 - The formula workbook that `tools/prototype/build_prototype.py` writes
   groups, counts and looks up rows by typed keys as text, as the engine
   does. Before, a `*`, `?` or `~` in an Issue ID, a stock, a market, a

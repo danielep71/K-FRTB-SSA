@@ -523,16 +523,36 @@ class Verification(NeedsOpenpyxl):
     def test_a_macro_result_is_the_last_result_line(self) -> None:
         verify = tool("verify")
         run = verify.Run(Path("folder"), "python-with-uno")
-        done = subprocess.CompletedProcess([], 0, "noise\nRESULT: PASS=91; FAIL=0\n", "")
+        done = subprocess.CompletedProcess([], 0, "noise\nRESULT: RESULT=OK; errors=0\n", "")
         with unittest.mock.patch("subprocess.run", return_value=done) as called:
-            self.assertEqual(run.macro(Path("w.xlsm"), verify.TESTS, Path("o.xlsx")),
-                             "PASS=91; FAIL=0")
+            self.assertEqual(run.macro(Path("w.xlsm"), verify.RUN, Path("o.xlsx")),
+                             "RESULT=OK; errors=0")
         self.assertEqual(called.call_args.args[0],
-                         ["python-with-uno", str(verify.LO_MACRO), "w.xlsm", verify.TESTS, "o.xlsx"])
+                         ["python-with-uno", str(verify.LO_MACRO), "w.xlsm", verify.RUN, "o.xlsx"])
         failed = subprocess.CompletedProcess([], 1, "lo-macro: FAIL (cannot load)\n", "")
         with unittest.mock.patch("subprocess.run", return_value=failed), \
                 self.assertRaisesRegex(verify.Failure, "cannot load"):
             run.macro(Path("w.xlsm"), verify.RUN, Path("o.xlsx"))
+
+    def test_the_suites_step_runs_both_suites_and_needs_each_to_pass(self) -> None:
+        verify = tool("verify")
+        run = verify.Run(Path("folder"), "python-with-uno")
+        results = {"TEST_Suite.Test_RunCore": "RESULT=PASS; suite=core; assertions=90",
+                   "TEST_Workbook.Test_RunWorkbook": "RESULT=PASS; suite=workbook; assertions=34"}
+        self.assertEqual(verify.TESTS, tuple(results))
+        with unittest.mock.patch.object(
+                verify.Run, "macro", side_effect=lambda _book, macro, _out: results[macro]) as called:
+            self.assertEqual(verify.test_suite(run), "\n".join(results.values()))
+        self.assertEqual([call.args[1] for call in called.call_args_list], list(results))
+        # Each run saves its own values, so one does not replace the other's.
+        self.assertEqual(len({call.args[2] for call in called.call_args_list}), 2)
+        for result in ("RESULT=FAIL; suite=workbook; failures=1", ""):
+            results["TEST_Workbook.Test_RunWorkbook"] = result
+            with unittest.mock.patch.object(
+                    verify.Run, "macro", side_effect=lambda _book, macro, _out: results[macro]), \
+                    self.assertRaisesRegex(verify.Failure, "TEST_Workbook.Test_RunWorkbook: "
+                                           + (result or "no result")):
+                verify.test_suite(run)
 
     def test_verify_stops_at_the_first_step_that_fails(self) -> None:
         verify = tool("verify")

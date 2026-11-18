@@ -26,7 +26,8 @@ It needs LibreOffice and openpyxl. The steps:
    "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
    for a cell that holds an error value, so the two cannot be compared here.
 6. Make two Params values unusable: the run stops and lists both.
-7. Run TEST_Suite.Test_RunAll: no assertion fails.
+7. Run the core suite and the workbook suite of the VBA tests, through
+   TEST_Suite.Test_RunCore and TEST_Workbook.Test_RunWorkbook: each run passes.
 8. Run the registered test cases, as run_cases.py does: the workbook holds
    every expected value.
 
@@ -67,7 +68,7 @@ import ssa_reference  # noqa: E402
 
 LO_MACRO = ROOT / "tools" / "devbuild" / "lo_macro.py"
 RUN = "M_Main.RunSSA_Silent"
-TESTS = "TEST_Suite.Test_RunAll"
+TESTS = ("TEST_Suite.Test_RunCore", "TEST_Workbook.Test_RunWorkbook")
 # The first row of a position table; its first column is C.
 FIRST_ROW = 5
 FIRST_COLUMN = 3
@@ -373,10 +374,14 @@ def stopped_run(run: Run) -> str:
 
 
 def test_suite(run: Run) -> str:
-    result = run.macro(run.workbook, TESTS, run.folder / "vba-tests.xlsx")
-    if not result.startswith("PASS=") or not result.endswith("FAIL=0"):
-        raise Failure(result)
-    return result
+    results = []
+    for macro in TESTS:
+        result = run.macro(run.workbook, macro, run.folder / f"vba-{macro}.xlsx")
+        if not result.startswith("RESULT=PASS;"):
+            raise Failure(f"{macro}: {result or 'no result'}; python3 tools/devbuild/lo_smoke.py "
+                          "prints the failures of the run")
+        results.append(result)
+    return "\n".join(results)
 
 
 def test_cases(run: Run) -> str:
@@ -396,7 +401,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Negative scenario on both workbooks", negative_scenario),
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
-    ("TEST_Suite.Test_RunAll", test_suite),
+    ("The core suite and the workbook suite of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
 )
 

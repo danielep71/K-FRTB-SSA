@@ -190,7 +190,10 @@ positions, the *Specific risk* of the interest rate row of `Results`.
 **Failure behaviour:** `ir_position_status`, on `IRCalc`, is `OK` or one of
 the texts listed under `CALC-03`, which shares the rows.
 
-**Validation:** no test case yet. See the
+**Validation:** the test cases
+`illustrative-ir-specific-risk-maturity-limits` and
+`illustrative-sample-ir-specific-risk`. Their expected values are
+`illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-02` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
@@ -279,7 +282,10 @@ interest rate row of `Results`, with its components per currency on
 The first test that fails gives the text. A rejected row enters neither
 `CALC-02` nor this calculation.
 
-**Validation:** no test case yet. See the
+**Validation:** the test cases `illustrative-invalid-ir-positions`,
+`illustrative-ir-time-band-limits` and
+`illustrative-sample-ir-general-market-risk`. Their expected values are
+`illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-03` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
@@ -342,9 +348,12 @@ The first test that fails gives the text. A rejected row enters neither
 - `INVALID: Market value must be a number`
 - `INVALID: Market value must be >= 0 (Direction gives the sign)`
 
-**Validation:** no test case yet. See the
-[validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
-`CALC-04` in the [traceability table](VALIDATION_PLAN.md#traceability).
+**Validation:** the test cases `illustrative-eq-matched-positions`,
+`illustrative-invalid-eq-positions` and `illustrative-sample-equity`. Their
+expected values are `illustrative`: derived within the project, they validate
+nothing. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
+and the rows of `CALC-04` in the [traceability
+table](VALIDATION_PLAN.md#traceability).
 
 ### `CALC-05` Commodities risk: simplified approach
 
@@ -407,9 +416,12 @@ commodity on `Buckets`.
 - `INVALID: Spot price must be a number`
 - `INVALID: currency not in FX_Table`
 
-**Validation:** no test case yet. See the
-[validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
-`CALC-05` in the [traceability table](VALIDATION_PLAN.md#traceability).
+**Validation:** the test cases `illustrative-co-matched-positions`,
+`illustrative-invalid-co-positions` and `illustrative-sample-commodities`.
+Their expected values are `illustrative`: derived within the project, they
+validate nothing. See the [validation
+matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of `CALC-05` in
+the [traceability table](VALIDATION_PLAN.md#traceability).
 
 ### `CALC-06` Foreign exchange risk: shorthand method
 
@@ -463,11 +475,13 @@ per currency and the overall net open position on `Buckets`.
 - `INVALID: Amount must be >= 0 (Direction gives the sign)`
 - `EXCLUDED: reporting currency carries no FX risk`
 
-**Validation:** no test case yet. `TEST_Suite` compares the example of table
-9 of MAR40.61, an overall net open position of 335 and a requirement of
-26.8, with the engine's result; it is not a registered test case. See the
-[validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
-`CALC-06` in the [traceability table](VALIDATION_PLAN.md#traceability).
+**Validation:** the test case `mar40-61-table-9`, two of whose expected
+values are published in table 9 of MAR40.61, and the test cases
+`illustrative-fx-one-sided-positions`, `illustrative-invalid-fx-positions`
+and `illustrative-sample-fx`. Every other expected value is `illustrative`:
+derived within the project, it validates nothing. See the [validation
+matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of `CALC-06` in
+the [traceability table](VALIDATION_PLAN.md#traceability).
 
 ### `CALC-07` Non-delta charges for options
 
@@ -509,9 +523,11 @@ unusable parameter: the run reads `STOPPED`, and `Checks` lists the name of
 the cell with `INVALID: must be a number` or `INVALID: must be 0 or more`.
 An empty cell is zero.
 
-**Validation:** no test case yet. See the
-[validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
-`CALC-07` in the [traceability table](VALIDATION_PLAN.md#traceability).
+**Validation:** the test case `illustrative-option-charges`. Its expected
+values are `illustrative`: derived within the project, they validate nothing.
+See the [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the
+rows of `CALC-07` in the [traceability
+table](VALIDATION_PLAN.md#traceability).
 
 ### `CALC-08` Requirement and risk-weighted assets
 
@@ -561,9 +577,9 @@ zero, a currency listed twice or the reporting currency not listed with
 rate 1. The run reads `STOPPED`, no result is calculated, and `Checks` lists
 each value with its reason (rules `C05` to `C07` and `C14`).
 
-**Validation:** no test case yet. `TEST_Suite` compares the requirement and
-the risk-weighted assets of the sample data with an illustrative
-re-calculation; it validates nothing. See the
+**Validation:** the test cases `illustrative-requirement-fx-and-options-only`
+and `illustrative-sample-requirement`. Their expected values are
+`illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-08` in the [traceability table](VALIDATION_PLAN.md#traceability).
 

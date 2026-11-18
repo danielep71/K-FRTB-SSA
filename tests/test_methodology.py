@@ -1,6 +1,7 @@
-"""The methodology guides against the VBA source and the template: the status
-texts of a rejected row, the reference values of the parameters, and the
-datasets and fields of the data contract."""
+"""The methodology guides against the VBA source, the template and the test
+cases: the status texts of a rejected row, the cases each calculation contract
+names, the reference values of the parameters, and the datasets and fields of
+the data contract."""
 
 from __future__ import annotations
 
@@ -19,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "docs" / "methodology" / "CALCULATION_CONTRACTS.md"
 DATA_CONTRACT = ROOT / "docs" / "methodology" / "data-contract.json"
 TEMPLATE = ROOT / "src" / "workbook" / "Template.xlsx"
+FIXTURES = ROOT / "tests" / "fixtures"
 CORE = ROOT / "src" / "core"
 # The contract whose Failure behaviour lists the statuses of a module's rows.
 ROW_MODULES = {"CALC-03": "CORE_InterestRate.bas", "CALC-04": "CORE_Equity.bas",
@@ -66,6 +68,23 @@ class StatusTexts(unittest.TestCase):
             with self.subTest(finding=finding):
                 self.assertIn(f'ST_INVALID & "{finding}"', source)
                 self.assertIn(f"`INVALID: {finding}`", text)
+
+
+class ValidationParagraphs(unittest.TestCase):
+    def test_each_contract_names_the_cases_whose_fixture_cites_it(self) -> None:
+        cited: dict[str, set[str]] = {}
+        for path in sorted(FIXTURES.glob("*.json")):
+            fixture = json.loads(path.read_text(encoding="utf-8"))
+            cited.setdefault(fixture["calculation"], set()).add(fixture["id"])
+        for number in range(2, 9):
+            calculation = f"CALC-0{number}"
+            with self.subTest(calculation=calculation):
+                text = contract(calculation)
+                paragraph = text[text.index("**Validation:**"):].split("\n\n")[0]
+                named = set(re.findall(r"`([a-z0-9]+(?:-[a-z0-9]+)+)`", paragraph))
+                self.assertTrue(cited[calculation])
+                self.assertEqual(named, cited[calculation])
+                self.assertNotIn("no test case", paragraph)
 
 
 class Parameters(unittest.TestCase):

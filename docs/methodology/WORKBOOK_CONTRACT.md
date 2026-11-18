@@ -368,9 +368,10 @@ The other output sheets show the line through a formula. With manual
 calculation, they show the new line after the next recalculation.
 
 Nothing of this is tested in Excel yet. In LibreOffice's VBA mode, which is
-not a supported host, `TEST_Suite` covers a run that fails while it writes,
-one that fails while it reads, and a parameter and a position changed after
-a run.
+not a supported host, the `workbook` suite of the
+[test harness](TEST_HARNESS.md#the-projects-suites) covers a run that fails
+while it writes, one that fails while it reads, and a parameter and a
+position changed after a run.
 
 ## Build
 

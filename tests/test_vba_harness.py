@@ -6,7 +6,10 @@ assertions it contains, that every case runs once with a well-formed unique
 identifier, that the documented passing RESULT line matches the counts, and
 that every record the harness writes is documented. The relation suite is
 checked the same way, and each of its cases must pair the relation with its
-corruption check; its tests are skipped in a repository that deleted it.
+corruption check; its tests are skipped in a repository that deleted it. Each
+project suite of the evidence policy is checked against the policy and the
+shape the evidence check reads: its counts, its identifiers, where its
+assertions are, and its certification entry point.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ HARNESS = ROOT / "tests/modules/TEST_Harness.bas"
 GUIDE = ROOT / "docs/methodology/TEST_HARNESS.md"
 REGISTRY = ROOT / "tests/accuracy/contracts.json"
 BUILD_CONFIG = ROOT / "tools/devbuild/workbook.json"
+POLICY = ROOT / ".github/excel-evidence-policy.json"
 CASE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # A RecordResult statement, not a comment that names it.
 RECORD = re.compile(r"^\s*TEST_Harness\.RecordResult ", re.M)
@@ -210,6 +214,149 @@ class RelationSuiteTest(unittest.TestCase):
             self.assertEqual(int(stated.group(1)), len(self.assertions(body)), name)
         passing = re.sub(r"\n'\s+", " ", self.bodies["RunRelationTests"])
         self.assertIn(f"cases={cases}; assertions={assertions}; failures=0", passing)
+
+
+def code(text: str) -> str:
+    """The statements of a module: no comment line, and no string literal."""
+    lines = [line for line in text.split("\n") if not line.lstrip().startswith("'")]
+    return re.sub(r'"[^"]*"', '""', "\n".join(lines))
+
+
+class ProjectSuitesTest(unittest.TestCase):
+    """Each suite the evidence policy lists under suites, against the policy."""
+
+    suites: ClassVar[list[dict[str, object]]] = json.loads(
+        POLICY.read_text(encoding="utf-8"))["suites"]
+
+    def each(self) -> list[tuple[dict[str, object], str, dict[str, str], list[str]]]:
+        """The entry, the source, the procedures and the cases the runner calls."""
+        found = []
+        for entry in self.suites:
+            text = source(ROOT / str(entry["source"]))
+            bodies = procedures(text)
+            runner = bodies[str(entry.get("runner", "RunSuite"))]
+            found.append((entry, text, bodies, re.findall(r"^\s+(Case\w+)$", runner, re.M)))
+        return found
+
+    def test_the_policy_lists_the_core_and_the_workbook_suite(self) -> None:
+        self.assertEqual([(entry["name"], entry["source"]) for entry in self.suites],
+                         [("core", "tests/modules/TEST_Suite.bas"),
+                          ("workbook", "tests/modules/TEST_Workbook.bas")])
+
+    def test_the_runner_calls_every_case_once(self) -> None:
+        for entry, _, bodies, called in self.each():
+            with self.subTest(suite=entry["name"]):
+                self.assertEqual(sorted(called),
+                                 sorted(name for name in bodies if name.startswith("Case")))
+                self.assertEqual(len(called), len(set(called)))
+
+    def test_each_case_begins_once_with_a_unique_identifier_and_records_its_error(self) -> None:
+        for entry, _, bodies, called in self.each():
+            identifiers = []
+            for name in called:
+                with self.subTest(suite=entry["name"], case=name):
+                    begun = re.findall(r'TEST_Harness\.BeginCase "([^"]+)"', bodies[name])
+                    self.assertEqual(len(begun), 1)
+                    self.assertRegex(begun[0], CASE_ID)
+                    # An error of the case is recorded, never left to end the run.
+                    self.assertRegex(bodies[name], r"\n\s+On Error GoTo CaseFailed\n\s+"
+                                     r"TEST_Harness\.BeginCase ")
+                    self.assertRegex(bodies[name], r"\nCaseFailed:\n\s+"
+                                     r"TEST_Harness\.RecordCaseError\n\nEnd Sub$")
+                    identifiers += begun
+            self.assertEqual(len(identifiers), len(set(identifiers)), entry["name"])
+
+    def test_every_assertion_is_a_named_one_in_the_body_of_a_case(self) -> None:
+        # The evidence check reads the assertions of a case in its own body, by their
+        # literal names: one in a helper, or with a computed name, would not be counted.
+        for entry, text, bodies, called in self.each():
+            with self.subTest(suite=entry["name"]):
+                named = []
+                for name in called:
+                    found = re.findall(r'TEST_Harness\.Assert\w+ "([^"]+)"', bodies[name])
+                    self.assertEqual(len(found), len(set(found)), name)
+                    for item in found:
+                        self.assertRegex(item, CASE_ID, name)
+                    named += found
+                self.assertEqual(len(named), len(re.findall(r"TEST_Harness\.Assert\w+", code(text))))
+
+    def test_the_counts_are_those_of_the_source_and_of_the_policy(self) -> None:
+        for entry, text, bodies, called in self.each():
+            with self.subTest(suite=entry["name"]):
+                assertions = sum(len(re.findall(r"TEST_Harness\.Assert\w+ ", bodies[name]))
+                                 for name in called)
+                self.assertEqual(constant(text, "EXPECTED_CASES"), len(called))
+                self.assertEqual(constant(text, "EXPECTED_ASSERTIONS"), assertions)
+                self.assertEqual(entry["expected_cases"], len(called))
+                self.assertEqual(entry["expected_assertions"], assertions)
+                self.assertIn(f'Private Const SUITE_NAME          As String = "{entry["name"]}"',
+                              text)
+
+    def test_the_certification_entry_point_saves_the_logs_the_policy_names(self) -> None:
+        for entry, _, bodies, _ in self.each():
+            with self.subTest(suite=entry["name"]):
+                body = bodies[str(entry["certification_entry_point"])]
+                self.assertRegex(body, r"^Public Sub \w+\( _\n    ByVal Folder As String, _\n"
+                                 r"    ByVal Fixtures As String\)\n")
+                steps = ["TEST_Harness.BeginCertification SUITE_NAME",
+                         "On Error Resume Next", "RunSuite", "On Error GoTo 0",
+                         f'TEST_Harness.SaveLog Folder & "\\{entry["log"]}"',
+                         'TEST_Harness.CertifyRun "NORMAL", True, RunErrorNumber, '
+                         "RunErrorDescription",
+                         f'TEST_Harness.EndCertification Folder & "\\{entry["certification_log"]}"']
+                statements = [line.strip() for line in body.split("\n")]
+                positions = [statements.index(step) for step in steps]
+                self.assertEqual(positions, sorted(positions))
+                # A suite that names no results file saves none.
+                self.assertEqual("results" in entry, "TEST_Harness.SaveResults" in body)
+
+    def test_each_suite_has_an_entry_point_that_raises_and_one_that_returns_the_result(
+            self) -> None:
+        for entry, text, bodies, _ in self.each():
+            with self.subTest(suite=entry["name"]):
+                plain = [name for name, body in bodies.items()
+                         if re.match(r"Public Sub \w+\(\)\n", body)
+                         and re.search(r"^\s+RunSuite$", body, re.M)]
+                self.assertEqual(len(plain), 1)
+                returning = [name for name, body in bodies.items()
+                             if re.match(r"Public Function \w+\(\) As String\n", body)
+                             and f"{name} = TEST_Harness.LastResult()" in body]
+                self.assertEqual(len(returning), 1)
+                self.assertIn("Option Private Module", text)
+
+    def test_the_core_suite_touches_no_workbook(self) -> None:
+        statements = code(source(ROOT / "tests/modules/TEST_Suite.bas"))
+        for word in ("ThisWorkbook", "ActiveWorkbook", "Worksheets", "Sheets", "Range", "Cells",
+                     "Names", "Application", "RunSSA", "RunSSA_Silent", "CheckStatus_Silent",
+                     "ClearOutputs_Silent"):
+            with self.subTest(word=word):
+                self.assertNotRegex(statements, rf"\b{word}\b")
+
+    def test_the_workbook_suite_ends_with_the_output_sheets_cleared(self) -> None:
+        text = source(ROOT / "tests/modules/TEST_Workbook.bas")
+        bodies = procedures(text)
+        last = re.findall(r"^\s+(Case\w+)$", bodies["RunSuite"], re.M)[-1]
+        statements = [line.strip() for line in code(bodies[last]).split("\n")]
+        cleared = max(index for index, line in enumerate(statements)
+                      if line == "ClearOutputs_Silent")
+        # Nothing after it runs the calculation again.
+        self.assertFalse([line for line in statements[cleared:] if "RunSSA" in line])
+        for name, body in bodies.items():
+            if name.startswith("Case"):
+                # What a case changes it puts back: as many restorations as changes.
+                self.assertEqual(len(re.findall(r"^\s+Saved(?:Range)? = ", body, re.M)),
+                                 len(re.findall(r" = Saved(?:Range)?$", body, re.M)), name)
+
+    def test_the_guides_name_each_suite_and_its_entry_points(self) -> None:
+        guide = GUIDE.read_text(encoding="utf-8")
+        for entry, _, bodies, _ in self.each():
+            module = Path(str(entry["source"])).stem
+            with self.subTest(suite=entry["name"]):
+                self.assertIn(f"| `{entry['name']}` | `{module}.bas` |", guide)
+                self.assertIn(f"`{module}.{entry['certification_entry_point']}`", guide)
+                for name, body in bodies.items():
+                    if body.startswith("Public "):
+                        self.assertIn(f"`{module}.{name}`", guide)
 
 
 class MissingRelationSuiteTest(unittest.TestCase):

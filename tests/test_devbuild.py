@@ -931,7 +931,12 @@ class LibreOfficeSmoke(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(),
                          "lo-smoke: FAIL (build: src/forms: forms are not built (frmInput))")
 
-    def test_the_entry_point_logs_and_results_file_come_from_the_evidence_policy(self) -> None:
+    def smoke(self, project_result: str = "RESULT=PASS; suite=project",
+              project_results: str = '{"kind": "test-results"}'
+              ) -> tuple[int, dict[str, Any], list[tuple[str, ...]], check_excel_run.Policy]:
+        """Exit code and summary of main with LibreOffice replaced by mocks, on a policy
+        with other names and one project suite, whose run ends with ``project_result``
+        and whose results file holds ``project_results``."""
         data = json.loads((ROOT / check_excel_run.POLICY).read_text(encoding="utf-8"))
         data["suite"]["source"] = "tests/modules/TEST_Renamed.bas"
         data["suite"]["certification_entry_point"] = "CertifyRenamed"
@@ -939,19 +944,28 @@ class LibreOfficeSmoke(unittest.TestCase):
             item["log"] = f"renamed-{item['log']}"
         data["evidence"]["certification_log"] = "renamed-certification.log"
         data["evidence"]["results"] = "renamed-results.json"
+        data["suites"] = [{"name": "project", "source": "tests/modules/TEST_Project.bas",
+                           "certification_entry_point": "CertifyProject", "expected_cases": 1,
+                           "expected_assertions": 1, "log": "project.log",
+                           "certification_log": "project-certification.log",
+                           "results": "project-results.json"}]
         policy = check_excel_run.parse_policy(json.dumps(data))
         injected = policy.logs["INJECTED_FAILURE"]
-        procedures: list[str] = []
+        called: list[tuple[str, ...]] = []
 
         def certify(_context: object, workbook: Path, folder: Path,
-                    procedure: str) -> dict[str, object]:
-            procedures.append(procedure)
+                    procedures: tuple[str, ...]) -> dict[str, object]:
+            called.append(procedures)
             for name in policy.logs.values():
                 failure = "FAILURE=exact-double/half-plus-quarter\n" if name == injected else ""
                 (folder / name).write_text(f"{failure}RESULT=DONE\n", encoding="utf-8")
             (folder / policy.certification).write_text("CERTIFIED\n", encoding="utf-8")
             (folder / policy.results).write_text('{"kind": "test-results"}', encoding="utf-8")
-            return {"workbook": str(workbook), "error": None}
+            (folder / "project.log").write_text(f"{project_result}\n", encoding="utf-8")
+            (folder / "project-certification.log").write_text("PROJECT\n", encoding="utf-8")
+            (folder / "project-results.json").write_text(project_results, encoding="utf-8")
+            return {"workbook": str(workbook),
+                    "errors": dict.fromkeys(procedures)}
 
         with tempfile.TemporaryDirectory() as directory:
             workbook = Path(directory) / "Workbook.xlsm"
@@ -967,15 +981,66 @@ class LibreOfficeSmoke(unittest.TestCase):
                     unittest.mock.patch.object(lo_smoke, "certify", side_effect=certify), \
                     contextlib.redirect_stdout(io.StringIO()) as output:
                 code = lo_smoke.main([str(workbook)])
-        summary = json.loads(output.getvalue())
-        self.assertEqual(procedures, ["TEST_Renamed.CertifyRenamed"])
+        return code, json.loads(output.getvalue()), called, policy
+
+    def test_the_entry_points_logs_and_results_files_come_from_the_evidence_policy(
+            self) -> None:
+        code, summary, called, policy = self.smoke()
+        # One session runs the example suite's entry point, then each project suite's.
+        self.assertEqual(called, [("TEST_Renamed.CertifyRenamed", "TEST_Project.CertifyProject")])
         self.assertEqual(list(summary["logs"]),
-                         [*policy.logs.values(), "renamed-certification.log"])
+                         [*policy.logs.values(), "renamed-certification.log", "project.log",
+                          "project-certification.log"])
         self.assertEqual(summary["logs"]["renamed-certification.log"], ["CERTIFIED"])
+        self.assertEqual(summary["logs"]["project-certification.log"], ["PROJECT"])
         self.assertEqual(summary["results"], {"kind": "test-results"})
+        self.assertEqual(summary["project_results"],
+                         {"project-results.json": {"kind": "test-results"}})
         # The injected mode's designed failure is found under the policy's log name.
         self.assertEqual(summary["unexpected"], [])
         self.assertEqual(code, 0)
+
+    def test_a_project_suite_whose_run_does_not_pass_is_unexpected(self) -> None:
+        # No failure line: a refused start ends so.
+        code, summary, _, _ = self.smoke(
+            project_result="RESULT=FAIL; suite=project; operation=NOT_RUN")
+        self.assertEqual(summary["unexpected"],
+                         ["project.log: RESULT=FAIL; suite=project; operation=NOT_RUN"])
+        self.assertEqual(code, 1)
+        code, summary, _, _ = self.smoke(
+            project_result="FAILURE=some-case/some-assertion; expected=1\nRESULT=FAIL; x")
+        self.assertEqual(summary["unexpected"],
+                         ["project.log: FAILURE=some-case/some-assertion; expected=1",
+                          "project.log: RESULT=FAIL; x"])
+        self.assertEqual(code, 1)
+
+    def test_a_project_results_file_that_is_not_one_is_unexpected(self) -> None:
+        code, summary, _, _ = self.smoke(project_results="not JSON")
+        self.assertEqual(summary["unexpected"],
+                         ["project-results.json: not written as a test-results file"])
+        self.assertEqual(code, 1)
+
+    def test_certify_runs_every_entry_point_in_one_document_and_keeps_each_error(self) -> None:
+        context = unittest.mock.MagicMock()
+        desktop = context.ServiceManager.createInstanceWithContext.return_value
+        document = desktop.loadComponentFromURL.return_value
+        scripts = {name: unittest.mock.MagicMock() for name in ("A.CertifyA", "B.CertifyB")}
+        scripts["A.CertifyA"].invoke.side_effect = RuntimeError("did not pass")
+        document.getScriptProvider.return_value.getScript.side_effect = \
+            lambda url: scripts[url.split("VBAProject.")[1].split("?")[0]]
+        self.enterContext(unittest.mock.patch.object(
+            lo_smoke, "property_value", side_effect=lambda name, value: (name, value)))
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            summary = lo_smoke.certify(context, folder / "Workbook.xlsm", folder,
+                                       ("A.CertifyA", "B.CertifyB"))
+        self.assertEqual(summary["errors"], {"A.CertifyA": "did not pass", "B.CertifyB": None})
+        # With a view: the entry points of the workbook need one.
+        self.assertIn(("Hidden", False), desktop.loadComponentFromURL.call_args.args[3])
+        scripts["B.CertifyB"].invoke.assert_called_once_with(
+            (str(folder), str(ROOT / "tests" / "fixtures")), (), ())
+        desktop.loadComponentFromURL.assert_called_once()
+        document.close.assert_called_once_with(True)
 
 
 class LibreOfficeMacro(unittest.TestCase):
@@ -1032,18 +1097,18 @@ class LibreOfficeMacro(unittest.TestCase):
         desktop = context.ServiceManager.createInstanceWithContext.return_value
         document = desktop.loadComponentFromURL.return_value
         script = document.getScriptProvider.return_value.getScript.return_value
-        script.invoke.return_value = ("PASS=91; FAIL=0",)
+        script.invoke.return_value = ("RESULT=PASS; suite=core",)
         # The real one needs the UNO bridge.
         self.enterContext(unittest.mock.patch.object(
             lo_smoke, "property_value", side_effect=lambda name, value: (name, value)))
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "out.xlsx"
             returned = lo_macro.run(context, Path(directory) / "Workbook.xlsm",
-                                    "TEST_Suite.Test_RunAll", output)
+                                    "TEST_Suite.Test_RunCore", output)
             saved = output.resolve().as_uri()
-        self.assertEqual(returned, "PASS=91; FAIL=0")
+        self.assertEqual(returned, "RESULT=PASS; suite=core")
         document.getScriptProvider.return_value.getScript.assert_called_once_with(
-            "vnd.sun.star.script:VBAProject.TEST_Suite.Test_RunAll"
+            "vnd.sun.star.script:VBAProject.TEST_Suite.Test_RunCore"
             "?language=Basic&location=document")
         document.calculateAll.assert_called_once_with()
         document.storeToURL.assert_called_once_with(

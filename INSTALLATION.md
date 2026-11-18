@@ -196,10 +196,11 @@ the failure in an issue.
 
 **Early warning in LibreOffice (optional).** Where LibreOffice and its
 Python UNO bridge are installed, `python3 tools/devbuild/lo_smoke.py` builds
-the development workbook and runs the harness certification in headless
-LibreOffice; `python3 tools/devbuild/lo_smoke.py WORKBOOK` runs a workbook
-you built. It reports only failures that LibreOffice is not known to cause,
-and exits 0 when there is none, 1 on such a failure, when the build fails or
+the development workbook and runs the certification of the example suite and
+of each project suite in headless LibreOffice;
+`python3 tools/devbuild/lo_smoke.py WORKBOOK` runs a workbook you built. It
+reports only failures that LibreOffice is not known to cause, which are all
+in the example suite: the run of a project suite must pass. It exits 0 when there is none, 1 on such a failure, when the build fails or
 when LibreOffice cannot run the workbook, and 2 for an unknown option, a
 missing workbook, a missing or malformed evidence policy, or a missing
 LibreOffice or UNO bridge. LibreOffice is not a supported host, and this is
@@ -207,7 +208,7 @@ never Excel evidence.
 
 `python3 tools/devbuild/lo_macro.py WORKBOOK MACRO OUTPUT` runs one macro of
 a workbook you built, such as `M_Main.RunSSA_Silent` or
-`TEST_Suite.Test_RunAll`, prints what it returned and saves the recalculated
+`TEST_Suite.Test_RunCore`, prints what it returned and saves the recalculated
 sheets to `OUTPUT` as a macro-free `.xlsx`. With `-` as `MACRO` it calls none
 and only recalculates and saves. It exits 0 when the macro ran, 1
 when LibreOffice could not open the workbook or the macro raised, and 2 for
@@ -247,8 +248,8 @@ is never Excel evidence, and it validates no rule.
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, runs `TEST_Suite.Test_RunAll`, and runs the
-test cases as `run_cases.py` does. Error
+area with the formula workbook's, runs the `core` and the `workbook` suite of
+the VBA tests, and runs the test cases as `run_cases.py` does. Error
 values typed as texts are checked on the formula workbook alone: LibreOffice
 gives the engine 0 for a cell that holds one, where Excel gives the error.
 `--uno-python PYTHON` names the Python that provides the UNO bridge, when it
@@ -312,6 +313,29 @@ Two more entry points show the failure paths and are expected to fail:
 - **What it proves.** The suite exercises the harness itself and validates no
   calculation of the workbook. The [harness guide](docs/methodology/TEST_HARNESS.md)
   defines the outcomes and the log format.
+
+**The project's suites.** The workbook's own tests run the same way, each
+from an entry point without arguments:
+
+<!-- BEGIN generated: project-suite-results -->
+| Suite | Type | A passing run ends with |
+| --- | --- | --- |
+| `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE` |
+| `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=3; assertions=34; failures=0; cleanup=PASS; recovery=NONE` |
+<!-- END generated: project-suite-results -->
+
+The `core` suite calls the engine's procedures and the worksheet functions on
+inputs written in each case, and touches no sheet. The `workbook` suite runs
+the whole calculation on the sample data the template ships: it rewrites the
+output sheets and leaves them cleared, so run it in a development workbook
+whose results you do not need. Anything else than the line above, or the
+error *Suite core did not pass* or *Suite workbook did not pass*, is a
+failure, and the log names the assertion. A pass shows that the engine gives,
+in that host, the values written in the cases: hand calculations, the example
+of table 9 of MAR40.61 and values derived within the project. It validates no
+rule ([what a suite proves](docs/methodology/TEST_HARNESS.md#the-projects-suites)).
+The notes above on the complete log, recovery and **End** or **Reset** apply
+to these suites too.
 
 <a id="recording-an-excel-run"></a>
 
