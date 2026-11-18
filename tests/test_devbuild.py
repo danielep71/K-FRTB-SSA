@@ -1020,6 +1020,20 @@ class LibreOfficeSmoke(unittest.TestCase):
                          ["project-results.json: not written as a test-results file"])
         self.assertEqual(code, 1)
 
+    def test_a_saved_file_is_found_by_its_whole_name(self) -> None:
+        # Where the separator is not the backslash the entry points join with, the
+        # files are beside the folder; one name may end with another.
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "evidence"
+            folder.mkdir()
+            self.assertIsNone(lo_smoke.written(folder, "results.json"))
+            beside = folder.with_name("evidence\\cases-results.json")
+            beside.write_text("{}", encoding="utf-8")
+            self.assertIsNone(lo_smoke.written(folder, "results.json"))
+            self.assertEqual(lo_smoke.written(folder, "cases-results.json"), beside)
+            (folder / "results.json").write_text("{}", encoding="utf-8")
+            self.assertEqual(lo_smoke.written(folder, "results.json"), folder / "results.json")
+
     def test_certify_runs_every_entry_point_in_one_document_and_keeps_each_error(self) -> None:
         context = unittest.mock.MagicMock()
         desktop = context.ServiceManager.createInstanceWithContext.return_value

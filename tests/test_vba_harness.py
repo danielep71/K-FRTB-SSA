@@ -25,6 +25,7 @@ from typing import ClassVar
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "tests/modules/TEST_Examples.bas"
 RELATIONS = ROOT / "tests/modules/TEST_Relations.bas"
+CASES = ROOT / "tests/modules/TEST_Cases.bas"
 HARNESS = ROOT / "tests/modules/TEST_Harness.bas"
 GUIDE = ROOT / "docs/methodology/TEST_HARNESS.md"
 REGISTRY = ROOT / "tests/accuracy/contracts.json"
@@ -43,6 +44,27 @@ def constant(text: str, name: str) -> int:
     match = re.search(rf"^\s*Private Const {name}\s+As Long = (\d+)\b", text, re.M)
     assert match, name
     return int(match.group(1))
+
+
+Recorded = tuple[str, str | None, str | None, str | None, str | None]
+
+
+def recorded_results(text: str, calls: str) -> list[Recorded]:
+    """Case, variant, quantity, dataset and record of every RecordResult call of
+    ``calls``, statements of the module ``text``, whose text constants may name them."""
+    strings = dict(re.findall(r'^\s*Private Const (\w+)\s+As String = "([^"]*)"', text, re.M))
+
+    def value(token: str) -> str | None:
+        if token == "vbNullString":
+            return None
+        return token.strip('"') if token.startswith('"') else strings[token]
+    separator = r",\s*(?:_\s+)?"
+    return [(case, value(variant), value(quantity), value(dataset), value(record))
+            for case, variant, quantity, dataset, record in re.findall(
+                r'TEST_Harness\.RecordResult "([^"]+)"' + separator
+                + r'(vbNullString|"[^"]+")' + separator + r'(\w+|"[^"]+")' + separator
+                + r'(vbNullString|"[^"]*")' + separator + r'(vbNullString|"[^"]*")'
+                + separator + r"\w+", calls)]
 
 
 def procedures(text: str) -> dict[str, str]:
@@ -103,23 +125,10 @@ class ExampleSuiteTest(unittest.TestCase):
         """The cases that record results, found by their RecordResult calls."""
         return {name: body for name, body in self.cases.items() if RECORD.search(body)}
 
-    def recorded(self) -> list[tuple[str, str | None, str | None, str | None, str | None]]:
+    def recorded(self) -> list[Recorded]:
         """Case, variant, quantity, dataset and record of every RecordResult call."""
-        strings = dict(re.findall(r'^\s*Private Const (\w+)\s+As String = "([^"]*)"', self.text,
-                                  re.M))
-
-        def value(token: str) -> str | None:
-            if token == "vbNullString":
-                return None
-            return token.strip('"') if token.startswith('"') else strings[token]
-        separator = r",\s*(?:_\s+)?"
         calls = "".join(self.results_cases().values())
-        recorded = [(case, value(variant), value(quantity), value(dataset), value(record))
-                    for case, variant, quantity, dataset, record in re.findall(
-                        r'TEST_Harness\.RecordResult "([^"]+)"' + separator
-                        + r'(vbNullString|"[^"]+")' + separator + r'(\w+|"[^"]+")' + separator
-                        + r'(vbNullString|"[^"]*")' + separator + r'(vbNullString|"[^"]*")'
-                        + separator + r"\w+", calls)]
+        recorded = recorded_results(self.text, calls)
         # Every call is read: none is skipped for a layout the pattern does not know.
         self.assertEqual(len(recorded), len(RECORD.findall(calls)), recorded)
         return recorded
@@ -140,8 +149,16 @@ class ExampleSuiteTest(unittest.TestCase):
                                 if output["scope"] else (None, None)))
                              for variant, outputs in groups for output in outputs
                              if output["quantity"] in contract["quantities"]]
-        self.assertEqual(sorted(recorded, key=str), sorted(expected, key=str))
+        # The suite of the registered cases records the results of its own cases;
+        # the example suite records the others, and nothing else.
+        cases = source(CASES) if CASES.is_file() else ""
+        others = recorded_results(cases, cases)
+        self.assertEqual(len(others), len(RECORD.findall(cases)))
+        self.assertEqual(sorted(recorded, key=str),
+                         sorted(set(expected) - set(others), key=str))
         self.assertEqual(len(recorded), len(set(recorded)))
+        self.assertEqual(len(others), len(set(others)))
+        self.assertFalse(set(recorded) & set(others))
 
     def test_the_results_case_reads_files_that_exist(self) -> None:
         paths = [path for body in self.results_cases().values()
@@ -238,10 +255,11 @@ class ProjectSuitesTest(unittest.TestCase):
             found.append((entry, text, bodies, re.findall(r"^\s+(Case\w+)$", runner, re.M)))
         return found
 
-    def test_the_policy_lists_the_core_and_the_workbook_suite(self) -> None:
+    def test_the_policy_lists_the_three_suites_of_the_project(self) -> None:
         self.assertEqual([(entry["name"], entry["source"]) for entry in self.suites],
                          [("core", "tests/modules/TEST_Suite.bas"),
-                          ("workbook", "tests/modules/TEST_Workbook.bas")])
+                          ("workbook", "tests/modules/TEST_Workbook.bas"),
+                          ("cases", "tests/modules/TEST_Cases.bas")])
 
     def test_the_runner_calls_every_case_once(self) -> None:
         for entry, _, bodies, called in self.each():
@@ -261,8 +279,10 @@ class ProjectSuitesTest(unittest.TestCase):
                     # An error of the case is recorded, never left to end the run.
                     self.assertRegex(bodies[name], r"\n\s+On Error GoTo CaseFailed\n\s+"
                                      r"TEST_Harness\.BeginCase ")
+                    # A case that restores sheets resumes to its cleanup afterwards.
                     self.assertRegex(bodies[name], r"\nCaseFailed:\n\s+"
-                                     r"TEST_Harness\.RecordCaseError\n\nEnd Sub$")
+                                     r"TEST_Harness\.RecordCaseError\n"
+                                     r"(?:\s+Resume CleanUp\n)?\nEnd Sub$")
                     identifiers += begun
             self.assertEqual(len(identifiers), len(set(identifiers)), entry["name"])
 
@@ -307,8 +327,13 @@ class ProjectSuitesTest(unittest.TestCase):
                 statements = [line.strip() for line in body.split("\n")]
                 positions = [statements.index(step) for step in steps]
                 self.assertEqual(positions, sorted(positions))
-                # A suite that names no results file saves none.
+                # A suite that names no results file saves none; one that names it
+                # saves it after the run is certified and before the certification log.
                 self.assertEqual("results" in entry, "TEST_Harness.SaveResults" in body)
+                if "results" in entry:
+                    saved = statements.index(
+                        f'TEST_Harness.SaveResults Folder & "\\{entry["results"]}"')
+                    self.assertTrue(positions[-2] < saved < positions[-1])
 
     def test_each_suite_has_an_entry_point_that_raises_and_one_that_returns_the_result(
             self) -> None:

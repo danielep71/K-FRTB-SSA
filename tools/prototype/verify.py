@@ -26,8 +26,10 @@ It needs LibreOffice and openpyxl. The steps:
    "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
    for a cell that holds an error value, so the two cannot be compared here.
 6. Make two Params values unusable: the run stops and lists both.
-7. Run the core suite and the workbook suite of the VBA tests, through
-   TEST_Suite.Test_RunCore and TEST_Workbook.Test_RunWorkbook: each run passes.
+7. Run the three suites of the VBA tests, through TEST_Suite.Test_RunCore,
+   TEST_Workbook.Test_RunWorkbook and TEST_Cases.Test_RunCases: each run
+   passes. The last is the module that case_suite.py writes from the
+   registered test cases.
 8. Run the registered test cases, as run_cases.py does: the workbook holds
    every expected value.
 
@@ -68,7 +70,8 @@ import ssa_reference  # noqa: E402
 
 LO_MACRO = ROOT / "tools" / "devbuild" / "lo_macro.py"
 RUN = "M_Main.RunSSA_Silent"
-TESTS = ("TEST_Suite.Test_RunCore", "TEST_Workbook.Test_RunWorkbook")
+TESTS = ("TEST_Suite.Test_RunCore", "TEST_Workbook.Test_RunWorkbook",
+         "TEST_Cases.Test_RunCases")
 # The first row of a position table; its first column is C.
 FIRST_ROW = 5
 FIRST_COLUMN = 3
@@ -401,7 +404,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Negative scenario on both workbooks", negative_scenario),
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
-    ("The core suite and the workbook suite of the VBA tests", test_suite),
+    ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
 )
 
