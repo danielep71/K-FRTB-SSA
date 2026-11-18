@@ -184,14 +184,34 @@ class CaseSuite(unittest.TestCase):
             literal("coupon_rate", [1])
 
     def test_a_text_is_typed_as_a_text(self) -> None:
-        # Assigned as it is, "1000" or "2029-06-26" would become a number or a date.
-        self.assertRegex(self.bodies["PutRow"], r"\.Value = Typed\(Values\(c\)\)")
-        self.assertRegex(self.bodies["PutRate"], r"\.Value = Typed\(Code\)")
-        self.assertRegex(self.bodies["PutRate"], r"\.Value = Typed\(Rate\)")
-        self.assertRegex(self.bodies["SetNamed"], r"\.Value = Typed\(Value\)")
-        typed = re.search(r"^Private Function Typed\(.*?^End Function$", self.text, re.M | re.S)
-        assert typed is not None
-        self.assertIn('Typed = "\'" & Value', typed.group(0))
+        # Assigned as it is, "1000" or "00123" would become a number, and "2029-06-26" a
+        # date. Every write of a test case goes through PutValue.
+        self.assertIn("PutValue Target.Offset(0, c - LBound(Values)), Values(c)",
+                      self.bodies["PutRow"])
+        self.assertIn("PutValue ThisWorkbook.Names(NM_FX_CCY).RefersToRange.Cells(Index, 1), Code",
+                      self.bodies["PutRate"])
+        self.assertIn("PutValue ThisWorkbook.Names(NM_FX_RATE).RefersToRange.Cells(Index, 1), "
+                      "Rate", self.bodies["PutRate"])
+        self.assertIn("PutValue ThisWorkbook.Names(CellName).RefersToRange, Value",
+                      self.bodies["SetNamed"])
+        for name in ("PutRow", "PutRate", "SetNamed"):
+            self.assertNotIn(".Value =", self.bodies[name], name)
+        put = re.search(r"^Private Sub PutValue\(.*?^End Sub$", self.text, re.M | re.S)
+        assert put is not None
+        # The cell is formatted as text for the write and gets its format back, on the
+        # error path too; an apostrophe typed before the text would stay in a cell that is
+        # formatted as text already, as the template's code columns are.
+        steps = [line.strip() for line in put.group(0).split("\n")]
+        # The write of a text that needs the format follows the format; an earlier
+        # "Target.Value = Value" is the write into a cell that is formatted as text already.
+        order = [steps.index(step, steps.index("On Error GoTo Failed")) for step in (
+            'Target.NumberFormat = "@"', "Target.Value = Value", "Restored:",
+            "On Error GoTo 0", "Target.NumberFormat = Saved",
+            "If ErrNumber <> 0 Then Err.Raise ErrNumber, ErrSource, ErrDescription",
+            "Failed:", "Resume Restored")]
+        self.assertEqual(order, sorted(order))
+        self.assertNotIn("'\" &", put.group(0))
+        self.assertNotIn("Typed", self.text)
         # The cases hold such a text: a number typed as a text.
         self.assertTrue(any(re.search(r', "\d[\d.]*"[,)]', body)
                             for name, body in self.bodies.items() if name.startswith("Inputs")))
@@ -255,6 +275,33 @@ class CaseSuite(unittest.TestCase):
         for name, body in self.bodies.items():
             if name.startswith("Inputs"):
                 self.assertRegex(body, r"'\n\s+ClearInputs\n", name)
+
+    def test_a_text_is_put_back_as_a_text_and_every_row_of_a_table_is_kept(self) -> None:
+        restore = re.search(r"^Private Function RestoreInputs\(.*?^End Function$", self.text,
+                            re.M | re.S)
+        assert restore is not None
+        # After the values, a kept text that is not a formula is written again as a text.
+        self.assertRegex(restore.group(0), r"If VarType\(AsTable\(mKept\(i\)\)\(r, c\)\) = vbString "
+                         r"Then\n\s+If Not IsFormula\(mFormulas\(i\)\(r, c\)\) Then\n\s+"
+                         r"PutValue InputArea\(i\)\.Cells\(r, c\), AsTable\(mKept\(i\)\)\(r, c\)")
+        # A position sheet is kept, cleared and restored through the rows of its table,
+        # as M_Main reads it, and not through a fixed number of rows.
+        keep = re.search(r"^Private Sub KeepInputs\(.*?^End Sub$", self.text, re.M | re.S)
+        rows = re.search(r"^Private Function TableRows\(.*?^End Function$", self.text,
+                         re.M | re.S)
+        area = re.search(r"^Private Function InputArea\(.*?^End Function$", self.text,
+                         re.M | re.S)
+        assert keep is not None and rows is not None and area is not None
+        self.assertIn("mRows(i) = TableRows(i)", keep.group(0))
+        self.assertIn("Sheet.Cells(Sheet.Rows.Count, Header.Column).End(xlUp).Row - Header.Row",
+                      rows.group(0))
+        self.assertIn("If Last < INPUT_ROWS Then Last = INPUT_ROWS", rows.group(0))
+        for index, width in enumerate(("IR", "EQ", "CO", "FX"), 1):
+            self.assertIn(f"Resize(PositionRows({index}), {width}_INPUT_WIDTH)", area.group(0))
+        self.assertNotIn("Resize(INPUT_ROWS", area.group(0))
+        # The same rule as M_Main.TableValues: the last row that holds a PositionID.
+        main = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode("cp1252")
+        self.assertIn("LastRow = Sheet.Cells(Sheet.Rows.Count, Header.Column).End(xlUp).Row", main)
 
     def test_the_cells_read_are_those_the_template_labels(self) -> None:
         assert openpyxl is not None

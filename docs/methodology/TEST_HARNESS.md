@@ -189,9 +189,19 @@ would write, and `tests/test_case_suite.py` fails while they differ.
   per expected output, named by the quantity and the record it is scoped
   to, and `inputs-restored`.
 - **The inputs are typed as the test case gives them.** A date is a date, a
-  number a number, and a text stays a text: a text that reads as a number
-  or as a date is typed with an apostrophe before it, as a user types it,
-  because Excel would otherwise store the number or the date.
+  number a number, and a text stays a text: a text is written with its cell
+  formatted as text, and the cell gets its format back, because Excel would
+  otherwise store a text such as `00123` as a number and `2029-06-26` as a
+  date. An apostrophe typed before the text is not used: in a cell that is
+  formatted as text already, as the template's code columns are, it stays
+  in the value.
+- **The sheets come back as they were.** The suite keeps the values and the
+  formulas of every input area before the first case, writes them back, a
+  text as a text, and checks every cell. A position sheet is kept through
+  the rows of its table, as the engine reads it, and not through a fixed
+  number of rows, so that a workbook with more positions than the 500 rows
+  the sheets are formatted for is restored too, and a case never runs
+  together with positions that it did not write.
 - **The cells are those the Python runner reads.** The tool takes the cell
   of each quantity from `tools/prototype/run_cases.py`, so the two runners
   cannot disagree on where a result is.

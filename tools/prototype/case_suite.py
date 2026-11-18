@@ -437,20 +437,21 @@ def runner(names: list[str]) -> list[str]:
 HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]], list[str]]] = [
     (["Private Function InputArea( _", "    ByVal Index As Long) _", "    As Range"], [
         ("PURPOSE", "One of the areas that hold the inputs a test case replaces."),
-        ("INPUTS", "Index   1 to 4: the rows of the four position sheets, INPUT_ROWS of\n"
-                   "        them; 5: the FX table, with its descriptions; 6 and 7: the\n"
-                   "        reporting date and currency; 8 to 11: the option charges."),
+        ("INPUTS", "Index   1 to 4: the rows of the four position sheets, as many as\n"
+                   "        PositionRows gives; 5: the FX table, with its descriptions;\n"
+                   "        6 and 7: the reporting date and currency; 8 to 11: the\n"
+                   "        option charges."),
     ], [("Header", "Range", "Header of a position sheet"), ("Codes", "Range", "FX table codes"),
         ("Rates", "Range", "FX table rates")], [
         "Select Case Index",
-        "    Case 1: Set Header = ThisWorkbook.Names(NM_IR_POS_HEADER).RefersToRange",
-        "            Set InputArea = Header.Offset(1, 0).Resize(INPUT_ROWS, IR_INPUT_WIDTH)",
-        "    Case 2: Set Header = ThisWorkbook.Names(NM_EQ_POS_HEADER).RefersToRange",
-        "            Set InputArea = Header.Offset(1, 0).Resize(INPUT_ROWS, EQ_INPUT_WIDTH)",
-        "    Case 3: Set Header = ThisWorkbook.Names(NM_CO_POS_HEADER).RefersToRange",
-        "            Set InputArea = Header.Offset(1, 0).Resize(INPUT_ROWS, CO_INPUT_WIDTH)",
-        "    Case 4: Set Header = ThisWorkbook.Names(NM_FX_POS_HEADER).RefersToRange",
-        "            Set InputArea = Header.Offset(1, 0).Resize(INPUT_ROWS, FX_INPUT_WIDTH)",
+        "    Case 1: Set Header = PositionHeader(1)",
+        "            Set InputArea = Header.Offset(1, 0).Resize(PositionRows(1), IR_INPUT_WIDTH)",
+        "    Case 2: Set Header = PositionHeader(2)",
+        "            Set InputArea = Header.Offset(1, 0).Resize(PositionRows(2), EQ_INPUT_WIDTH)",
+        "    Case 3: Set Header = PositionHeader(3)",
+        "            Set InputArea = Header.Offset(1, 0).Resize(PositionRows(3), CO_INPUT_WIDTH)",
+        "    Case 4: Set Header = PositionHeader(4)",
+        "            Set InputArea = Header.Offset(1, 0).Resize(PositionRows(4), FX_INPUT_WIDTH)",
         "    Case 5: Set Codes = ThisWorkbook.Names(NM_FX_CCY).RefersToRange",
         "            Set Rates = ThisWorkbook.Names(NM_FX_RATE).RefersToRange",
         "            Set InputArea = Codes.Resize(Codes.Rows.Count, _",
@@ -462,11 +463,50 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         '    Case 10: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "CO").RefersToRange',
         '    Case 11: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "FX").RefersToRange',
         "End Select"]),
+    (["Private Function PositionHeader( _", "    ByVal Index As Long) _", "    As Range"], [
+        ("PURPOSE", "The header cell of one of the four position sheets."),
+        ("INPUTS", "Index   1 interest rate, 2 equity, 3 commodity, 4 foreign exchange."),
+    ], [], [
+        "Select Case Index",
+        "    Case 1: Set PositionHeader = ThisWorkbook.Names(NM_IR_POS_HEADER).RefersToRange",
+        "    Case 2: Set PositionHeader = ThisWorkbook.Names(NM_EQ_POS_HEADER).RefersToRange",
+        "    Case 3: Set PositionHeader = ThisWorkbook.Names(NM_CO_POS_HEADER).RefersToRange",
+        "    Case 4: Set PositionHeader = ThisWorkbook.Names(NM_FX_POS_HEADER).RefersToRange",
+        "End Select"]),
+    (["Private Function PositionRows( _", "    ByVal Index As Long) _", "    As Long"], [
+        ("PURPOSE", "The rows of a position sheet a test case replaces and puts back: those\n"
+                    "of the table, from the header to the last row that holds a PositionID,\n"
+                    "as the engine reads it, and at least INPUT_ROWS."),
+        ("INPUTS", "Index   As PositionHeader."),
+        ("RETURNS", "The rows kept by the last KeepInputs; INPUT_ROWS before the first."),
+    ], [], [
+        "If mRows(Index) > 0 Then",
+        "    PositionRows = mRows(Index)",
+        "Else",
+        "    PositionRows = INPUT_ROWS",
+        "End If"]),
+    (["Private Function TableRows( _", "    ByVal Index As Long) _", "    As Long"], [
+        ("PURPOSE", "The rows of a position sheet that hold the table now: from the row\n"
+                    "under the header to the last row that holds a PositionID, as M_Main\n"
+                    "reads a table, and at least INPUT_ROWS."),
+        ("INPUTS", "Index   As PositionHeader."),
+    ], [("Header", "Range", "Header cell"), ("Sheet", "Worksheet", "Sheet of the table"),
+        ("Last", "Long", "Last row under the header that holds a PositionID")], [
+        "Set Header = PositionHeader(Index)",
+        "Set Sheet = Header.Worksheet",
+        "Last = Sheet.Cells(Sheet.Rows.Count, Header.Column).End(xlUp).Row - Header.Row",
+        "If Last < INPUT_ROWS Then Last = INPUT_ROWS",
+        "TableRows = Last"]),
     (["Private Sub KeepInputs()"], [
         ("PURPOSE", "Keep what every input area holds, before a case replaces it: its\n"
-                    "values and its formulas."),
-        ("STATE OWNERSHIP", "Sets mKept and mFormulas."),
+                    "values and its formulas. A position sheet is kept through the rows of\n"
+                    "its table, whatever their number."),
+        ("STATE OWNERSHIP", "Sets mRows, mKept and mFormulas."),
     ], [("i", "Long", "Input area")], [
+        "For i = 1 To 4",
+        "    mRows(i) = 0",
+        "    mRows(i) = TableRows(i)",
+        "Next i",
         "For i = 1 To INPUT_AREAS",
         "    mKept(i) = InputArea(i).Value",
         "    mFormulas(i) = AsTable(InputArea(i).Formula)",
@@ -494,6 +534,16 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         "        For c = 1 To UBound(mFormulas(i), 2)",
         "            If IsFormula(mFormulas(i)(r, c)) Then",
         "                InputArea(i).Cells(r, c).Formula = mFormulas(i)(r, c)",
+        "            End If",
+        "        Next c",
+        "    Next r",
+        "    'A text the write above made a number, a date or a logical value is a text again.",
+        "    For r = 1 To UBound(mFormulas(i), 1)",
+        "        For c = 1 To UBound(mFormulas(i), 2)",
+        "            If VarType(AsTable(mKept(i))(r, c)) = vbString Then",
+        "                If Not IsFormula(mFormulas(i)(r, c)) Then",
+        "                    PutValue InputArea(i).Cells(r, c), AsTable(mKept(i))(r, c)",
+        "                End If",
         "            End If",
         "        Next c",
         "    Next r",
@@ -577,16 +627,16 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
     (["Private Sub SetNamed( _", "    ByVal CellName As String, _",
       "    ByVal Value As Variant)"], [
         ("PURPOSE", "Type a value in the cell a workbook name refers to."),
-    ], [], ["ThisWorkbook.Names(CellName).RefersToRange.Value = Typed(Value)"]),
+    ], [], ["PutValue ThisWorkbook.Names(CellName).RefersToRange, Value"]),
     (["Private Sub PutRate( _", "    ByVal Index As Long, _", "    ByVal Code As String, _",
       "    ByVal Rate As Variant)"], [
         ("PURPOSE", "Type one row of the FX table: a currency and its rate."),
         ("INPUTS", "Index   Row of the table, from 1.\nCode    Currency code.\n"
                    "Rate    Its rate; Empty leaves the cell empty."),
     ], [], [
-        "ThisWorkbook.Names(NM_FX_CCY).RefersToRange.Cells(Index, 1).Value = Typed(Code)",
+        "PutValue ThisWorkbook.Names(NM_FX_CCY).RefersToRange.Cells(Index, 1), Code",
         "If Not IsEmpty(Rate) Then",
-        "    ThisWorkbook.Names(NM_FX_RATE).RefersToRange.Cells(Index, 1).Value = Typed(Rate)",
+        "    PutValue ThisWorkbook.Names(NM_FX_RATE).RefersToRange.Cells(Index, 1), Rate",
         "End If"]),
     (["Private Sub PutRow( _", "    ByVal HeaderName As String, _", "    ByVal Index As Long, _",
       "    ByVal Values As Variant)"], [
@@ -599,21 +649,46 @@ HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]]
         "Set Target = ThisWorkbook.Names(HeaderName).RefersToRange.Offset(Index, 0)",
         "For c = LBound(Values) To UBound(Values)",
         "    If Not IsEmpty(Values(c)) Then",
-        "        Target.Offset(0, c - LBound(Values)).Value = Typed(Values(c))",
+        "        PutValue Target.Offset(0, c - LBound(Values)), Values(c)",
         "    End If",
         "Next c"]),
-    (["Private Function Typed( _", "    ByVal Value As Variant) _", "    As Variant"], [
-        ("PURPOSE", "A value as it is assigned to a cell so that the cell holds it as the\n"
-                    "test case gives it: a text stays a text."),
-        ("RETURNS", "A text with an apostrophe before it, which makes the cell hold the\n"
-                    "text as typed: without it, a text that reads as a number or a date\n"
-                    "becomes one. Any other value unchanged."),
-    ], [], [
-        "If VarType(Value) = vbString Then",
-        "    Typed = \"'\" & Value",
-        "Else",
-        "    Typed = Value",
-        "End If"]),
+    (["Private Sub PutValue( _", "    ByVal Target As Range, _", "    ByVal Value As Variant)"], [
+        ("PURPOSE", "Type a value in a cell so that the cell holds it as the test case gives\n"
+                    "it: a text stays a text. A text that reads as a number, a date or a\n"
+                    "logical value is written with the cell formatted as text, and the cell\n"
+                    "gets its format back; typing an apostrophe before the text would leave\n"
+                    "the apostrophe in a cell that is already formatted as text."),
+        ("INPUTS", "Target   The cell.\nValue    What it holds; any other value than a text is written as it is."),
+        ("STATE OWNERSHIP", "Changes the number format of Target for the write and puts it back,\n"
+                            "on the success and the error path."),
+        ("ERROR POLICY", "An error of the write is raised again once the format is back."),
+    ], [("Saved", "String", "Number format of the cell"),
+        ("ErrNumber", "Long", "Error of the write; 0 for none"),
+        ("ErrSource", "String", "Its source"), ("ErrDescription", "String", "Its description")], [
+        "If VarType(Value) <> vbString Then",
+        "    Target.Value = Value",
+        "    Exit Sub",
+        "End If",
+        "Saved = CStr(Target.NumberFormat)",
+        'If Saved = "@" Then',
+        "    Target.Value = Value",
+        "    Exit Sub",
+        "End If",
+        "On Error GoTo Failed",
+        'Target.NumberFormat = "@"',
+        "Target.Value = Value",
+        "",
+        "Restored:",
+        "On Error GoTo 0",
+        "Target.NumberFormat = Saved",
+        "If ErrNumber <> 0 Then Err.Raise ErrNumber, ErrSource, ErrDescription",
+        "Exit Sub",
+        "",
+        "Failed:",
+        "ErrNumber = Err.Number",
+        "ErrSource = Err.Source",
+        "ErrDescription = Err.Description",
+        "Resume Restored"]),
     (["Private Function RowCell( _", "    ByVal HeaderName As String, _",
       "    ByVal Index As Long, _", "    ByVal ColumnOffset As Long) _", "    As Variant"], [
         ("PURPOSE", "The value of one cell of a calculation sheet."),
@@ -741,7 +816,7 @@ def module() -> str:
             "    'The inputs a test case replaces (InputArea).",
             "        Private Const INPUT_AREAS         As Long = 11    'Areas kept and put back",
             f"        Private Const INPUT_ROWS          As Long = {run_cases.CAPACITY}   "
-            "'Rows of a position sheet kept and cleared",
+            "'Fewest rows of a position sheet kept",
             "    'Where a result per currency is found.",
             "        Private Const SEARCH_ROWS         As Long = 60    "
             "'Rows searched under a header",
@@ -750,6 +825,7 @@ def module() -> str:
             f"        Private Const FX_BLOCK_NET        As Long = "
             f"{run_cases.FX_BLOCK_NET - FIRST_COLUMN}     'Buckets FX block: net position",
             "", THIN, "' MODULE STATE", THIN,
+            "        Private mRows(1 To 4)    As Long      'Rows of each position sheet kept",
             "        Private mKept(1 To 11)   As Variant   'What each input area held: values",
             "        Private mFormulas(1 To 11) As Variant 'What each input area held: formulas",
             "", ""]
