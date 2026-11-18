@@ -79,7 +79,10 @@ Use only the categories an entry needs.
   can make: the two workbook events, the open and close without a change,
   and the round trip. The suite passes in LibreOffice except for eight
   assertions on error values, which LibreOffice cannot hold; nothing was
-  run in Excel (#22).
+  run in Excel (#22). `tools/devbuild/lo_smoke.py` judges the RESULT line of
+  every run on its own, so that a known failure never hides a host state
+  that was not restored, a recovery that is required or a run that was
+  refused.
 
 - The registered test cases run in the workbook. `tests/modules/TEST_Cases.bas`
   is the `cases` suite of the test harness: 18 cases and 345 assertions, one
