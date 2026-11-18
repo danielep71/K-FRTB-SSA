@@ -172,14 +172,24 @@ def certify(context: Any, workbook: Path, folder: Path,
     return summary
 
 
+def written(folder: Path, name: str) -> Path | None:
+    """The file an entry point saved as ``name`` in ``folder``, or None. Where the
+    path separator is not the backslash the entry points join with, the file is
+    beside the folder, named by the folder, a backslash and the name."""
+    for path in (folder / name, folder.with_name(f"{folder.name}\\{name}")):
+        if path.is_file():
+            return path
+    return None
+
+
 def read_logs(folder: Path, policy: check_excel_run.Policy) -> dict[str, object]:
     found: dict[str, object] = {}
     for name in log_names(policy):
-        matches = sorted(folder.rglob(name)) + sorted(folder.parent.glob(f"*{name}"))
-        if not matches:
+        path = written(folder, name)
+        if path is None:
             found[name] = None
             continue
-        lines = matches[0].read_text(encoding="utf-8", errors="replace").splitlines()
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         if name in certification_logs(policy):
             found[name] = lines
         else:
@@ -192,10 +202,10 @@ def read_logs(folder: Path, policy: check_excel_run.Policy) -> dict[str, object]
 def read_results(folder: Path, name: str) -> object:
     """The results file, parsed; its text when it is not JSON; None when it is missing.
     The workbook's build stamp names the working tree's HEAD, so it is shown, not checked."""
-    matches = sorted(folder.rglob(name)) + sorted(folder.parent.glob(f"*{name}"))
-    if not matches:
+    path = written(folder, name)
+    if path is None:
         return None
-    text = matches[0].read_text(encoding="utf-8", errors="replace")
+    text = path.read_text(encoding="utf-8", errors="replace")
     try:
         return json.loads(text)
     except ValueError:

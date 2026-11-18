@@ -56,16 +56,26 @@ The project's cases are 18 JSON fixtures, on the calculations `CALC-02` to
 | `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break |
 
 `tests/derivations/ssa.py` computes every expected value from the
-calculation contracts, and `python3 tools/prototype/run_cases.py` runs the
-cases on the engine in LibreOffice and looks each expected value up in the
-workbook. Neither validates a rule: the first is the project's own
-derivation, and LibreOffice is not a supported host.
+calculation contracts. Two runners compare the workbook with them: the
+`cases` suite of the [test harness](TEST_HARNESS.md#the-projects-suites),
+`tests/modules/TEST_Cases.bas`, which `tools/prototype/case_suite.py` writes
+from the cases and which runs in Excel; and
+`python3 tools/prototype/run_cases.py`, which runs the cases on the engine in
+LibreOffice and looks each expected value up in the workbook. Nothing of this
+validates a rule: the derivation is the project's own, LibreOffice is not a
+supported host, and the suite has not run in Excel
+([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
-No [accuracy contract](#accuracy-contracts) covers a calculation of the
-project yet. A contract's results are those a suite of the test harness
-records in an Excel run, and no suite runs the project's cases yet: the two
-suites of the project hold their own inputs
-([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)).
+One [accuracy contract](#accuracy-contracts) covers a calculation of the
+project: `ACC-02`, on the overall net open position and the requirement of
+the FX calculation, `CALC-06`. Its calibration case is
+`illustrative-sample-fx` and its holdout case `mar40-61-table-9`, whose two
+values are published. It is a draft and cannot be frozen yet: a frozen
+contract needs three holdout cases whose values are `published` or
+`independent`, and the project has one
+([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47)). Its
+results are those the `cases` suite records in an Excel run, in
+`cases-results.json`.
 
 <a id="fixture-format"></a>
 

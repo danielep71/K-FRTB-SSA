@@ -233,6 +233,15 @@ with every output as a formula, and one more column on `IRCalc`, the key the
 rows of an issue are netted on. It is a second implementation of the same
 rules, to compare the VBA engine with.
 
+**The suite of the test cases.** `python tools/prototype/case_suite.py`
+checks that `tests/modules/TEST_Cases.bas`, the `cases` suite of the VBA
+tests, is what the test cases of `tests/fixtures/` and `tests/expected/`
+give, and exits 0 when it is and 1 when it is not; with `--write` it writes
+the module. Run it with `--write` after you add or change a test case of the
+project, then update the suite's counts in
+`.github/excel-evidence-policy.json`. It needs openpyxl, and compiles and
+runs nothing.
+
 **The test cases on the engine (optional).** Where LibreOffice is installed,
 `python3 tools/prototype/run_cases.py` writes each
 [test case](docs/methodology/TEST_CASES.md) of `tests/fixtures/` to the input
@@ -248,8 +257,8 @@ is never Excel evidence, and it validates no rule.
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, runs the `core` and the `workbook` suite of
-the VBA tests, and runs the test cases as `run_cases.py` does. Error
+area with the formula workbook's, runs the three suites of the VBA tests, and
+runs the test cases as `run_cases.py` does. Error
 values typed as texts are checked on the formula workbook alone: LibreOffice
 gives the engine 0 for a cell that holds one, where Excel gives the error.
 `--uno-python PYTHON` names the Python that provides the UNO bridge, when it
@@ -322,15 +331,21 @@ from an entry point without arguments:
 | --- | --- | --- |
 | `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=3; assertions=34; failures=0; cleanup=PASS; recovery=NONE` |
+| `cases` | `TEST_Cases.RunCaseTests` | `RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE; cases=18; assertions=345; failures=0; cleanup=PASS; recovery=NONE` |
 <!-- END generated: project-suite-results -->
 
 The `core` suite calls the engine's procedures and the worksheet functions on
 inputs written in each case, and touches no sheet. The `workbook` suite runs
 the whole calculation on the sample data the template ships: it rewrites the
-output sheets and leaves them cleared, so run it in a development workbook
-whose results you do not need. Anything else than the line above, or the
-error *Suite core did not pass* or *Suite workbook did not pass*, is a
-failure, and the log names the assertion. A pass shows that the engine gives,
+output sheets and leaves them cleared. The `cases` suite runs every
+registered [test case](docs/methodology/TEST_CASES.md): each case replaces
+the inputs of the workbook with its own, runs the calculation, puts back the
+inputs the workbook had, formulas included, and clears the output sheets. Run the last two in a
+development workbook whose results you do not need. Anything else than the
+line above, or the error *Suite core did not pass*, *Suite workbook did not
+pass* or *Suite cases did not pass*, is a failure, and the log names the
+assertion. If the `cases` suite stops half way, with **End** or **Reset**,
+the input sheets hold a test case's inputs: build the workbook again. A pass shows that the engine gives,
 in that host, the values written in the cases: hand calculations, the example
 of table 9 of MAR40.61 and values derived within the project. It validates no
 rule ([what a suite proves](docs/methodology/TEST_HARNESS.md#the-projects-suites)).

@@ -15,6 +15,19 @@
       "decision": null,
       "calibration_cases": ["illustrative-format-example"],
       "holdout_cases": ["illustrative-file-import-example"]
+    },
+    {
+      "id": "ACC-02",
+      "calculation": "CALC-06",
+      "regime": "MAR40 as in force from 2023-01-01: the shorthand method, with net positions of at most 1e9 in the reporting currency",
+      "quantities": ["fx_overall_net_open_position", "fx_charge"],
+      "metric": "absolute",
+      "threshold": 0.000001,
+      "provenance": "The default absolute tolerance of a derived value (calculation contracts, Decisions): the two quantities are sums and one product of amounts in Double arithmetic, which agree to far more digits. A draft: it has one holdout case, and its calibration case holds illustrative values only",
+      "status": "draft",
+      "decision": null,
+      "calibration_cases": ["illustrative-sample-fx"],
+      "holdout_cases": ["mar40-61-table-9"]
     }
   ]
 }

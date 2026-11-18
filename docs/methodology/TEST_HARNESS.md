@@ -16,9 +16,10 @@ records.
 | `tests/modules/TEST_Examples.bas` | The example suite: one case per kind of assertion, one case that reads the illustrative [test cases](TEST_CASES.md) and records their totals, and the reference implementation of the [cleanup pattern](../VBA_HOUSE_STYLE.md#operation-and-cleanup-outcomes) with its failure paths. It holds no calculation of the workbook |
 | `tests/modules/TEST_Relations.bas` | The illustrative [relation tests](#relation-tests), `RunRelationTests`: four relations of a stand-in total, each with its corruption check. It is not certified, and holds no calculation of the workbook |
 | `tests/modules/TEST_Suite.bas` | The `core` suite, one of [the project's suites](#the-projects-suites): the engine's procedures and the worksheet functions on inputs written in each case. It reads and writes no sheet |
-| `tests/modules/TEST_Workbook.bas` | The `workbook` suite, the other one: the whole calculation through the workbook's entry points, on the sample data of the template. It rewrites the output sheets |
+| `tests/modules/TEST_Workbook.bas` | The `workbook` suite: the whole calculation through the workbook's entry points, on the sample data of the template. It rewrites the output sheets |
+| `tests/modules/TEST_Cases.bas` | The `cases` suite: every registered [test case](TEST_CASES.md) of the project, run in the workbook as an [end-to-end case runner](#end-to-end-case-runner) does. `tools/prototype/case_suite.py` writes it from the test cases; it is never edited |
 
-All five use `Option Private Module`, so they never become part of the
+All six use `Option Private Module`, so they never become part of the
 workbook's external surface. A production workbook contains none of them.
 
 A project suite follows the example suite: one `Case` procedure per case,
@@ -136,13 +137,14 @@ The example suite tests the harness: its two failure modes show that a
 failing assertion and a skipped case are reported, and it holds no
 calculation of the workbook. I keep it beside the project's suites for that
 reason, with the illustrative test cases it reads and the illustrative
-entries of the guides that those cases cite. The workbook's own tests are two
-suites, so that the tests of the core need no workbook:
+entries of the guides that those cases cite. The workbook's own tests are
+three suites, so that the tests of the core need no workbook:
 
 | Suite | Module | What it runs | What it needs and changes |
 | --- | --- | --- | --- |
 | `core` | `TEST_Suite.bas` | The core procedures and the worksheet functions, on inputs written in each case: time bands, ladders, the four risk classes, the validation of rows and parameters, the netting of issues and the fingerprint | The VBA project only. It reads and writes no sheet |
 | `workbook` | `TEST_Workbook.bas` | `RunSSA_Silent`, `CheckStatus_Silent` and `ClearOutputs_Silent` on the template's sample data: the totals of the sample portfolio, a run that fails while it writes or while it reads, and a parameter and a position changed after a run | The workbook with the template's sheets and sample data. It rewrites the output sheets and leaves them cleared. The cell and the name it changes for one operation are put back before it asserts |
+| `cases` | `TEST_Cases.bas` | The 18 registered test cases of the calculations `CALC-02` to `CALC-08`: each case types the test case's inputs on the input sheets, runs `RunSSA_Silent` and compares every expected output with the cell that holds it | The workbook with the template's sheets. Each case replaces the reporting date and currency, the FX table, the option charges and the four position sheets, then puts back what they held, values and formulas, and clears the output sheets, and asserts that as `inputs-restored` |
 
 Each suite has three entry points:
 
@@ -150,6 +152,7 @@ Each suite has three entry points:
 | --- | --- | --- | --- |
 | `core` | `TEST_Suite.RunCoreTests` | `TEST_Suite.Test_RunCore` | `TEST_Suite.CertifyCore` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `TEST_Workbook.Test_RunWorkbook` | `TEST_Workbook.CertifyWorkbook` |
+| `cases` | `TEST_Cases.RunCaseTests` | `TEST_Cases.Test_RunCases` | `TEST_Cases.CertifyCases` |
 
 - **Run.** Type it in the Immediate window. It ends as every run of the
   harness does: `RESULT=PASS`, or the error *Suite core did not pass* after
@@ -158,27 +161,62 @@ Each suite has three entry points:
 - **Run and return the result.** The same run for a caller that reads a
   value and not an error, such as `tools/devbuild/lo_macro.py`: it returns
   the `RESULT` line and raises nothing.
-- **Certify.** It takes the two arguments of `CertifyExamples`, and saves
-  `core.log` and `core-certification.log`, or `workbook.log` and
-  `workbook-certification.log`. Neither suite records results, so neither
-  saves a results file. The path of `tests/fixtures/` is not read.
+- **Certify.** It takes the two arguments of `CertifyExamples`, and saves the
+  suite's log and certification log: `core.log` and `core-certification.log`,
+  `workbook.log` and `workbook-certification.log`, `cases.log` and
+  `cases-certification.log`. The `cases` suite also saves the results it
+  recorded, as `cases-results.json`; the other two record none. The path of
+  `tests/fixtures/` is not read: the inputs of every suite are in its module.
 
-The expected values are written in the cases: hand calculations, each
-stated in the header of its case; the example of table 9 of MAR40.61; and,
-for the sample portfolio, the requirement and the risk-weighted assets of
-the test case `illustrative-sample-requirement`. An amount is compared
-within the default tolerances of the
-[calculation contracts](CALCULATION_CONTRACTS.md#decisions), a count, a time
-band and a text exactly. Where a number is expected, an empty cell, a text
-or an error value is an error of the case, never a zero.
+In the `core` and the `workbook` suite the expected values are written in
+the cases: hand calculations, each stated in the header of its case; the
+example of table 9 of MAR40.61; and, for the sample portfolio, the
+requirement and the risk-weighted assets of the test case
+`illustrative-sample-requirement`. An amount is compared within the default
+tolerances of the [calculation contracts](CALCULATION_CONTRACTS.md#decisions),
+a count, a time band and a text exactly. Where a number is expected, an
+empty cell, a text or an error value is an error of the case, never a zero.
 
-A pass shows that the engine gives those values in the host that ran the
-suite. It validates no rule: the hand calculations and the derived values
-are mine, as the engine is, and only the two figures of table 9 are
-published. The registered [test cases](TEST_CASES.md) do not run under the
-harness yet
-([issue 21](https://github.com/danielep71/K-FRTB-SSA/issues/21)), and
-neither suite has run in Excel
+**The `cases` suite is generated.**
+`python tools/prototype/case_suite.py --write` writes `TEST_Cases.bas` from
+`tests/fixtures/` and `tests/expected/`, with the inputs and the expected
+values of each test case as literals of the module, so Excel reads no file.
+Do not edit the module: change the test case, or the tool, and write it
+again. Without an option the tool compares the tracked module with what it
+would write, and `tests/test_case_suite.py` fails while they differ.
+
+- **One case per test case**, with the test case's id. It has one assertion
+  per expected output, named by the quantity and the record it is scoped
+  to, and `inputs-restored`.
+- **The inputs are typed as the test case gives them.** A date is a date, a
+  number a number, and a text stays a text: a text is written with its cell
+  formatted as text, and the cell gets its format back, because Excel would
+  otherwise store a text such as `00123` as a number and `2029-06-26` as a
+  date. An apostrophe typed before the text is not used: in a cell that is
+  formatted as text already, as the template's code columns are, it stays
+  in the value.
+- **The sheets come back as they were.** The suite keeps the values and the
+  formulas of every input area before the first case, writes them back, a
+  text as a text, and checks every cell. A position sheet is kept through
+  the rows of its table, as the engine reads it, and not through a fixed
+  number of rows, so that a workbook with more positions than the 500 rows
+  the sheets are formatted for is restored too, and a case never runs
+  together with positions that it did not write.
+- **The cells are those the Python runner reads.** The tool takes the cell
+  of each quantity from `tools/prototype/run_cases.py`, so the two runners
+  cannot disagree on where a result is.
+- **A number is compared within the output's own tolerance.** Where the
+  expected value is zero, an empty cell holds it; anywhere else an empty
+  cell, a text or an error value is an error of the case.
+- **Every number is recorded.** Each compared number is also a
+  [result](#results), with the scope of its expected output, so that an
+  [accuracy contract](TEST_CASES.md#accuracy-contracts) on any quantity of
+  the cases can be measured on the suite's results file.
+
+A pass of any of the three suites shows that the engine gives the expected
+values in the host that ran it. It validates no rule: the hand calculations
+and the derived values are mine, as the engine is, and only the two figures
+of table 9 are published. None of the suites has run in Excel
 ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
 ## Relation tests
@@ -218,10 +256,10 @@ validates no figure: only a `published` or `independent` case does
 A case runner tests the workbook as a user runs it: it writes a test case's
 inputs to the input sheets, runs the calculation through its public entry
 point, compares the outputs with the case's expected values within the case's
-tolerance, and restores the sheets. It needs the input and result areas of the
-[workbook contract](WORKBOOK_CONTRACT.md), which the template does not lay out
-yet, so it ships no runner. The suite's runner calls one case procedure per
-test case, `Case<Name>`, which follows this skeleton; it uses the contract's
+tolerance, and restores the sheets. The project's runner is the `cases` suite,
+`TEST_Cases.bas` ([the project's suites](#the-projects-suites)), whose cases
+have this shape. The suite's runner calls one case procedure per test case,
+`Case<Name>`, which follows this skeleton; it uses the workbook contract's
 illustrative `Inputs_Settings` area and `M_Run.RunCalculation` entry point,
 and the constant `SETTING_ROWS`, the number of rows the contract fixes for
 that area (one):
@@ -233,11 +271,8 @@ Private Sub CaseExample()
     Dim Saved            As Variant    'Its values before the case
     Dim RestoreDue       As Boolean    'True once Saved holds them
     Dim Detail           As String     'Why the area could not be restored
-    Dim ErrNumber        As Long       'Error of the case; 0 for none
-    Dim ErrSource        As String
-    Dim ErrDescription   As String
 
-        On Error GoTo Failed
+        On Error GoTo CaseFailed
         TEST_Harness.BeginCase "<case-id>"
         Set Anchor = ThisWorkbook.Names("Inputs_Settings").RefersToRange
         Set Area = Anchor.Offset(1, 1).Resize(SETTING_ROWS, 1)
@@ -256,20 +291,11 @@ CleanUp:
             Detail = RestoreInputs(Area, Saved)
         End If
         TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
-        If ErrNumber <> 0 Then
-            On Error GoTo CaseFailed
-            Err.Raise ErrNumber, ErrSource, ErrDescription
-        End If
         Exit Sub
-
-Failed:
-        ErrNumber = Err.Number
-        ErrSource = Err.Source
-        ErrDescription = Err.Description
-        Resume CleanUp
 
 CaseFailed:
         TEST_Harness.RecordCaseError
+        Resume CleanUp
 End Sub
 ```
 
@@ -313,9 +339,14 @@ End Sub
   ([run outcomes](#run-outcomes)). That check does not see cell values, so a
   failed `inputs-restored` is the only record of a sheet left changed: check
   the input sheets by hand before the next run.
-- **The case's error.** It is saved before cleanup, raised again once the
-  sheets are restored, and recorded by `RecordCaseError`, so the next case
-  still runs.
+- **The case's error.** The handler records it with `RecordCaseError`, as
+  its first statement, and resumes to the cleanup, so the sheets are
+  restored and the next case still runs. The cleanup starts with
+  `On Error GoTo 0`: the handler is enabled again by `Resume`, and an error
+  of the cleanup would otherwise come back to it and loop. Such an error
+  reaches the runner instead. The error is not raised again: a raise after
+  `Resume CleanUp` under a handler of the procedure is what
+  `tools/check_vba_jumps.py` reports.
 
 ## Volume benchmarks
 
@@ -525,7 +556,11 @@ Without Excel, `tests/test_vba_harness.py` checks what the source can show:
   evidence policy, every assertion has a literal name in the body of a case,
   its certification entry point saves the logs the policy names, the `core`
   suite touches no workbook, and the `workbook` suite puts back what it
-  changes and ends with the output sheets cleared.
+  changes and ends with the output sheets cleared;
+- `tests/test_case_suite.py`: the `cases` suite is what its tool writes from
+  the test cases, each case asserts every expected output once and restores
+  the sheets on both paths, and the cells it reads are those the template
+  labels.
 
 `check_excel_run.py` proves that an evidence folder is consistent with a
 commit, and measures the commit's accuracy contracts on its results files. It

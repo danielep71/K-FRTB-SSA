@@ -65,6 +65,22 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The registered test cases run in the workbook. `tests/modules/TEST_Cases.bas`
+  is the `cases` suite of the test harness: 18 cases and 345 assertions, one
+  case per test case and one assertion per expected output, plus the
+  restoration of the sheets. Each case types its inputs on the input sheets,
+  runs `RunSSA_Silent`, compares every expected output within its tolerance,
+  records every number as a result, and puts the inputs back, formulas
+  included.
+  `tools/prototype/case_suite.py` writes the module from `tests/fixtures/`
+  and `tests/expected/`, and a test fails while the tracked module is not
+  what it writes. Its certification entry point is `CertifyCases`, and the
+  evidence policy lists it with its results file, `cases-results.json`. The
+  project has its first accuracy contract, `ACC-02`, a draft on the overall
+  net open position and the requirement of the FX calculation. The suite
+  passes in LibreOffice, where the contract holds; it has not run in Excel
+  (#21).
+
 - The workbook's VBA tests run under the test harness, as two suites. The
   `core` suite, 11 cases and 90 assertions in `tests/modules/TEST_Suite.bas`,
   calls the engine's procedures and the worksheet functions and touches no
@@ -193,6 +209,13 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- The skeleton of a case of an end-to-end case runner, in the harness guide,
+  passes the VBA checks: the handler records the case's error and resumes to
+  the cleanup. The earlier skeleton raised the error again after
+  `Resume CleanUp`, which `tools/check_vba_jumps.py` reports (#51).
+- `tools/devbuild/lo_smoke.py` finds each file a suite saved by its whole
+  name. It took the first file whose name ended with the one it looked for,
+  so `results.json` could be read from another suite's results file (#21).
 - Each calculation contract names its test cases and says which values are
   published. Seven contracts still said that no test case existed, after the
   cases were registered (#49).

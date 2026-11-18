@@ -538,14 +538,15 @@ class Verification(NeedsOpenpyxl):
         verify = tool("verify")
         run = verify.Run(Path("folder"), "python-with-uno")
         results = {"TEST_Suite.Test_RunCore": "RESULT=PASS; suite=core; assertions=90",
-                   "TEST_Workbook.Test_RunWorkbook": "RESULT=PASS; suite=workbook; assertions=34"}
+                   "TEST_Workbook.Test_RunWorkbook": "RESULT=PASS; suite=workbook; assertions=34",
+                   "TEST_Cases.Test_RunCases": "RESULT=PASS; suite=cases; assertions=329"}
         self.assertEqual(verify.TESTS, tuple(results))
         with unittest.mock.patch.object(
                 verify.Run, "macro", side_effect=lambda _book, macro, _out: results[macro]) as called:
             self.assertEqual(verify.test_suite(run), "\n".join(results.values()))
         self.assertEqual([call.args[1] for call in called.call_args_list], list(results))
         # Each run saves its own values, so one does not replace the other's.
-        self.assertEqual(len({call.args[2] for call in called.call_args_list}), 2)
+        self.assertEqual(len({call.args[2] for call in called.call_args_list}), 3)
         for result in ("RESULT=FAIL; suite=workbook; failures=1", ""):
             results["TEST_Workbook.Test_RunWorkbook"] = result
             with unittest.mock.patch.object(
