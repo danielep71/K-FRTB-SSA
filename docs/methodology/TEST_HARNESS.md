@@ -17,9 +17,10 @@ records.
 | `tests/modules/TEST_Relations.bas` | The illustrative [relation tests](#relation-tests), `RunRelationTests`: four relations of a stand-in total, each with its corruption check. It is not certified, and holds no calculation of the workbook |
 | `tests/modules/TEST_Suite.bas` | The `core` suite, one of [the project's suites](#the-projects-suites): the engine's procedures and the worksheet functions on inputs written in each case. It reads and writes no sheet |
 | `tests/modules/TEST_Workbook.bas` | The `workbook` suite: the whole calculation through the workbook's entry points, on the sample data of the template. It rewrites the output sheets |
+| `tests/modules/TEST_Probes.bas` | The `probes` suite: what the workbook relies on Excel to do, one case for each behaviour of the [Host behaviour](VALIDATION_PLAN.md#host-behaviour) table that a procedure can observe. It tests no calculation |
 | `tests/modules/TEST_Cases.bas` | The `cases` suite: every registered [test case](TEST_CASES.md) of the project, run in the workbook as an [end-to-end case runner](#end-to-end-case-runner) does. `tools/prototype/case_suite.py` writes it from the test cases; it is never edited |
 
-All six use `Option Private Module`, so they never become part of the
+All seven use `Option Private Module`, so they never become part of the
 workbook's external surface. A production workbook contains none of them.
 
 A project suite follows the example suite: one `Case` procedure per case,
@@ -138,12 +139,13 @@ failing assertion and a skipped case are reported, and it holds no
 calculation of the workbook. I keep it beside the project's suites for that
 reason, with the illustrative test cases it reads and the illustrative
 entries of the guides that those cases cite. The workbook's own tests are
-three suites, so that the tests of the core need no workbook:
+four suites, so that the tests of the core need no workbook:
 
 | Suite | Module | What it runs | What it needs and changes |
 | --- | --- | --- | --- |
 | `core` | `TEST_Suite.bas` | The core procedures and the worksheet functions, on inputs written in each case: time bands, ladders, the four risk classes, the validation of rows and parameters, the netting of issues and the fingerprint | The VBA project only. It reads and writes no sheet |
 | `workbook` | `TEST_Workbook.bas` | `RunSSA_Silent`, `CheckStatus_Silent` and `ClearOutputs_Silent` on the template's sample data: the totals of the sample portfolio, a run that fails while it writes or while it reads, and a parameter and a position changed after a run | The workbook with the template's sheets and sample data. It rewrites the output sheets and leaves them cleared. The cell and the name it changes for one operation are put back before it asserts |
+| `probes` | `TEST_Probes.bas` | Six probes of Excel's behaviour: an error value typed in an input cell and read as `#ERROR`, a text written into a cell that is not formatted as text, a range taken as a table, the status line on the other output sheets, and the save state after the status check | The workbook with the template's sheets and sample data. It appends rows under the four position tables and removes them, changes `ScalingIR` and `ThisWorkbook.Saved` for one check and puts both back, rewrites the output sheets and leaves them cleared |
 | `cases` | `TEST_Cases.bas` | The 18 registered test cases of the calculations `CALC-02` to `CALC-08`: each case types the test case's inputs on the input sheets, runs `RunSSA_Silent` and compares every expected output with the cell that holds it | The workbook with the template's sheets. Each case replaces the reporting date and currency, the FX table, the option charges and the four position sheets, then puts back what they held, values and formulas, and clears the output sheets, and asserts that as `inputs-restored` |
 
 Each suite has three entry points:
@@ -152,6 +154,7 @@ Each suite has three entry points:
 | --- | --- | --- | --- |
 | `core` | `TEST_Suite.RunCoreTests` | `TEST_Suite.Test_RunCore` | `TEST_Suite.CertifyCore` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `TEST_Workbook.Test_RunWorkbook` | `TEST_Workbook.CertifyWorkbook` |
+| `probes` | `TEST_Probes.RunProbeTests` | `TEST_Probes.Test_RunProbes` | `TEST_Probes.CertifyProbes` |
 | `cases` | `TEST_Cases.RunCaseTests` | `TEST_Cases.Test_RunCases` | `TEST_Cases.CertifyCases` |
 
 - **Run.** Type it in the Immediate window. It ends as every run of the
@@ -163,9 +166,10 @@ Each suite has three entry points:
   the `RESULT` line and raises nothing.
 - **Certify.** It takes the two arguments of `CertifyExamples`, and saves the
   suite's log and certification log: `core.log` and `core-certification.log`,
-  `workbook.log` and `workbook-certification.log`, `cases.log` and
-  `cases-certification.log`. The `cases` suite also saves the results it
-  recorded, as `cases-results.json`; the other two record none. The path of
+  `workbook.log` and `workbook-certification.log`, `probes.log` and
+  `probes-certification.log`, `cases.log` and `cases-certification.log`.
+  The `cases` suite also saves the results it
+  recorded, as `cases-results.json`; the others record none. The path of
   `tests/fixtures/` is not read: the inputs of every suite are in its module.
 
 In the `core` and the `workbook` suite the expected values are written in
@@ -213,11 +217,43 @@ would write, and `tests/test_case_suite.py` fails while they differ.
   [accuracy contract](TEST_CASES.md#accuracy-contracts) on any quantity of
   the cases can be measured on the suite's results file.
 
-A pass of any of the three suites shows that the engine gives the expected
-values in the host that ran it. It validates no rule: the hand calculations
-and the derived values are mine, as the engine is, and only the two figures
-of table 9 are published. None of the suites has run in Excel
-([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
+A pass of the `core`, the `workbook` or the `cases` suite shows that the
+engine gives the expected values in the host that ran it. It validates no
+rule: the hand calculations and the derived values are mine, as the engine
+is, and only the two figures of table 9 are published. None of the suites
+has run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
+
+**The `probes` suite measures the host.** Each of its cases is the probe of
+a behaviour of the code that the [Host behaviour](VALIDATION_PLAN.md#host-behaviour)
+table lists: its assertions say what Excel must do for the code to be
+right, and a pass on a host is the measurement of that behaviour on that
+host, kept in the certification log and the run's host record. A failure
+is a finding about Excel or about the code, never a test to loosen.
+
+- `error-values-in-inputs` (`HB-08`): an error value typed in an input cell
+  reads as the text `#ERROR` where an output shows that text, and no
+  output cell holds an error value. The rows are those of `error_keys` in
+  `tools/prototype/verify.py`, which checks the formula workbook.
+- `reading-an-error-value` (`HB-08`): a cell given `CVErr(#N/A)` holds an
+  error value, which `PlainText` reads as `#ERROR`, and the text `#N/A`
+  written into a text-formatted cell stays a text.
+- `text-written-into-a-cell` (`HB-09`): a text that reads as a number,
+  written as it is into a cell that is not formatted as text, becomes a
+  number, and written through the cell's format it keeps its digits and the
+  cell gets its format back.
+- `areas-as-tables` (`HB-13`): the `Value` and the `Formula` of a range of several
+  cells are tables from 1, and those of one cell are not.
+- `status-on-the-other-sheets` (`HB-10`): after a run, `E1` of each
+  calculation sheet and of `Checks` shows the status line of `Results`.
+- `save-state-after-the-check` (`HB-11`): `CheckStatus_OnEvent` leaves a
+  saved workbook saved when the results are current, and unsaved when it
+  writes `OUTDATED:`.
+
+The events `Workbook_Open` and `Workbook_BeforeSave` cannot be raised by a
+procedure: [the checks by hand](../../INSTALLATION.md#host-checks-by-hand)
+cover them. In LibreOffice a cell given an error value by VBA stays empty,
+so eight assertions of the first two cases fail there; `tools/devbuild/lo_smoke.py`
+knows them, and `tools/prototype/verify.py` does not run this suite.
 
 ## Relation tests
 

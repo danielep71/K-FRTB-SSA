@@ -30,7 +30,11 @@ valid VBA differently in known ways:
   TEST_Harness.Echo;
 - Application.Build does not exist, so ENVIRONMENT has an empty build;
 - after a call that raised under On Error Resume Next, Err.Number reads 0,
-  so the assertions on raised errors fail (KNOWN_FAILURES below).
+  so the assertions on raised errors fail (KNOWN_FAILURES below);
+- a cell given an error value by VBA, CVErr(#N/A), stays empty, and an error
+  value typed in a cell reads as 0 in the engine, so the probes of the
+  probes suite that read an error value fail (KNOWN_FAILURES below); that
+  suite passes every other assertion.
 """
 
 from __future__ import annotations
@@ -66,6 +70,15 @@ KNOWN_FAILURES = frozenset({
     "cleanup-each-restoration-failure/calculation-cleanup-error",
     "cleanup-each-restoration-failure/screen-cleanup-error",
     "cleanup-only-failure/cleanup-error",
+    # The probes suite, on an error value in a cell.
+    "error-values-in-inputs/issue-key-of-an-issue-id-typed-as-an-error",
+    "error-values-in-inputs/issue-key-of-another-issue-id-typed-as-an-error",
+    "error-values-in-inputs/net-of-the-issue-of-error-ids",
+    "error-values-in-inputs/net-of-the-issue-on-its-second-row",
+    "error-values-in-inputs/currency-typed-as-an-error",
+    "error-values-in-inputs/position-id-typed-as-an-error",
+    "reading-an-error-value/error-value-is-read-as-an-error",
+    "reading-an-error-value/error-value-reads-as-the-error-text",
 })
 # The failure each deliberate failure mode is designed to produce, by mode.
 DESIGNED = {"INJECTED_FAILURE": frozenset({"exact-double/half-plus-quarter"}),
@@ -300,11 +313,13 @@ def unexpected(logs: dict[str, Any], expected: Mapping[str, frozenset[str]]) -> 
 
 
 def not_passed(logs: dict[str, Any], policy: check_excel_run.Policy) -> list[str]:
-    """The project suites whose run did not pass: no failure is known in one, so a
-    run that was refused, or that ended without a failure line, is reported too."""
+    """The project suites whose run did not pass and names no failure: a run that was
+    refused, or that ended without a failure line. A failure line is judged by
+    ``unexpected``, which knows the few that LibreOffice causes."""
     return [f"{item.log}: {logs[item.log]['result'] or 'no RESULT'}"
             for item in policy.project_suites
             if isinstance(logs.get(item.log), dict)
+            and not logs[item.log]["failures"]
             and not logs[item.log]["result"].startswith("RESULT=PASS;")]
 
 

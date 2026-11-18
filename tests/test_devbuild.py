@@ -1007,12 +1007,16 @@ class LibreOfficeSmoke(unittest.TestCase):
         self.assertEqual(summary["unexpected"],
                          ["project.log: RESULT=FAIL; suite=project; operation=NOT_RUN"])
         self.assertEqual(code, 1)
+        # A failure line is judged by what LibreOffice is known to cause.
         code, summary, _, _ = self.smoke(
             project_result="FAILURE=some-case/some-assertion; expected=1\nRESULT=FAIL; x")
         self.assertEqual(summary["unexpected"],
-                         ["project.log: FAILURE=some-case/some-assertion; expected=1",
-                          "project.log: RESULT=FAIL; x"])
+                         ["project.log: FAILURE=some-case/some-assertion; expected=1"])
         self.assertEqual(code, 1)
+        known = sorted(lo_smoke.KNOWN_FAILURES)[0]
+        code, summary, _, _ = self.smoke(
+            project_result=f"FAILURE={known}; expected=1\nRESULT=FAIL; x")
+        self.assertEqual((summary["unexpected"], code), ([], 0))
 
     def test_a_project_results_file_that_is_not_one_is_unexpected(self) -> None:
         code, summary, _, _ = self.smoke(project_results="not JSON")

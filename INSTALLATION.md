@@ -257,7 +257,7 @@ is never Excel evidence, and it validates no rule.
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, runs the three suites of the VBA tests, and
+area with the formula workbook's, runs the three suites of the VBA tests that run in LibreOffice, and
 runs the test cases as `run_cases.py` does. Error
 values typed as texts are checked on the formula workbook alone: LibreOffice
 gives the engine 0 for a cell that holds one, where Excel gives the error.
@@ -331,13 +331,16 @@ from an entry point without arguments:
 | --- | --- | --- |
 | `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=3; assertions=34; failures=0; cleanup=PASS; recovery=NONE` |
+| `probes` | `TEST_Probes.RunProbeTests` | `RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE; cases=6; assertions=42; failures=0; cleanup=PASS; recovery=NONE` |
 | `cases` | `TEST_Cases.RunCaseTests` | `RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE; cases=18; assertions=345; failures=0; cleanup=PASS; recovery=NONE` |
 <!-- END generated: project-suite-results -->
 
 The `core` suite calls the engine's procedures and the worksheet functions on
 inputs written in each case, and touches no sheet. The `workbook` suite runs
 the whole calculation on the sample data the template ships: it rewrites the
-output sheets and leaves them cleared. The `cases` suite runs every
+output sheets and leaves them cleared. The `probes` suite measures Excel's behaviour on error values, texts,
+ranges and the status check, and appends rows under the position tables and
+removes them, as the harness guide describes. The `cases` suite runs every
 registered [test case](docs/methodology/TEST_CASES.md): each case replaces
 the inputs of the workbook with its own, runs the calculation, puts back the
 inputs the workbook had, formulas included, and clears the output sheets. Run the last two in a
@@ -583,6 +586,56 @@ the runner's own record. A PASS says the evidence is consistent
 with the commit. It validates a calculation only as far as its accuracy
 contracts and their reference values do; the illustrative contract `ACC-01`
 validates none.
+
+### Host checks by hand
+
+The one-command run and the `probes` suite measure most of what the
+prototype relies on Excel to do. These checks need a person, because no
+procedure can raise the events or close the workbook. Make them once, on the
+host of an Excel run, in a development workbook built from the candidate
+commit, and write what you saw in the issue that covers host evidence
+([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) and in the
+`HB-12` row of the [Host behaviour](docs/methodology/VALIDATION_PLAN.md#host-behaviour)
+table. Use a copy that you may save:
+
+```sh
+copy test-results\build\Workbook-development.xlsm host-checks.xlsm
+```
+
+Open `host-checks.xlsm`, enable the macros, and run `RunSSA` (**Alt+F8**).
+The status line, `Results!C4`, begins `OK:`, and so does `E1` of the
+calculation sheets.
+
+1. **Save after a changed input.** Change the amount of the first row of
+   `IRPositions` and do not run. Press **Ctrl+S**. The status line must now
+   begin `OUTDATED: OK:`: the check ran before the save. Put the amount back,
+   run `RunSSA` and save: it begins `OK:` again. Close the workbook.
+2. **Open a workbook that another application saved.** With the workbook
+   closed, change that amount with an application that does not run the
+   check, for example:
+
+   ```sh
+   python -c "import openpyxl; w = openpyxl.load_workbook('host-checks.xlsm', keep_vba=True); c = w['IRPositions']['H5']; c.value += 1; w.save('host-checks.xlsm')"
+   ```
+
+   Open the result in Excel and enable the macros. The status line must
+   begin `OUTDATED:` as soon as the workbook is open, and Excel must ask
+   whether to save when you close it. Close it without saving.
+3. **Open and close a workbook whose inputs did not change.** Open
+   `host-checks.xlsm`, run `RunSSA`, save, close, open it again and close it
+   without touching anything. Excel must not ask whether to save.
+4. **The one-command run.** `python tools/devbuild/excel_run.py` opens a
+   workbook, which runs `Workbook_Open`. A run that ends `excel-run: PASS`
+   was not stopped by the event procedures; say so.
+5. **The round trip, source to workbook and back.** Follow the steps of
+   [By hand](#by-hand) that export every component and run
+   `tools/check_excel_run.py` on the export, for the same commit, and record
+   the `Note:` lines: each is a re-cased identifier (`HB-01`) or a
+   difference.
+
+Write each result as what you saw, with the Excel build and the Windows
+version, even where it is not what is expected: a difference is a finding.
+The folder `host-checks.xlsm` is in stays outside Git.
 
 ### A run for another commit
 
