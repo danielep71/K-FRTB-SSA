@@ -126,6 +126,9 @@ def negative(source: Path, target: Path) -> None:
         # The instrument is read without regard to case and the blanks at its ends.
         ["IR-INST3", "T", " swap LEG ", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
          "NONE", "", ""],
+        # Not the blanks inside it: Excel's TRIM would collapse them, VBA's Trim$ does not.
+        ["IR-INST4", "T", "Swap  leg", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
         # No coupon; a currency outside the FX table; a duplicate PositionID.
         ["IR-BAD1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", None, day(2030, 1, 1), None,
          "OTHER", "BB+ to BB-", ""],

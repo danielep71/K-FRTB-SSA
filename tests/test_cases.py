@@ -94,6 +94,7 @@ class Derivation(unittest.TestCase):
             # An instrument is one of the seven values of DS-06, whatever its case and blanks;
             # the test comes before the currency's.
             ({"instrument_code": " swap LEG "}, "OK"),
+            ({"instrument_code": "Swap  leg"}, INSTRUMENT),
             ({"instrument_code": "Securitisation"}, INSTRUMENT),
             ({"instrument_code": None}, INSTRUMENT),
             ({"instrument_code": "Equity", "currency_code": "ZAR"}, INSTRUMENT),

@@ -368,8 +368,16 @@ INSTRUMENT_REASON = "INVALID: Instrument must be " + ", ".join(INSTRUMENTS[:-1])
 
 
 def listed_instrument(cell: str) -> str:
-    """TRUE when an Instrument cell, trimmed, is one of INSTRUMENTS."""
-    return "OR(" + ",".join(f'{text(cell)}="{name}"' for name in INSTRUMENTS) + ")"
+    """TRUE when an Instrument cell is one of INSTRUMENTS, without regard to case and to
+    the blanks at its ends, as the engine reads it.
+
+    Excel's TRIM also collapses the blanks inside a text, which VBA's Trim$ does not:
+    "Swap  leg" would pass. So the name must stand in the cell as it is, with only
+    blanks around it: TRIM leaves nothing else, and the characters from the first
+    letter of the name are the name."""
+    return "OR(" + ",".join(
+        f'IFERROR(AND(TRIM({cell})="{name}",MID({cell},SEARCH("{name[0]}",{cell}),{len(name)})="{name}"),FALSE)'
+        for name in INSTRUMENTS) + ")"
 
 
 def issue_rows(last: str) -> str:
