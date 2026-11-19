@@ -320,14 +320,32 @@ def negative(cells: str) -> str:
     return f"({cells}<0)"
 
 
+def listed(code: str) -> str:
+    """The currency code of an FX_Table cell as the engine reads it: trimmed, upper case."""
+    return f"UPPER(TRIM({code}))"
+
+
+def in_table(code: str) -> str:
+    """An array expression: TRUE for the cells of FX_Ccy that hold the currency code.
+
+    The engine reads the codes of FX_Table through CodeText, as it reads every
+    code: trimmed and without regard to case."""
+    return f"({listed('FX_Ccy')}={listed(code)})"
+
+
 def no_currency(code: str) -> str:
     """TRUE when a currency code is blank or not in FX_Table."""
-    return f'OR({code}="",{count_where(same("FX_Ccy", code))}=0)'
+    return f'OR({code}="",{count_where(in_table(code))}=0)'
 
 
 def fx_rate(code: str) -> str:
     """The rate of a currency code of FX_Table."""
-    return sum_where("FX_Rate", same("FX_Ccy", code))
+    return sum_where("FX_Rate", in_table(code))
+
+
+def table_code(index: str) -> str:
+    """The currency code of row index of FX_Table, trimmed and upper case; "" for a blank."""
+    return listed(f"INDEX(FX_Ccy,{index})")
 
 
 def text(cell: str) -> str:
@@ -338,14 +356,9 @@ def text(cell: str) -> str:
     return f'IFERROR(TRIM({cell}),"{ERROR_TEXT}")'
 
 
-def typed(cell: str) -> str:
-    """A typed text that is compared as it is: ERROR_TEXT for an error value."""
-    return f'IFERROR({cell},"{ERROR_TEXT}")'
-
-
 def neither(cell: str, first: str, second: str) -> str:
-    """TRUE when a typed text is neither of two words."""
-    return f'AND({typed(cell)}<>"{first}",{typed(cell)}<>"{second}")'
+    """TRUE when a typed text, trimmed, is neither of two words."""
+    return f'AND({text(cell)}<>"{first}",{text(cell)}<>"{second}")'
 
 
 def issue_rows(last: str) -> str:
@@ -674,10 +687,10 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(NOT(ISNUMBER(IRPositions!K{r})),"INVALID: Final maturity date missing",'
         'IF(' + NOT_A_DATE.format(cell="IRPositions!K{r}") + ',"INVALID: Final maturity date is not a date",'
         'IF(IRPositions!K{r}<AsOfDate,"INVALID: final maturity before AsOfDate",'
-        'IF(AND(IRPositions!I{r}="Fixed",NOT(ISNUMBER(IRPositions!J{r}))),"INVALID: Coupon required for a fixed-rate position",'
-        'IF(AND(IRPositions!I{r}="Floating",NOT(ISNUMBER(IRPositions!L{r}))),"INVALID: Next repricing date required for a floating-rate position",'
-        'IF(AND(IRPositions!I{r}="Floating",' + NOT_A_DATE.format(cell="IRPositions!L{r}") + '),"INVALID: Next repricing date is not a date",'
-        'IF(AND(IRPositions!I{r}="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
+        'IF(AND(' + text("IRPositions!I{r}") + '="Fixed",NOT(ISNUMBER(IRPositions!J{r}))),"INVALID: Coupon required for a fixed-rate position",'
+        'IF(AND(' + text("IRPositions!I{r}") + '="Floating",NOT(ISNUMBER(IRPositions!L{r}))),"INVALID: Next repricing date required for a floating-rate position",'
+        'IF(AND(' + text("IRPositions!I{r}") + '="Floating",' + NOT_A_DATE.format(cell="IRPositions!L{r}") + '),"INVALID: Next repricing date is not a date",'
+        'IF(AND(' + text("IRPositions!I{r}") + '="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
         'IF(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
         '"OK")))))))))))))))))')
@@ -701,10 +714,10 @@ def build_ir_calc(ctx: Context) -> None:
          ir_status,
          '=IF($C{r}="","",UPPER(' + text("IRPositions!F{r}") + '))',
          '=IF($C{r}="","",IF(' + no_currency("$E{r}") + ',"",' + fx_rate("$E{r}") + '))',
-         '=IF($D{r}="OK",IF(IRPositions!G{r}="Long",1,-1)*IRPositions!H{r}*$F{r},0)',
-         '=IF($D{r}="OK",IF(IRPositions!I{r}="Floating",IRPositions!L{r},IRPositions!K{r}),"")',
+         '=IF($D{r}="OK",IF(' + text("IRPositions!G{r}") + '="Long",1,-1)*IRPositions!H{r}*$F{r},0)',
+         '=IF($D{r}="OK",IF(' + text("IRPositions!I{r}") + '="Floating",IRPositions!L{r},IRPositions!K{r}),"")',
          '=IF($D{r}="OK",($H{r}-AsOfDate)/DaysPerYear,"")',
-         '=IF($D{r}="OK",IF(OR(IRPositions!I{r}="Floating",IRPositions!J{r}>=CouponThreshold),"High","Low"),"")',
+         '=IF($D{r}="OK",IF(OR(' + text("IRPositions!I{r}") + '="Floating",IRPositions!J{r}>=CouponThreshold),"High","Low"),"")',
          '=IF($D{r}="OK",IF($J{r}="High",SUMPRODUCT((Ladder_UpperHigh<>"")*(Ladder_UpperHigh<$I{r})),'
          'SUMPRODUCT((Ladder_UpperLow<>"")*(Ladder_UpperLow<$I{r})))+1,"")',
          '=IF($D{r}="OK",INDEX(Ladder_Zone,$K{r}),"")',
@@ -765,7 +778,7 @@ def build_eq_calc(ctx: Context) -> None:
          '=IF($C{r}="","",' + text("EQPositions!F{r}") + ')',
          '=IF($C{r}="","",UPPER(' + text("EQPositions!G{r}") + '))',
          '=IF($D{r}="OK",' + fx_rate(eq_currency) + ',"")',
-         '=IF($D{r}="OK",IF(EQPositions!I{r}="Long",1,-1)*EQPositions!J{r}*$H{r},0)',
+         '=IF($D{r}="OK",IF(' + text("EQPositions!I{r}") + '="Long",1,-1)*EQPositions!J{r}*$H{r},0)',
          '=IF($D{r}="OK",$E{r}&"|"&$F{r}&"|"&$G{r},"")',
          '=IF($J{r}="","",' + sum_where(R("I"), same(R("J"), "$J{r}")) + ')',
          '=IF($J{r}="",0,IF(' + count_where(same(f"$J${FIRST}:$J{{r}}", "$J{r}"))
@@ -796,7 +809,7 @@ def build_co_calc(ctx: Context) -> None:
          co_status,
          '=IF($C{r}="","",UPPER(' + text("COPositions!E{r}") + '))',
          '=IF($D{r}="OK",' + fx_rate(co_currency) + ',"")',
-         '=IF($D{r}="OK",IF(COPositions!F{r}="Long",1,-1)*COPositions!G{r}*COPositions!I{r}*$F{r},0)',
+         '=IF($D{r}="OK",IF(' + text("COPositions!F{r}") + '="Long",1,-1)*COPositions!G{r}*COPositions!I{r}*$F{r},0)',
          '=ABS($G{r})',
          '=IF($D{r}<>"OK","",IF(' + FIRST_OK_ROW_OF_KEY + '=1,MAX($I$4:$I{p})+1,""))',
          '=IF(LEFT($D{r},7)="INVALID",COUNTIF($D$5:$D{r},"INVALID*"),"")'])
@@ -821,7 +834,7 @@ def build_fx_calc(ctx: Context) -> None:
          fx_status,
          '=IF($C{r}="","",UPPER(' + text("FXPositions!E{r}") + '))',
          '=IF($D{r}="OK",' + fx_rate("$E{r}") + ',"")',
-         '=IF($D{r}="OK",IF(FXPositions!F{r}="Long",1,-1)*FXPositions!G{r},0)',
+         '=IF($D{r}="OK",IF(' + text("FXPositions!F{r}") + '="Long",1,-1)*FXPositions!G{r},0)',
          '=IF($D{r}="OK",$G{r}*$F{r},0)',
          '=IF(LEFT($D{r},7)="INVALID",COUNTIF($D$5:$D{r},"INVALID*"),"")'])
 
@@ -843,7 +856,7 @@ def build_ir_ladder(ctx: Context) -> None:
         # The rows of IRCalc in this row's currency and time band.
         slot = (same(IC("E"), f"$C{rr}"), f'({IC("K")}=$D{rr})')
         f: dict[str, str | int] = {
-            "C": f'=IF(OR(INDEX(FX_Ccy,{ci})="",INDEX(FX_Ccy,{ci})=GoldCode),"",INDEX(FX_Ccy,{ci}))',
+            "C": f'=IF(OR({table_code(str(ci))}="",{table_code(str(ci))}=GoldCode),"",{table_code(str(ci))})',
             "D": b, "E": f"=INDEX(Ladder_Zone,$D{rr})",
             "F": f'=IF(INDEX(Ladder_LabelHigh,$D{rr})="","n/a",INDEX(Ladder_LabelHigh,$D{rr}))',
             "G": f"=INDEX(Ladder_LabelLow,$D{rr})", "H": f"=INDEX(Ladder_RW,$D{rr})",
@@ -904,7 +917,7 @@ def build_ir_zones(ctx: Context) -> None:
 def zone_formulas(ccy: int, rr: int) -> dict[str, str]:
     """The formulas of row rr of IR_Zones, for the currency in row ccy of FX_Table, by column."""
     currency = f"$C{rr}"
-    f = {"C": f'=IF(OR(INDEX(FX_Ccy,{ccy})="",INDEX(FX_Ccy,{ccy})=GoldCode),"",INDEX(FX_Ccy,{ccy}))',
+    f = {"C": f'=IF(OR({table_code(str(ccy))}="",{table_code(str(ccy))}=GoldCode),"",{table_code(str(ccy))})',
          "D": f'=IF($C{rr}="",0,{count_where(same(IC("E"), currency), ok(IC("D")))})',
          "E": f'=IF($C{rr}="",0,{sum_where(LD("N"), same(LD("C"), currency))})'}
     for z, (a, bcol, cc, d, e) in zip((1, 2, 3), [("F", "G", "H", "I", "J"), ("K", "L", "M", "N", "O"),
@@ -1027,7 +1040,7 @@ def buckets_fx(wb: Book, ws: Sheet, FS: int) -> Block:
         currency = same(FC("E"), f"$D{rr}")
         f: dict[str, str | int] = {
             "C": i + 1,
-            "D": f'=IF(INDEX(FX_Ccy,{i + 1})="","",INDEX(FX_Ccy,{i + 1}))',
+            "D": f'=IF({table_code(str(i + 1))}="","",{table_code(str(i + 1))})',
             "E": f'=IF($D{rr}="","",IF($D{rr}=ReportingCcy,"Reporting ccy",IF($D{rr}=GoldCode,"Gold","Currency")))',
             "F": f'=IF($D{rr}="",0,{sum_where(FC("G"), currency, ok(FC("D")))})',
             "G": f'=IF($D{rr}="","",INDEX(FX_Rate,{i + 1}))',
@@ -1200,10 +1213,10 @@ def check_rules(ctx: Context) -> list[Rule]:
         ("C05", "ERROR", "Params", f'=IF({fx_rate("TRIM(ReportingCcy)")}=1,0,1)', "FX_Table",
          "The reporting currency must be listed in FX_Table with rate 1."),
         ("C06", "ERROR", "Params", "=" + "+".join(
-            f'(INDEX(FX_Ccy,{i})<>"")*({count_where(same("FX_Ccy", f"INDEX(FX_Ccy,{i})"))}>1)'
+            f'({table_code(str(i))}<>"")*({count_where(in_table(f"INDEX(FX_Ccy,{i})"))}>1)'
             for i in range(1, NFX + 1)), "FX_Table",
          "Currency codes listed more than once in FX_Table."),
-        ("C07", "ERROR", "Params", '=SUMPRODUCT((FX_Ccy<>"")*(1-ISNUMBER(FX_Rate)))+SUMPRODUCT((FX_Ccy<>"")*ISNUMBER(FX_Rate)*(FX_Rate<=0))',
+        ("C07", "ERROR", "Params", '=SUMPRODUCT((TRIM(FX_Ccy)<>"")*(1-ISNUMBER(FX_Rate)))+SUMPRODUCT((TRIM(FX_Ccy)<>"")*ISNUMBER(FX_Rate)*(FX_Rate<=0))',
          "FX_Table", "Listed currencies whose rate is missing, not a number or not positive."),
         ("C08", "WARNING", "Params", f'=COUNTIF(Params!$H$6:$H${PARAM_LAST},"CHANGED")', "MAR40",
          "Constants that differ from the MAR40 value (what-if run): the result is not the regulatory figure."),
