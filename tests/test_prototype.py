@@ -395,6 +395,14 @@ class Generator(NeedsOpenpyxl):
                          '=IF($C6="",0,SUMPRODUCT((UPPER(IRCalc!$E$5:$E$504)=UPPER($C6))'
                          '*(IRCalc!$K$5:$K$504=$D6)*(IRCalc!$G$5:$G$504>0)*1,IRCalc!$G$5:$G$504))')
 
+    def test_the_engine_limit_is_the_number_of_rows_the_template_is_built_for(self) -> None:
+        generator = tool("build_prototype")
+        config = (ROOT / "src" / "core" / "CORE_Config.bas").read_text(encoding="cp1252")
+        match = re.search(r"Public Const MAX_POSITION_ROWS As Long = (\d+)", config)
+        assert match is not None
+        self.assertEqual(int(match.group(1)), generator.CAP)
+        self.assertEqual(int(match.group(1)), 500)
+
     def test_every_output_sheet_repeats_the_status_line(self) -> None:
         assert openpyxl is not None
         generator = tool("build_prototype")

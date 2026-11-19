@@ -71,8 +71,8 @@ Attribute VB_Name = "TEST_Workbook"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "workbook"
-        Private Const EXPECTED_CASES      As Long = 3
-        Private Const EXPECTED_ASSERTIONS As Long = 34
+        Private Const EXPECTED_CASES      As Long = 4
+        Private Const EXPECTED_ASSERTIONS As Long = 41
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -96,7 +96,7 @@ Public Sub RunWorkbookTests()
 ' PURPOSE
 '   Run the workbook suite. A passing run ends with
 '   RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE;
-'   cases=3; assertions=34; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=4; assertions=41; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' STATE OWNERSHIP
 '   Rewrites the output sheets and leaves them cleared.
@@ -222,6 +222,7 @@ Private Sub RunSuite()
         AllowWritingToSheets
         CaseSamplePortfolio
         CaseFailedRun
+        CaseVolume
         CaseOutdatedResults
 
 Finish:
@@ -360,6 +361,56 @@ Private Sub CaseFailedRun()
         TEST_Harness.AssertEqualText "while-reading-fingerprint", vbNullString, NamedText(NM_FINGERPRINT)
         TEST_Harness.AssertEqualText "while-reading-check", "RESULT=FAILED; cleanup=PASS", CheckOutcome()
         TEST_Harness.AssertEqualText "run-after-the-failures", "RESULT=OK", Left$(RunSSA_Silent(), 9)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+
+Private Sub CaseVolume()
+'
+'==============================================================================
+'                                  CaseVolume
+'------------------------------------------------------------------------------
+' PURPOSE
+'   A position sheet that holds more rows than the workbook supports stops
+'   the run: a PositionID on the row after the last supported one makes the
+'   table 501 rows, and a run on exactly 500 rows is not stopped. The stop
+'   leaves no result, counts one error on Checks and lists the sheet and the
+'   rows found.
+'
+' STATE OWNERSHIP
+'   Rewrites the output sheets. Writes one PositionID below the sample rows
+'   of IRPositions, twice, and clears the cell before it asserts.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Header       As Range     'First header cell of IRPositions
+    Dim Findings     As Range     'Header of the Checks findings table
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "volume"
+        Set Header = ThisWorkbook.Names(NM_IR_POS_HEADER).RefersToRange
+        Header.Offset(MAX_POSITION_ROWS, 0).Value = "V500"
+        TEST_Harness.AssertEqualText "run-on-500-rows-is-not-stopped", "RESULT=INCOMPLETE", _
+            Left$(RunSSA_Silent(), 17)
+        Header.Offset(MAX_POSITION_ROWS, 0).ClearContents
+        Header.Offset(MAX_POSITION_ROWS + 1, 0).Value = "V501"
+        TEST_Harness.AssertEqualText "run-on-501-rows-is-stopped", "RESULT=STOPPED;", _
+            Left$(RunSSA_Silent(), 15)
+        Header.Offset(MAX_POSITION_ROWS + 1, 0).ClearContents
+        TEST_Harness.AssertEqualText "status-line", "STOPPED: 1 unusable input(s)", Left$(StatusLine(), 28)
+        TEST_Harness.AssertEqualText "no-result", vbNullString, NamedText("SSA_Requirement")
+        TEST_Harness.AssertEqualText "error-count-of-checks", "1", NamedText(NM_CHECKS_ERRORS)
+        Set Findings = ThisWorkbook.Names(NM_FINDINGS_HEADER).RefersToRange
+        TEST_Harness.AssertEqualText "finding-sheet", SH_IR_POS, PlainText(Findings.Offset(1, 1).Value)
+        TEST_Harness.AssertEqualText "finding-reason", _
+            ST_INVALID & "501 rows found; the workbook supports at most 500", _
+            PlainText(Findings.Offset(1, 6).Value)
         Exit Sub
 
 CaseFailed:

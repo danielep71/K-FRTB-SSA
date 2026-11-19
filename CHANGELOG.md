@@ -204,6 +204,17 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- A run stops when a position sheet holds more rows than the workbook
+  supports. The limit is `MAX_POSITION_ROWS`, 500, the rows the template is
+  formatted, validated and coloured for, counted from the row below the
+  header to the last row with a PositionID. On more, the status line reads
+  `STOPPED`, no result is calculated, and `Checks` lists the sheet and the
+  rows found under rule `C14`, which already stops the run on an unusable
+  `Params` value; a table of exactly 500 rows runs as before. Before, such a
+  run calculated every row and wrote results that no format, formula or check
+  covered. The stop text of the status line reads `unusable input(s)`. A run
+  of four full sheets took about 12 seconds in LibreOffice, and none has been
+  timed in Excel. The data contract no longer lists the limit as a gap (#45).
 - The engine rejects two inputs that the data contract excludes. An interest
   rate row whose instrument is not one of `Bond`, `FRN`, `Swap leg`,
   `Future leg`, `FRA leg`, `Forward leg` and `Other`, or whose instrument is

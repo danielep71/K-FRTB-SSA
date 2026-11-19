@@ -14,8 +14,8 @@
       "name": "core",
       "source": "tests/modules/TEST_Suite.bas",
       "certification_entry_point": "CertifyCore",
-      "expected_cases": 11,
-      "expected_assertions": 93,
+      "expected_cases": 12,
+      "expected_assertions": 99,
       "log": "core.log",
       "certification_log": "core-certification.log"
     },
@@ -23,8 +23,8 @@
       "name": "workbook",
       "source": "tests/modules/TEST_Workbook.bas",
       "certification_entry_point": "CertifyWorkbook",
-      "expected_cases": 3,
-      "expected_assertions": 34,
+      "expected_cases": 4,
+      "expected_assertions": 41,
       "log": "workbook.log",
       "certification_log": "workbook-certification.log"
     },

@@ -122,6 +122,8 @@ CORE_Config	Const	NM_FX_RATE
 # SIG	CORE_Config	Const	NM_FX_RATE	Public Const NM_FX_RATE As String = "FX_Rate"
 CORE_Config	Const	NM_OPTIONS_PREFIX
 # SIG	CORE_Config	Const	NM_OPTIONS_PREFIX	Public Const NM_OPTIONS_PREFIX As String = "Options"
+CORE_Config	Const	MAX_POSITION_ROWS
+# SIG	CORE_Config	Const	MAX_POSITION_ROWS	Public Const MAX_POSITION_ROWS As Long = 500
 CORE_Config	Const	IR_ID
 # SIG	CORE_Config	Const	IR_ID	Public Const IR_ID As Long = 1
 CORE_Config	Const	IR_INSTRUMENT
@@ -516,6 +518,8 @@ CORE_Config	Const	ERR_CLEANUP_FAILED
 # SIG	CORE_Config	Const	ERR_CLEANUP_FAILED	Public Const ERR_CLEANUP_FAILED As Long = &H80040803
 CORE_Engine	Sub	Calculate
 # SIG	CORE_Engine	Sub	Calculate	Public Sub Calculate(ByRef Inputs() As Variant, ByRef Outputs() As Variant)
+CORE_Engine	Function	PositionVolumeErrors
+# SIG	CORE_Engine	Function	PositionVolumeErrors	Public Function PositionVolumeErrors(ByRef Inputs() As Variant, ByRef Findings() As String, ByRef FindingCount As Long) As Long
 CORE_Equity	Sub	CalculateEquity
 # SIG	CORE_Equity	Sub	CalculateEquity	Public Sub CalculateEquity(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef MarketOutput() As Variant, ByRef Totals() As Double)
 CORE_ForeignExchange	Sub	CalculateForeignExchange

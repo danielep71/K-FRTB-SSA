@@ -1210,7 +1210,7 @@ def build_checks(ctx: Context) -> None:
     ws.conditional_formatting.add(rngG, CellIsRule(operator="equal", formula=['"WARNING"'], **AMBER))
     ws.conditional_formatting.add(rngG, CellIsRule(operator="equal", formula=['"OK"'], **GREEN))
     DS = ctx.findings = RULE_L + 3
-    section(ws, DS, "Findings: rejected rows and unusable Params values" if ctx.template
+    section(ws, DS, "Findings: rejected rows and inputs that stop the run" if ctx.template
             else "Rejected rows (first 15 per sheet)", "C", "I")
     name(wb, "Checks_Header", "Checks!$C$6")
     name(wb, "Checks_Errors", "Checks!$D$4")
@@ -1254,8 +1254,8 @@ def check_rules(ctx: Context) -> list[Rule]:
     ]
     if ctx.template:
         rules.append(("C14", "ERROR", "Params", "=0", "MAR40",
-                      "Unusable Params values (parameter, ladder, specific-risk table, option charge): the run "
-                      "stops and lists them below."))
+                      "Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
+                      f"position sheets with more than {CAP} rows: the run stops and lists them below."))
         rules[4] = rules[4][:5] + ("The reporting currency must be listed in FX_Table with rate 1 (the run stops).",)
         rules[5] = rules[5][:5] + ("Currency codes listed more than once in FX_Table (the run stops).",)
         rules[6] = rules[6][:5] + ("Listed currencies whose rate is missing, not a number or not positive (the run stops).",)
