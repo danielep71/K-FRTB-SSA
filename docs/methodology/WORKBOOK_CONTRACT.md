@@ -111,7 +111,8 @@ Tab order is the order of the table. Every sheet is visible.
   total row.
 - A position sheet is formatted for 500 rows. `M_Main` reads a table from
   the row below its header to the last row with a value in its first
-  column.
+  column, and a table of more than 500 rows stops the run
+  (`MAX_POSITION_ROWS`, rule `C14` of `Checks`).
 - Input cells have a yellow fill, and the MAR40 constants on `Params` a grey
   one. Those cells are unlocked, every other cell is locked, and every sheet
   is protected without a password ([protection](#protection)).

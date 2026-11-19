@@ -578,7 +578,9 @@ headline of `Results`.
 a scaling factor that is not a number, an FX rate that is not greater than
 zero, a currency listed twice or the reporting currency not listed with
 rate 1. The run reads `STOPPED`, no result is calculated, and `Checks` lists
-each value with its reason (rules `C05` to `C07` and `C14`).
+each value with its reason (rules `C05` to `C07` and `C14`). A position
+sheet with more than 500 rows stops the run in the same way: `Checks` lists
+the sheet and the rows found under `C14`.
 
 **Validation:** the test cases `illustrative-requirement-fx-and-options-only`
 and `illustrative-sample-requirement`. Their expected values are

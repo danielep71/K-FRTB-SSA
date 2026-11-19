@@ -5,13 +5,14 @@ Attribute VB_Name = "CORE_Engine"
 ' PURPOSE
 '   Run the whole MAR40 simplified standardised approach from raw cell
 '   values to every output table: validate Params, stop when a parameter is
-'   unusable, otherwise calculate the four risk classes, scale and sum them
+'   unusable or a position sheet holds more rows than the workbook supports,
+'   otherwise calculate the four risk classes, scale and sum them
 '   into the own funds requirement and RWA, and assemble the Checks rules,
 '   the findings and the Results status line.
 '
 ' PUBLIC SURFACE
 '   None outside this VBA project (Option Private Module).
-'     Calculate.
+'     Calculate, PositionVolumeErrors.
 '
 ' DEPENDENCIES
 '   CORE_Config, CORE_Util, CORE_Parameters, CORE_InterestRate, CORE_Equity,
@@ -33,7 +34,7 @@ Attribute VB_Name = "CORE_Engine"
 '   BCBS MAR40.1-40.2 (aggregation and scaling), MAR40 throughout.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-19
 '
 ' AUTHOR
 '   Daniele Penza
@@ -94,6 +95,7 @@ Public Sub Calculate( _
     Dim Findings()     As String     'Findings (1 To 4, 1 To n)
     Dim FindingCount   As Long       'Findings in use
     Dim ParameterErrors As Long      'BuildParameters errors
+    Dim VolumeErrors   As Long       'Position sheets over MAX_POSITION_ROWS
     Dim TableErrors    As Long       'Ladder, specific-risk and option errors
     Dim ReportingErrors As Long      'C05
     Dim DuplicateErrors As Long      'C06
@@ -150,18 +152,20 @@ Public Sub Calculate( _
         RuleCounts(5) = ReportingErrors
         RuleCounts(6) = DuplicateErrors
         RuleCounts(7) = RateErrors
-        RuleCounts(14) = ParameterErrors + TableErrors
+        VolumeErrors = PositionVolumeErrors(Inputs, Findings, FindingCount)
+        RuleCounts(14) = ParameterErrors + TableErrors + VolumeErrors
         If ParameterErrors = 0 Then RuleCounts(8) = ChangedParameterCount(Parameters, GoldCode)
 
-        If ParameterErrors + TableErrors + ReportingErrors + DuplicateErrors + RateErrors > 0 Then
-            '--- Stopped: no calculation on unusable parameters --------------------
+        If ParameterErrors + TableErrors + ReportingErrors + DuplicateErrors + RateErrors _
+           + VolumeErrors > 0 Then
+            '--- Stopped: no calculation on unusable inputs ------------------------
             Outputs(OUT_STOPPED) = True
             CountBySeverity RuleCounts, Errors, Warnings
             Outputs(OUT_RULES) = RuleTable(RuleCounts)
             Outputs(OUT_FINDINGS) = FindingTable(Findings, FindingCount)
             Outputs(OUT_ERRORS) = Errors
             Outputs(OUT_WARNINGS) = Warnings
-            Outputs(OUT_STATUS) = "STOPPED: " & Errors & " unusable Params value(s); see Checks. " & _
+            Outputs(OUT_STATUS) = "STOPPED: " & Errors & " unusable input(s); see Checks. " & _
                                   "No results were calculated."
             Exit Sub
         End If
@@ -234,6 +238,57 @@ Public Sub Calculate( _
         End If
 
 End Sub
+
+
+Public Function PositionVolumeErrors( _
+    ByRef Inputs() As Variant, _
+    ByRef Findings() As String, _
+    ByRef FindingCount As Long) _
+    As Long
+'
+'==============================================================================
+'                            PositionVolumeErrors
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Find the position sheets that hold more rows than the workbook supports
+'   (MAX_POSITION_ROWS) and record a finding for each.
+'
+' INPUTS
+'   Inputs         Vector (1 To IN_COUNT); only the four position tables
+'                  (IN_IR_ROWS, IN_EQ_ROWS, IN_CO_ROWS, IN_FX_ROWS) are read.
+'                  A table spans the row below its header to its last row
+'                  with a PositionID, blank rows between included.
+'   Findings       Findings list, appended to (CORE_Util.AddFinding).
+'   FindingCount   Findings in use; incremented.
+'
+' RETURNS
+'   The number of sheets over the limit: 0 when every table has at most
+'   MAX_POSITION_ROWS rows. The finding names the sheet and the rows found.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim SheetNames  As Variant   'Position sheet names
+    Dim Slots       As Variant   'Input slot of each table
+    Dim Table       As Variant   'One position table
+    Dim RowsFound   As Long      'Rows of one table
+    Dim i           As Long      'Table
+
+        SheetNames = Array(SH_IR_POS, SH_EQ_POS, SH_CO_POS, SH_FX_POS)
+        Slots = Array(IN_IR_ROWS, IN_EQ_ROWS, IN_CO_ROWS, IN_FX_ROWS)
+        For i = 0 To 3
+            Table = Inputs(Slots(i))
+            RowsFound = UBound(Table, 1)
+            If RowsFound > MAX_POSITION_ROWS Then
+                PositionVolumeErrors = PositionVolumeErrors + 1
+                AddFinding Findings, FindingCount, CStr(SheetNames(i)), "Rows", vbNullString, _
+                           ST_INVALID & RowsFound & " rows found; the workbook supports at most " _
+                           & MAX_POSITION_ROWS
+            End If
+        Next i
+
+End Function
 
 
 '------------------------------------------------------------------------------

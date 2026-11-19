@@ -17,7 +17,7 @@ Attribute VB_Name = "TEST_Suite"
 '   Never part of the production import set.
 '
 ' DEPENDENCIES
-'   TEST_Harness; CORE_Config, CORE_Util, CORE_Parameters,
+'   TEST_Harness; CORE_Config, CORE_Util, CORE_Parameters, CORE_Engine,
 '   CORE_InterestRate, CORE_Equity, CORE_Commodity, CORE_ForeignExchange and
 '   FRTBSSA_Formulas.
 '
@@ -66,8 +66,8 @@ Attribute VB_Name = "TEST_Suite"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
-        Private Const EXPECTED_CASES      As Long = 11
-        Private Const EXPECTED_ASSERTIONS As Long = 93
+        Private Const EXPECTED_CASES      As Long = 12
+        Private Const EXPECTED_ASSERTIONS As Long = 99
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=11; assertions=93; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=12; assertions=99; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -208,6 +208,7 @@ Private Sub RunSuite()
         CaseIssueNetting
         CaseDateBounds
         CaseParameters
+        CaseVolume
         CaseFacade
         CaseFingerprint
 
@@ -822,6 +823,56 @@ CaseFailed:
 End Sub
 
 
+Private Sub CaseVolume()
+'
+'==============================================================================
+'                                  CaseVolume
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The largest volume the workbook supports: a position table of exactly
+'   MAX_POSITION_ROWS rows is within the limit, and one row more is a
+'   finding that names the sheet and the rows found.
+'
+' REFERENCE
+'   The data contract's Volume section: at most 500 rows on a position sheet.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Inputs(1 To IN_COUNT) As Variant   'Engine input vector, position tables only
+    Dim Findings()       As String    'Findings
+    Dim FindingCount     As Long      'Findings in use
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "volume"
+        Inputs(IN_IR_ROWS) = FilledRows(IR_INPUT_WIDTH, MAX_POSITION_ROWS)
+        Inputs(IN_EQ_ROWS) = FilledRows(EQ_INPUT_WIDTH, MAX_POSITION_ROWS)
+        Inputs(IN_CO_ROWS) = FilledRows(CO_INPUT_WIDTH, MAX_POSITION_ROWS)
+        Inputs(IN_FX_ROWS) = FilledRows(FX_INPUT_WIDTH, MAX_POSITION_ROWS)
+        TEST_Harness.AssertEqualDouble "sheets-at-the-limit", 0, _
+            PositionVolumeErrors(Inputs, Findings, FindingCount)
+        Inputs(IN_IR_ROWS) = FilledRows(IR_INPUT_WIDTH, MAX_POSITION_ROWS + 1)
+        TEST_Harness.AssertEqualDouble "sheets-one-row-beyond", 1, _
+            PositionVolumeErrors(Inputs, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "findings-recorded", 1, FindingCount
+        TEST_Harness.AssertEqualText "finding-sheet", SH_IR_POS, Findings(1, 1)
+        TEST_Harness.AssertEqualText "finding-reason", _
+            ST_INVALID & "501 rows found; the workbook supports at most 500", Findings(4, 1)
+        Inputs(IN_EQ_ROWS) = FilledRows(EQ_INPUT_WIDTH, MAX_POSITION_ROWS + 1)
+        Inputs(IN_CO_ROWS) = FilledRows(CO_INPUT_WIDTH, MAX_POSITION_ROWS + 1)
+        Inputs(IN_FX_ROWS) = FilledRows(FX_INPUT_WIDTH, MAX_POSITION_ROWS + 1)
+        FindingCount = 0
+        TEST_Harness.AssertEqualDouble "all-four-sheets-beyond", 4, _
+            PositionVolumeErrors(Inputs, Findings, FindingCount)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+
 Private Sub CaseFacade()
 '
 '==============================================================================
@@ -958,6 +1009,41 @@ Private Function NumberOf( _
             Err.Raise 13, "TEST_Suite.NumberOf", "The result is not a number."
         End If
         NumberOf = CDbl(Value)
+
+End Function
+
+
+Private Function FilledRows( _
+    ByVal Width As Long, _
+    ByVal Count As Long) _
+    As Variant
+'
+'==============================================================================
+'                                 FilledRows
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Build an input table of Count rows, each with a PositionID in its first
+'   column, as Range.Value would return it.
+'
+' INPUTS
+'   Width   Columns of the table.
+'   Count   Rows of the table (>= 1).
+'
+' RETURNS
+'   Variant (1 To Count, 1 To Width).
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Table()   As Variant   'Result
+    Dim r         As Long      'Row
+
+        ReDim Table(1 To Count, 1 To Width)
+        For r = 1 To Count
+            Table(r, 1) = "P" & r
+        Next r
+        FilledRows = Table
 
 End Function
 
