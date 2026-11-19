@@ -42,6 +42,10 @@ def derived(case: dict[str, Any]) -> dict[tuple[str, str | None], Any]:
             output.get("value", output.get("text")) for output in ssa.derive(case)}
 
 
+INSTRUMENT = ("INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg "
+              "or Other")
+
+
 def ir_case(**inputs: object) -> dict[str, Any]:
     """A fixture with one interest rate row, valid unless inputs change it."""
     row = {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long",
@@ -87,6 +91,13 @@ class Derivation(unittest.TestCase):
             # A row that fails several tests reports the first of the contract's list.
             ({"currency_code": "ZAR", "direction_code": "Buy"}, "INVALID: currency not in FX_Table"),
             ({"currency_code": " eur "}, "OK"),
+            # An instrument is one of the seven values of DS-06, whatever its case and blanks;
+            # the test comes before the currency's.
+            ({"instrument_code": " swap LEG "}, "OK"),
+            ({"instrument_code": "Swap  leg"}, INSTRUMENT),
+            ({"instrument_code": "Securitisation"}, INSTRUMENT),
+            ({"instrument_code": None}, INSTRUMENT),
+            ({"instrument_code": "Equity", "currency_code": "ZAR"}, INSTRUMENT),
             ({"currency_code": "XAU"}, "INVALID: gold is FX risk; enter it on FXPositions"),
             ({"direction_code": " long "}, "OK"),
             ({"position_value_amount": True}, "INVALID: Position value must be a number"),
@@ -107,6 +118,23 @@ class Derivation(unittest.TestCase):
         for inputs, status in cases:
             with self.subTest(inputs=inputs):
                 self.assertEqual(derived(ir_case(**inputs))[("ir_position_status", "P1")], status)
+
+    def test_a_commodity_that_is_gold_is_rejected_before_its_other_fields_are_read(self) -> None:
+        records = [{"id": f"C{number}", "inputs": {
+            "commodity_code": commodity, "direction_code": "Sell", "quantity_count": 1,
+            "spot_price_amount": 1, "currency_code": "USD"}}
+            for number, commodity in enumerate((" xau ", "Copper", None))]
+        case = {"calculation": "CALC-05", "reporting_date": "2026-12-31",
+                "reporting_currency_code": "EUR",
+                "datasets": {"DS-05": [{"id": "EUR", "inputs": {"fx_rate": 1.0}},
+                                       {"id": "USD", "inputs": {"fx_rate": 0.9}}],
+                             "DS-08": records}}
+        outputs = derived(case)
+        self.assertEqual(outputs[("co_position_status", "C0")],
+                         "INVALID: gold is FX risk; enter it on FXPositions")
+        self.assertEqual(outputs[("co_position_status", "C1")],
+                         "INVALID: Direction must be Long or Short")
+        self.assertEqual(outputs[("co_position_status", "C2")], "INVALID: Commodity missing")
 
     def test_an_entered_issue_never_nets_with_a_position_without_one(self) -> None:
         case = ir_case(sr_category_code="OTHER", rating_grade_code="BB+ to BB-")
@@ -136,7 +164,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 18)
+        self.assertEqual(len(self.cases), 20)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -180,7 +208,28 @@ class Registered(unittest.TestCase):
                 if reference["class"] == "published":
                     published.append((name, output["quantity"], output["value"], reference["source"],
                                       reference["locator"], output["tolerance"]["absolute"]))
+        # What each source prints: table 10 and paragraphs 2 and 3 of example C.2 of SRC-03,
+        # whose positions are printed to 0.01 mn (tolerance 500); MAR40.27, which prints whole
+        # millions (tolerance 500,000); table 9 of MAR40.61.
+        c2 = "bcbs119-c2-maturity-method"
+        v27 = "mar40-27-vertical-disallowance"
         self.assertEqual(published, [
+            (c2, "ir_weighted_position", 500000.0, "SRC-03", "Part C.2, table 10, 7 to 10 years", 500),
+            (c2, "ir_weighted_position", 150000.0, "SRC-03", "Part C.2, table 10, 1 to 3 months", 500),
+            (c2, "ir_weighted_position", 1050000.0, "SRC-03", "Part C.2, table 10, 6 to 12 months", 500),
+            (c2, "ir_weighted_position", -5625000.0, "SRC-03", "Part C.2, table 10, 7 to 10 years", 500),
+            (c2, "ir_weighted_position", 1125000.0, "SRC-03",
+             "Part C.2, table 10, the position of the future in zone 2", 500),
+            (c2, "ir_weighted_position", -200000.0, "SRC-03", "Part C.2, table 10, 3 to 6 months", 500),
+            (c2, "ir_vertical_disallowance", 50000.0, "SRC-03", "Part C.2, paragraph 2(a)", 500),
+            (c2, "ir_horizontal_disallowance_within_zones", 80000.0, "SRC-03",
+             "Part C.2, paragraph 2(b)", 500),
+            (c2, "ir_net_position_charge", 3000000.0, "SRC-03", "Part C.2, paragraph 2(e)", 500),
+            (c2, "ir_general_market_risk_charge", 4580000.0, "SRC-03", "Part C.2, paragraph 3", 500),
+            (c2, "ir_general_market_risk_charge", 4580000.0, "SRC-03", "Part C.2, paragraph 3", 500),
+            (v27, "ir_weighted_position", 100000000.0, "SRC-02", "MAR40.27", 500000),
+            (v27, "ir_weighted_position", -90000000.0, "SRC-02", "MAR40.27", 500000),
+            (v27, "ir_vertical_disallowance", 9000000.0, "SRC-02", "MAR40.27", 500000),
             ("mar40-61-table-9", "fx_overall_net_open_position", 335.0, "SRC-02", "MAR40.61, table 9",
              0.5),
             ("mar40-61-table-9", "fx_charge", 26.8, "SRC-02", "MAR40.61, table 9", 0.05)])
@@ -199,7 +248,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 18)
+        self.assertEqual(len(names), 20)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])

@@ -74,8 +74,8 @@ Attribute VB_Name = "TEST_Cases"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "cases"
-        Private Const EXPECTED_CASES      As Long = 18
-        Private Const EXPECTED_ASSERTIONS As Long = 345
+        Private Const EXPECTED_CASES      As Long = 20
+        Private Const EXPECTED_ASSERTIONS As Long = 386
     'The inputs a test case replaces (InputArea).
         Private Const INPUT_AREAS         As Long = 11    'Areas kept and put back
         Private Const INPUT_ROWS          As Long = 500   'Fewest rows of a position sheet kept
@@ -105,7 +105,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=18; assertions=345; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=20; assertions=386; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' STATE OWNERSHIP
 '   Replaces the inputs for each case and puts them back; leaves the
@@ -231,6 +231,7 @@ Private Sub RunSuite()
         TEST_Harness.BeginRun SUITE_NAME, "NORMAL", EXPECTED_CASES, EXPECTED_ASSERTIONS
         On Error GoTo RunFailed
         AllowWritingToSheets
+        CaseBcbs119C2MaturityMethod
         CaseIllustrativeCoMatchedPositions
         CaseIllustrativeEqMatchedPositions
         CaseIllustrativeFxOneSidedPositions
@@ -248,6 +249,7 @@ Private Sub RunSuite()
         CaseIllustrativeSampleIrGeneralMarketRisk
         CaseIllustrativeSampleIrSpecificRisk
         CaseIllustrativeSampleRequirement
+        CaseMar4027VerticalDisallowance
         CaseMar4061Table9
 
 Finish:
@@ -267,6 +269,177 @@ End Sub
 '------------------------------------------------------------------------------
 '                                     CASES
 '------------------------------------------------------------------------------
+
+Private Sub InputsBcbs119C2MaturityMethod()
+'
+'==============================================================================
+'                         InputsBcbs119C2MaturityMethod
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case bcbs119-c2-maturity-method.
+'
+' STATE OWNERSHIP
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+        ClearInputs
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+        SetNamed "ReportingCcy", "USD"
+        PutRate 1, "USD", 1
+        PutRow NM_IR_POS_HEADER, 1, Array("C2-QUAL", Empty, "Bond", "USD", "Long", 13330000, _
+            "Fixed", 0.08, DateSerial(2034, 9, 30), Empty, "QUAL", "A+ to BBB-")
+        PutRow NM_IR_POS_HEADER, 2, Array("C2-GOV", Empty, "Bond", "USD", "Long", 75000000, _
+            "Fixed", 0.07, DateSerial(2026, 11, 30), Empty, "GOV", "AAA to AA-")
+        PutRow NM_IR_POS_HEADER, 3, Array("C2-SWAP-FLOAT", Empty, "Swap leg", "USD", "Long", _
+            150000000, "Floating", Empty, DateSerial(2034, 9, 30), DateSerial(2027, 6, 30), _
+            "NONE")
+        PutRow NM_IR_POS_HEADER, 4, Array("C2-SWAP-FIXED", Empty, "Swap leg", "USD", "Short", _
+            150000000, "Fixed", 0.05, DateSerial(2034, 9, 30), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 5, Array("C2-FUT-LONG", Empty, "Future leg", "USD", "Long", _
+            50000000, "Fixed", 0.05, DateSerial(2030, 3, 31), Empty, "GOV", "AAA to AA-")
+        PutRow NM_IR_POS_HEADER, 6, Array("C2-FUT-SHORT", Empty, "Future leg", "USD", "Short", _
+            50000000, "Fixed", 0.05, DateSerial(2027, 3, 30), Empty, "GOV", "AAA to AA-")
+
+End Sub
+
+
+Private Sub CaseBcbs119C2MaturityMethod()
+'
+'==============================================================================
+'                          CaseBcbs119C2MaturityMethod
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case bcbs119-c2-maturity-method, on CALC-03: The worked example C.2
+'   of SRC-03, general market risk of interest rate instruments by the
+'   maturity method: a qualifying bond, a government bond, an interest rate
+'   swap and a long position in a future, entered as the six legs they slot
+'   into, give weighted positions of +0.15, -0.20, +1.05, +1.125, -5.625 and
+'   +0.5 ($ mn) and a charge of $4,580,000.
+'
+' STATE OWNERSHIP
+'   Replaces the inputs of the workbook and rewrites the output
+'   sheets; puts the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim ResultText   As String    'RunSSA_Silent result line, not compared
+    Dim Actual       As Double    'Number read from the workbook
+    Dim RestoreDue   As Boolean   'True once the inputs are kept
+    Dim Detail       As String    'Why the sheets could not be restored
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "bcbs119-c2-maturity-method"
+        KeepInputs
+        RestoreDue = True
+        InputsBcbs119C2MaturityMethod
+        ResultText = RunSSA_Silent()
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-qual", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-qual", 10, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-QUAL", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-qual", 500000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-QUAL", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-gov", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-gov", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-GOV", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-gov", 150000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-GOV", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-swap-float", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 3, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-swap-float", 4, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-SWAP-FLOAT", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 3, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-swap-float", 1050000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-SWAP-FLOAT", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-swap-fixed", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 4, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-swap-fixed", 10, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-SWAP-FIXED", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 4, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-swap-fixed", -5625000, Actual, _
+            500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-SWAP-FIXED", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-fut-long", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 5, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-fut-long", 7, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-FUT-LONG", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 5, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-fut-long", 1125000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-FUT-LONG", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-fut-short", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 6, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-fut-short", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, "ir_time_band", _
+            "DS-06", "C2-FUT-SHORT", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 6, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-fut-short", -200000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-FUT-SHORT", Actual
+        Actual = ZonesTotal("USD", Array(2))
+        TEST_Harness.AssertNear "ir-vertical-disallowance-of-usd", 50000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_vertical_disallowance", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(6, 11, 16))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-within-zones-of-usd", 80000, _
+            Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_horizontal_disallowance_within_zones", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(25))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-between-zones-of-usd", 1450000, _
+            Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_horizontal_disallowance_between_zones", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(26))
+        TEST_Harness.AssertNear "ir-net-position-charge-of-usd", 3000000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_net_position_charge", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(27))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge-of-usd", 4580000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_general_market_risk_charge", "DS-05", "USD", Actual
+        Actual = NumberOf(ResultsCell(1, 3))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge", 4580000, Actual, 500, 0
+        TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
+            "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+CleanUp:
+        On Error GoTo 0
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 
 Private Sub InputsIllustrativeCoMatchedPositions()
 '
@@ -624,7 +797,7 @@ Private Sub InputsIllustrativeInvalidCoPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
         ClearInputs
@@ -646,15 +819,18 @@ Private Sub InputsIllustrativeInvalidCoPositions()
         PutRow NM_CO_POS_HEADER, 1, Array("X-DUP", Empty, "Copper", "Long", 1, Empty, 1, "USD")
         PutRow NM_CO_POS_HEADER, 2, Array("x-dup", Empty, "Copper", "Long", 1, Empty, 1, "USD")
         PutRow NM_CO_POS_HEADER, 3, Array("X-NAME", Empty, Empty, "Long", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 4, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 5, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
+        PutRow NM_CO_POS_HEADER, 4, Array("X-GOLDNAME", Empty, "XAU", "Long", 1, Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 6, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 7, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, Empty, _
+        PutRow NM_CO_POS_HEADER, 5, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 6, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 8, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
-        PutRow NM_CO_POS_HEADER, 9, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, "XAU")
-        PutRow NM_CO_POS_HEADER, 10, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 7, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 8, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, Empty, _
+            "USD")
+        PutRow NM_CO_POS_HEADER, 9, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
+        PutRow NM_CO_POS_HEADER, 10, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, _
+            "XAU")
+        PutRow NM_CO_POS_HEADER, 11, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
 
 End Sub
 
@@ -674,7 +850,7 @@ Private Sub CaseIllustrativeInvalidCoPositions()
 '   sheets; puts the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
     Dim ResultText   As String    'RunSSA_Silent result line, not compared
@@ -693,22 +869,25 @@ Private Sub CaseIllustrativeInvalidCoPositions()
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_CO_CALC_HEADER, 2, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-name", _
             "INVALID: Commodity missing", PlainText(RowCell(NM_CO_CALC_HEADER, 3, 1))
+        TEST_Harness.AssertEqualText "co-position-status-of-x-goldname", _
+            "INVALID: gold is FX risk; enter it on FXPositions", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 4, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_CO_CALC_HEADER, _
-            4, 1))
+            5, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-qty", _
-            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 5, 1))
+            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-neg", _
             "INVALID: Quantity must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 7, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-price", _
-            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 7, 1))
+            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
-        TEST_Harness.AssertEqualText "co-position-status-of-x-gold", _
             "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 9, 1))
+        TEST_Harness.AssertEqualText "co-position-status-of-x-gold", _
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 11, 1))
 
 CleanUp:
         On Error GoTo 0
@@ -974,7 +1153,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
         ClearInputs
@@ -997,37 +1176,41 @@ Private Sub InputsIllustrativeInvalidIrPositions()
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
         PutRow NM_IR_POS_HEADER, 2, Array("x-dup", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 3, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 4, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 5, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 6, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
+        PutRow NM_IR_POS_HEADER, 3, Array("X-INSTR", Empty, "Securitisation", "EUR", "Long", _
+            1, "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 4, Array("X-NOINSTR", Empty, Empty, "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 7, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 5, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 8, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 6, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 7, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 8, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 9, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 10, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
             "Variable", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 9, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
-            0.05, Empty, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 10, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 11, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, _
+            "Fixed", 0.05, Empty, Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 12, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, 20311231, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 11, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 13, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2026, 9, 29), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 12, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 14, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 13, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 15, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 14, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 16, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), 20270101, "NONE")
-        PutRow NM_IR_POS_HEADER, 15, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 17, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), DateSerial(2029, 6, 27), "NONE")
-        PutRow NM_IR_POS_HEADER, 16, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 18, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "CORP", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 17, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 19, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "OTHER", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 18, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 20, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
 
 End Sub
@@ -1049,7 +1232,7 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '   sheets; puts the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
     Dim ResultText   As String    'RunSSA_Silent result line, not compared
@@ -1066,51 +1249,57 @@ Private Sub CaseIllustrativeInvalidIrPositions()
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-instr", _
+            "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-noinstr", _
+            "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-gold", _
             "INVALID: gold is FX risk; enter it on FXPositions", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            5, 1))
+            7, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-text", _
             "INVALID: Position value must be a number", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            6, 1))
+            8, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-neg", _
             "INVALID: Position value must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 7, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-type", _
             "INVALID: Rate type must be Fixed or Floating", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 8, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 10, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nomat", _
-            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
+            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 11, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-notdate", _
             "INVALID: Final maturity date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            10, 1))
+            12, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-past", _
             "INVALID: final maturity before AsOfDate", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            11, 1))
+            13, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nocpn", _
             "INVALID: Coupon required for a fixed-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 12, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 14, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-norep", _
             "INVALID: Next repricing date required for a floating-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 13, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-repnotdate", _
             "INVALID: Next repricing date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            14, 1))
+            16, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-replate", _
             "INVALID: repricing date outside AsOfDate to final maturity", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-cat", _
             "INVALID: SR category must be GOV, QUAL, OTHER or NONE", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 16, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 18, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-grade", _
             "INVALID: no MAR40.6 charge for this category and rating grade", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 19, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 18, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 20, 1))
 
 CleanUp:
         On Error GoTo 0
@@ -3086,6 +3275,130 @@ Private Sub CaseIllustrativeSampleRequirement()
             0.000000001
         TEST_Harness.RecordResult "illustrative-sample-requirement", vbNullString, _
             "risk_weighted_assets", vbNullString, vbNullString, Actual
+
+CleanUp:
+        On Error GoTo 0
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+
+Private Sub InputsMar4027VerticalDisallowance()
+'
+'==============================================================================
+'                       InputsMar4027VerticalDisallowance
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case mar40-27-vertical-disallowance.
+'
+' STATE OWNERSHIP
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+        ClearInputs
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+        SetNamed "ReportingCcy", "USD"
+        PutRate 1, "USD", 1
+        PutRow NM_IR_POS_HEADER, 1, Array("V1-LONG", Empty, "Bond", "USD", "Long", _
+            8000000000#, "Fixed", 0.05, DateSerial(2028, 3, 30), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 2, Array("V1-SHORT", Empty, "Bond", "USD", "Short", _
+            7200000000#, "Fixed", 0.05, DateSerial(2028, 3, 30), Empty, "NONE")
+
+End Sub
+
+
+Private Sub CaseMar4027VerticalDisallowance()
+'
+'==============================================================================
+'                        CaseMar4027VerticalDisallowance
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case mar40-27-vertical-disallowance, on CALC-03: The example of
+'   MAR40.27 of SRC-02: weighted longs of USD 100 million and weighted
+'   shorts of USD 90 million in one time band give a vertical disallowance
+'   of 10% of USD 90 million, USD 9 million. The two positions are sized so
+'   that the 1.25% weight of the band of 1 to 2 years gives those weighted
+'   amounts.
+'
+' STATE OWNERSHIP
+'   Replaces the inputs of the workbook and rewrites the output
+'   sheets; puts the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim ResultText   As String    'RunSSA_Silent result line, not compared
+    Dim Actual       As Double    'Number read from the workbook
+    Dim RestoreDue   As Boolean   'True once the inputs are kept
+    Dim Detail       As String    'Why the sheets could not be restored
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "mar40-27-vertical-disallowance"
+        KeepInputs
+        RestoreDue = True
+        InputsMar4027VerticalDisallowance
+        ResultText = RunSSA_Silent()
+        TEST_Harness.AssertEqualText "ir-position-status-of-v1-long", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-v1-long", 5, Actual, 0, 0
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_time_band", "DS-06", "V1-LONG", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-v1-long", 100000000, Actual, 500000, 0
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_weighted_position", "DS-06", "V1-LONG", Actual
+        TEST_Harness.AssertEqualText "ir-position-status-of-v1-short", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-v1-short", 5, Actual, 0, 0
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_time_band", "DS-06", "V1-SHORT", Actual
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-v1-short", -90000000, Actual, 500000, 0
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_weighted_position", "DS-06", "V1-SHORT", Actual
+        Actual = ZonesTotal("USD", Array(2))
+        TEST_Harness.AssertNear "ir-vertical-disallowance-of-usd", 9000000, Actual, 500000, 0
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_vertical_disallowance", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(6, 11, 16))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-within-zones-of-usd", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_horizontal_disallowance_within_zones", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(25))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-between-zones-of-usd", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_horizontal_disallowance_between_zones", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(26))
+        TEST_Harness.AssertNear "ir-net-position-charge-of-usd", 10000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_net_position_charge", "DS-05", "USD", Actual
+        Actual = ZonesTotal("USD", Array(27))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge-of-usd", 19000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_general_market_risk_charge", "DS-05", "USD", Actual
+        Actual = NumberOf(ResultsCell(1, 3))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge", 19000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "mar40-27-vertical-disallowance", vbNullString, _
+            "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
 
 CleanUp:
         On Error GoTo 0

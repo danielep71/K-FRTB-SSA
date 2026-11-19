@@ -182,8 +182,10 @@ positions, the *Specific risk* of the interest rate row of `Results`.
 - The workbook cannot tell an unsupported instrument from a bond. Entered
   as a debt position, it is calculated as one: a stated limit of the
   [data contract](DATA_CONTRACT.md#unsupported-input). Do not enter it. The
-  engine does not read `DS-06.instrument` yet
-  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
+  engine reads `DS-06.instrument` and rejects a row whose instrument is not
+  one of the seven values the contract allows; `Other` stays among them, so
+  that an instrument without a value of its own can be entered. The list
+  cannot tell a supported instrument from one entered under its name.
 - A category and grade that table 1 does not list, such as `OTHER` with an
   investment grade, reject the row.
 
@@ -263,6 +265,7 @@ interest rate row of `Results`, with its components per currency on
 **Failure behaviour:** `ir_position_status`, on `IRCalc`, is `OK` or:
 
 - `INVALID: duplicate PositionID`
+- `INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg or Other`
 - `INVALID: currency not in FX_Table`
 - `INVALID: gold is FX risk; enter it on FXPositions`
 - `INVALID: Direction must be Long or Short`
@@ -282,10 +285,16 @@ interest rate row of `Results`, with its components per currency on
 The first test that fails gives the text. A rejected row enters neither
 `CALC-02` nor this calculation.
 
-**Validation:** the test cases `illustrative-invalid-ir-positions`,
-`illustrative-ir-time-band-limits` and
-`illustrative-sample-ir-general-market-risk`. Their expected values are
-`illustrative`: derived within the project, they validate nothing. See the
+**Validation:** the test cases `bcbs119-c2-maturity-method`,
+`illustrative-invalid-ir-positions`, `illustrative-ir-time-band-limits`,
+`illustrative-sample-ir-general-market-risk` and
+`mar40-27-vertical-disallowance`. Two of them hold `published` values: the
+weighted positions, the vertical and within-zone disallowances, the net
+position charge and the charge of the worked example C.2 of `SRC-03`
+(`bcbs119-c2-maturity-method`), and the weighted positions and the vertical
+disallowance of the example of MAR40.27 (`mar40-27-vertical-disallowance`).
+The expected values of the others are `illustrative`: derived within the
+project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-03` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
@@ -399,9 +408,8 @@ commodity on `Buckets`.
   does not check that their units are.
 - A derivative is entered as a notional position in the commodity, as
   MAR40.71 describes. The workbook converts nothing.
-- Gold is FX risk (MAR40.63): enter it on `FXPositions`. The engine does
-  not yet reject a commodity named as the gold code
-  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
+- Gold is FX risk (MAR40.63): enter it on `FXPositions`. A row whose
+  commodity is the gold code is rejected.
 - A spot price is used as entered, also when it is negative.
 - `Buckets` lists up to 30 commodities. The totals include every commodity,
   and `Checks` warns (rule `C11`).
@@ -410,6 +418,7 @@ commodity on `Buckets`.
 
 - `INVALID: duplicate PositionID`
 - `INVALID: Commodity missing`
+- `INVALID: gold is FX risk; enter it on FXPositions`
 - `INVALID: Direction must be Long or Short`
 - `INVALID: Quantity must be a number`
 - `INVALID: Quantity must be >= 0 (Direction gives the sign)`
@@ -575,7 +584,9 @@ headline of `Results`.
 a scaling factor that is not a number, an FX rate that is not greater than
 zero, a currency listed twice or the reporting currency not listed with
 rate 1. The run reads `STOPPED`, no result is calculated, and `Checks` lists
-each value with its reason (rules `C05` to `C07` and `C14`).
+each value with its reason (rules `C05` to `C07` and `C14`). A position
+sheet with more than 500 rows stops the run in the same way: `Checks` lists
+the sheet and the rows found under `C14`.
 
 **Validation:** the test cases `illustrative-requirement-fx-and-options-only`
 and `illustrative-sample-requirement`. Their expected values are

@@ -28,6 +28,19 @@
       "decision": null,
       "calibration_cases": ["illustrative-sample-fx"],
       "holdout_cases": ["mar40-61-table-9"]
+    },
+    {
+      "id": "ACC-03",
+      "calculation": "CALC-03",
+      "regime": "MAR40 as in force from 2023-01-01: the maturity method, with weighted positions of at most 1e10 in the reporting currency",
+      "quantities": ["ir_weighted_position", "ir_vertical_disallowance", "ir_horizontal_disallowance_within_zones", "ir_net_position_charge", "ir_general_market_risk_charge"],
+      "metric": "absolute",
+      "threshold": 500,
+      "provenance": "The tolerance of the published values of example C.2 of SRC-03: its positions are printed to 0.01 mn, and the rounding of 13.33 mn moves a printed charge by at most 0.005 mn x 3.75% = 187.5, which the tolerance of 500 covers. A draft: it has two holdout cases, and its calibration case holds illustrative values only",
+      "status": "draft",
+      "decision": null,
+      "calibration_cases": ["illustrative-sample-ir-general-market-risk"],
+      "holdout_cases": ["bcbs119-c2-maturity-method", "mar40-27-vertical-disallowance"]
     }
   ]
 }
