@@ -220,6 +220,9 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The security policy links to the repository's private vulnerability
+  reporting channel (#70).
+
 - A run stops when a position sheet holds more rows than the workbook
   supports. The limit is `MAX_POSITION_ROWS`, 500, the rows the template is
   formatted, validated and coloured for, counted from the row below the
