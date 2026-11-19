@@ -1243,13 +1243,14 @@ def build_test_catalogue(ctx: Context) -> None:
     calc = D.calc_all()
     ws = new_sheet(wb, "TestCatalogue", "Reference-test catalogue",
                    "Each test reads one output cell. T01-T03 reproduce the published MAR40.61 Table 9 example; the others "
-                   "are an independent re-calculation (Python) of the shipped sample data, so they FAIL by design once the "
-                   "sample positions or parameters are changed.", "N", "test",
-                   {"C": 6.8, "D": 14.8, "E": 46.8, "F": 26.8, "G": 24.8, "H": 12.8, "I": 16.8, "J": 16.8, "K": 11.8,
+                   "compare the shipped sample data with a re-calculation (Python) that the project wrote from the same "
+                   "reading of MAR40 as the engine, so its values are illustrative and validate no rule. They FAIL by "
+                   "design once the sample positions or parameters are changed.", "N", "test",
+                   {"C": 6.8, "D": 14.8, "E": 46.8, "F": 26.8, "G": 27.8, "H": 12.8, "I": 16.8, "J": 16.8, "K": 11.8,
                     "L": 9.8, "M": 9.8, "N": 4}, 33.95)
     header(ws, 6, "C", ["Test", "Area", "Description", "Source", "Source status", "Sheet", "Actual", "Expected",
                         "Abs diff", "Tolerance", "Result"], "input", 11, 30, 5)
-    pub, ind = "Official published example", "Independent re-calculation"
+    pub, ind = "Official published example", "Illustrative re-calculation"
     ir = calc["ir"]
     zrow = {c: ZF + i for i, (c, _, _) in enumerate(D.FX)}
     tests: list[tuple[str, str, str, str, str, str, float]] = [
@@ -1440,7 +1441,7 @@ def fill_home(ctx: Context) -> None:
         ("COCalc", "Outputs. Every intermediate per commodity row."),
         ("FXCalc", "Outputs. Every intermediate per FX row."),
         ("Checks", "Outputs. Errors, warnings and information lines; rejected rows with reasons."),
-        ("TestCatalogue", "Reference and tests. Published example and independent re-calculation."),
+        ("TestCatalogue", "Reference and tests. Published example and the project's own re-calculation."),
         ("README", "Reference. Methodology, conventions, scope and limitations."),
     ]
     for k, (sh, txt) in enumerate(sheet_desc):

@@ -12,7 +12,11 @@ The repository's own checks are in the
 
 ## 🖥️ Host policy
 
-Adapt this section to the project and record the decision in an issue.
+I recorded this policy as a decision on 2026-11-19, in
+[issue 23](https://github.com/danielep71/K-FRTB-SSA/issues/23): the project
+keeps the defaults below. LibreOffice is an early warning that finds some
+defects before a run in Excel; it is not a supported host, and nothing it
+shows is evidence.
 
 - **Target host:** Microsoft 365 Excel desktop on Windows, 64-bit. Windows
   32-bit, older perpetual versions, Mac and Excel for the web are not

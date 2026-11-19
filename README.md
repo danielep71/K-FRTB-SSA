@@ -64,7 +64,7 @@ calculation, which has not been compiled or run in Excel:
 
 | Area | State |
 | --- | --- |
-| Calculation | Prototype. The VBA source of a MAR40 engine for the four risk classes is under `src/`, with a macro-free template of 18 sheets and synthetic sample data ([workbook contract](docs/methodology/WORKBOOK_CONTRACT.md)). I have run it only in LibreOffice's VBA mode: it is not compiled or run in Excel, no evidence of a run is recorded here, and it is not validated for regulatory reporting |
+| Calculation | Prototype. The VBA source of a MAR40 engine for the four risk classes is under `src/`, with a macro-free template of 18 sheets and synthetic sample data: [the prototype](docs/PROTOTYPE.md) says what it calculates, how to use and build it and what it does not do, and the [workbook contract](docs/methodology/WORKBOOK_CONTRACT.md) defines its layout. I have run it only in LibreOffice's VBA mode: it is not compiled or run in Excel, no evidence of a run is recorded here, and it is not validated for regulatory reporting |
 | Methodology | The Basel Framework's chapter MAR40 is the [registered source](docs/methodology/SOURCES.md), and each calculation of the engine has a [contract](docs/methodology/CALCULATION_CONTRACTS.md) whose rules cite it, with every parameter compared with the text. The [data contract](docs/methodology/DATA_CONTRACT.md) defines every input field and how a cell is read. No rule is validated |
 | Test cases | 18 [cases](docs/methodology/TEST_CASES.md) cover the seven calculations: the sample portfolio, limits and invalid rows. One holds values published in MAR40; the others are derived within the project and validate nothing. The workbook's VBA tests are four suites of the [test harness](docs/methodology/TEST_HARNESS.md#the-projects-suites), with a certification entry point each; one of them, generated from the cases, runs all 18 in the workbook, and one probes what the workbook relies on Excel to do. They have run only in LibreOffice: no case has run in Excel |
 | Tooling and governance | In use: every change goes through a pull request that **Repository integrity** checks |
@@ -159,6 +159,7 @@ The full layout and its rules are in
 | --- | --- |
 | [`docs/methodology/`](docs/methodology/README.md) | Sources, data contract, calculation and workbook contracts, test cases, test harness, validation plan |
 | [`INSTALLATION.md`](INSTALLATION.md) | Moving source between the repository and Excel, recording an Excel run, upgrades, troubleshooting and removal |
+| [`docs/PROTOTYPE.md`](docs/PROTOTYPE.md) | The prototype for the person who uses it: what it calculates, the sheets and inputs, how to run it, the worksheet functions, how to build it, what it does not do and what has been checked |
 | [`docs/REPOSITORY_STRUCTURE.md`](docs/REPOSITORY_STRUCTURE.md) | Source layout, reserved paths, dependency direction |
 | [`docs/VBA_HOUSE_STYLE.md`](docs/VBA_HOUSE_STYLE.md) | VBA naming, contracts, errors, cleanup and static checks |
 | [`docs/repo_governance/`](docs/repo_governance/README.md) | Settings, issue labels, pull requests, traffic, distribution |

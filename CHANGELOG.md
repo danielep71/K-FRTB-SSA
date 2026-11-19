@@ -65,6 +65,17 @@ Use only the categories an entry needs.
 
 ### Added
 
+- A guide to the prototype for the person who uses it, `docs/PROTOTYPE.md`:
+  what the workbook calculates, what it needs, its 18 sheets and its inputs,
+  how to run `RunSSA`, `ClearOutputs` and `CheckStatus` and read the status
+  line, the four worksheet functions, how to build the workbook, what it does
+  not do and what has been checked. The README and the installation guide
+  link it. `SECURITY.md` now states, for each entry point of the workbook and
+  for the project's test suites and the LibreOffice tools, what it reads,
+  writes, saves or deletes, and that none starts a process or reaches the
+  network. `INSTALLATION.md` records the host policy as a decision of the
+  project, which keeps the defaults (#23).
+
 - A `probes` suite for the first Excel run, `tests/modules/TEST_Probes.bas`:
   6 cases and 42 assertions that measure what the workbook relies on Excel
   to do. An error value typed in an input cell reads as `#ERROR` where an
@@ -176,6 +187,12 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The social preview says *Prototype* and that the workbook has not been run
+  in Excel yet, where it said *In development*; its only figures are still
+  the four scaling factors of MAR40.2. The sentence of the structure guide
+  that called the public API inventory empty now describes its two tiers
+  (#23).
+
 - `TEST_Suite.Test_RunAll` no longer exists: run the two suites of the VBA
   tests by their entry points. `TEST_Suite.Test_RunCore` now returns the
   `RESULT` line of the harness, as `TEST_Workbook.Test_RunWorkbook` does,
@@ -227,6 +244,11 @@ Use only the categories an entry needs.
   `docs/assets/social-preview.html` (#6).
 
 ### Fixed
+
+- The template no longer calls the re-calculation of the sample data
+  independent. The `TestCatalogue` sheet and the sheet list on `Home` name it
+  as the project's own re-calculation, whose values are illustrative, as the
+  validation plan states (#54).
 
 - The skeleton of a case of an end-to-end case runner, in the harness guide,
   passes the VBA checks: the handler records the case's error and resumes to
