@@ -379,15 +379,29 @@ class Generator(NeedsOpenpyxl):
                                             f"{sheet.title}!{cell.coordinate}")
         # A typed text is read as the engine reads it.
         self.assertEqual(calc["C5"].value, '=IFERROR(TRIM(IRPositions!C5),"#ERROR")')
-        self.assertIn('IF(AND(IFERROR(IRPositions!G5,"#ERROR")<>"Long",'
-                      'IFERROR(IRPositions!G5,"#ERROR")<>"Short"),', str(calc["D5"].value))
+        # A direction and a rate type are read without the blanks at their ends.
+        self.assertIn('IF(AND(IFERROR(TRIM(IRPositions!G5),"#ERROR")<>"Long",'
+                      'IFERROR(TRIM(IRPositions!G5),"#ERROR")<>"Short"),', str(calc["D5"].value))
+        self.assertIn('IFERROR(TRIM(IRPositions!I5),"#ERROR")="Floating"', str(calc["D5"].value))
         self.assertIsNone(openpyxl.load_workbook(self.template)["IRCalc"]["Z4"].value)
-        # A blank currency is not one of FX_Table, whose unused rows are blank.
-        self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(FX_Ccy)=UPPER($E5))*1)=0),'
+        # A blank currency is not one of FX_Table, whose unused rows are blank, and a
+        # code of FX_Table is read trimmed and without regard to case.
+        self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(TRIM(FX_Ccy))=UPPER(TRIM($E5)))*1)=0),'
                       '"INVALID: currency not in FX_Table"', str(calc["D5"].value))
+        self.assertEqual(book["IR_Ladder"]["C6"].value,
+                         '=IF(OR(UPPER(TRIM(INDEX(FX_Ccy,1)))="",UPPER(TRIM(INDEX(FX_Ccy,1)))=GoldCode),'
+                         '"",UPPER(TRIM(INDEX(FX_Ccy,1))))')
         self.assertEqual(book["IR_Ladder"]["I6"].value,
                          '=IF($C6="",0,SUMPRODUCT((UPPER(IRCalc!$E$5:$E$504)=UPPER($C6))'
                          '*(IRCalc!$K$5:$K$504=$D6)*(IRCalc!$G$5:$G$504>0)*1,IRCalc!$G$5:$G$504))')
+
+    def test_the_engine_limit_is_the_number_of_rows_the_template_is_built_for(self) -> None:
+        generator = tool("build_prototype")
+        config = (ROOT / "src" / "core" / "CORE_Config.bas").read_text(encoding="cp1252")
+        match = re.search(r"Public Const MAX_POSITION_ROWS As Long = (\d+)", config)
+        assert match is not None
+        self.assertEqual(int(match.group(1)), generator.CAP)
+        self.assertEqual(int(match.group(1)), 500)
 
     def test_every_output_sheet_repeats_the_status_line(self) -> None:
         assert openpyxl is not None
@@ -542,19 +556,22 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 20)]
-        self.assertEqual(added, ["IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
+        added = [positions.cell(row, 3).value for row in range(first, first + 24)]
+        self.assertEqual(added, ["IR-INST1", "IR-INST2", "IR-INST3", "IR-INST4", "IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
                                  "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
                                  "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2"])
-        self.assertIsNone(positions.cell(first + 20, 3).value)
+        self.assertIsNone(positions.cell(first + 24, 3).value)
+        # An instrument outside the list, none at all, and one typed in another case with blanks.
+        self.assertEqual([positions.cell(first + offset, 5).value for offset in range(4)],
+                         ["Securitisation", None, " swap LEG ", "Swap  leg"])
         # Error values, not texts that read like them: the Issue ID of a
         # rejected row, which has no coupon, and a direction.
-        self.assertIsNone(positions.cell(first + 18, 10).value)
-        for offset, column in ((18, 15), (19, 7)):
+        self.assertIsNone(positions.cell(first + 22, 10).value)
+        for offset, column in ((22, 15), (23, 7)):
             with self.subTest(offset=offset, column=column):
                 self.assertEqual(positions.cell(first + offset, column).data_type, "e")
         # Keys that a criteria function would read as patterns or comparisons.
-        self.assertEqual([positions.cell(first + offset, 15).value for offset in range(10, 15)],
+        self.assertEqual([positions.cell(first + offset, 15).value for offset in range(14, 19)],
                          ["ISS-?", "ISS-A", "ISS-*", "<>ISS-A", "POS:R1"])
         codes = verify.first_cell(book, "FX_Ccy")
         self.assertEqual(codes.offset(len(ssa_reference.FX) - 1).value, ssa_reference.FX[-1][0])
@@ -564,9 +581,9 @@ class Verification(NeedsOpenpyxl):
         # The maturity that is not a date, and the Issue ID equal to a PositionID.
         # openpyxl reads a number above the date range in a date cell as an
         # error, so the number is looked for in the sheet itself.
-        self.assertRegex(sheet_xml, rf'<c r="K{first + 6}"[^>]*><v>20311231</v>')
-        self.assertEqual(positions.cell(first + 8, 15).value, "R1")
-        self.assertIsNone(positions.cell(first + 7, 15).value)
+        self.assertRegex(sheet_xml, rf'<c r="K{first + 10}"[^>]*><v>20311231</v>')
+        self.assertEqual(positions.cell(first + 12, 15).value, "R1")
+        self.assertIsNone(positions.cell(first + 11, 15).value)
         self.assertEqual(verify.named_cell(book, "ScalingIR").value, 1.5)
         self.assertEqual(verify.named_cell(book, "OptionsFX").value, 1000)
         for sheet, rows in (("EQPositions", ssa_reference.EQ), ("COPositions", ssa_reference.CO),

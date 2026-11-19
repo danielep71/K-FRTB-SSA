@@ -106,29 +106,39 @@ def procedure(signature: list[str], sections: list[tuple[str, str]],
 
 def wrapped(statement: str) -> list[str]:
     """A statement on lines of at most WIDTH characters after the indentation,
-    broken after a comma outside a string literal."""
+    broken after a comma outside a string literal, or else after a blank inside
+    one: the literal is then closed, joined with `& _` and opened again."""
     limit = WIDTH - 8
     if len(statement) <= limit:
         return [statement]
-    breaks = []
+    commas = []
+    blanks = []
     quoted = False
     for index, character in enumerate(statement):
         if character == '"':
             quoted = not quoted
         elif character == "," and not quoted:
-            breaks.append(index + 1)
+            commas.append(index + 1)
+        elif character == " " and quoted:
+            blanks.append(index + 1)
     lines = []
     start = 0
+    opening = ""
     indent = ""
-    while len(indent) + len(statement) - start > limit:
-        room = limit - len(indent) - 2
-        fitting = [point for point in breaks if start < point <= start + room]
-        if not fitting:
+    while len(indent) + len(opening) + len(statement) - start > limit:
+        room = limit - len(indent) - len(opening) - 2
+        comma = [point for point in commas if start < point <= start + room]
+        blank = [point for point in blanks if start < point <= start + room - 3]
+        if comma:
+            lines.append(indent + opening + statement[start:comma[-1]] + " _")
+            start, opening = comma[-1] + 1, ""
+        elif blank:
+            lines.append(indent + opening + statement[start:blank[-1]] + '" & _')
+            start, opening = blank[-1], '"'
+        else:
             raise SuiteError(f"a statement cannot be wrapped: {statement[start:start + 60]}...")
-        lines.append(indent + statement[start:fitting[-1]] + " _")
-        start = fitting[-1] + 1
         indent = "    "
-    lines.append(indent + statement[start:])
+    lines.append(indent + opening + statement[start:])
     return lines
 
 

@@ -55,8 +55,10 @@ class StatusTexts(unittest.TestCase):
     def test_each_contract_lists_the_statuses_its_module_gives(self) -> None:
         for calculation, module in ROW_MODULES.items():
             with self.subTest(calculation=calculation):
+                # A text that the source continues on the next line is one text.
+                source = re.sub(r'"\s*&\s*_\s*\n\s*"', "", vba(module))
                 given = {PREFIXES[prefix] + text
-                         for prefix, text in STATUS_IN_SOURCE.findall(vba(module))}
+                         for prefix, text in STATUS_IN_SOURCE.findall(source)}
                 listed = set(STATUS_IN_CONTRACT.findall(contract(calculation)))
                 self.assertTrue(given)
                 self.assertEqual(listed, given)

@@ -153,7 +153,7 @@ Read from the sheet `IRPositions`.
 | --- | --- | --- | --- | --- | --- |
 | `position_id` | Text | — | Yes | Any | Column PositionID. Unique on the sheet, without regard to case |
 | `portfolio` | Text | — | No | Any | Column Portfolio. Not read |
-| `instrument` | Text | — | Yes | `Bond`, `FRN`, `Swap leg`, `Future leg`, `FRA leg`, `Forward leg`, `Other` | Column Instrument. Not read yet: issue 44 |
+| `instrument` | Text | — | Yes | `Bond`, `FRN`, `Swap leg`, `Future leg`, `FRA leg`, `Forward leg`, `Other` | Column Instrument, read without regard to case. A row with another value, or none, is rejected |
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code excepted |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `position_value` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Position value (ccy). The market value of the principal or of the notional underlying; Direction gives the sign |
@@ -190,7 +190,7 @@ Read from the sheet `COPositions`.
 | --- | --- | --- | --- | --- | --- |
 | `position_id` | Text | — | Yes | Any | Column PositionID. Unique on the sheet, without regard to case |
 | `portfolio` | Text | — | No | Any | Column Portfolio. Not read |
-| `commodity` | Text | — | Yes | Any | Column Commodity. Rows with the same name are netted. Never gold: issue 44 |
+| `commodity` | Text | — | Yes | Any | Column Commodity. Rows with the same name are netted. Never gold: a row whose commodity is the gold code is rejected |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `quantity` | Decimal | Units of the commodity | Yes | ≥ 0 | Column Quantity. Direction gives the sign |
 | `unit` | Text | — | No | Any | Column Unit. The standard unit of the quantity; not read |
@@ -380,7 +380,7 @@ reason. The texts are listed in the *Failure behaviour* of each
 | `C05` | `DS-05` without the reporting currency at rate 1 | The run stops: no result is calculated, `Checks` lists the value, and the status line reads `STOPPED` |
 | `C06` | A currency listed twice in `DS-05` | As `C05` |
 | `C07` | A rate of `DS-05` that is not a number greater than 0 | As `C05` |
-| `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code | As `C05` |
+| `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code; or a position table of `DS-06` to `DS-09` with more than 500 rows ([volume](#volume)) | As `C05` |
 
 Four rules report without rejecting:
 
@@ -409,24 +409,13 @@ diversified entered in `DS-07` as `Index` is charged as one. This is a
 stated limit: you decide what is entered, and the
 [support matrix](README.md#support-matrix) says what must not be.
 
-What a field can exclude, the contract excludes: `instrument` has a list of
-allowed values, and a commodity is never gold. The engine does not enforce
-either yet ([gaps](#gaps)).
+What a field can exclude, the contract excludes, and the engine rejects:
+`instrument` has a list of allowed values, and a commodity is never gold.
 
 ## Gaps
 
-Where the engine does not yet do what this contract says:
-
-| Field or rule | The contract says | The engine does | Issue |
-| --- | --- | --- | --- |
-| `DS-06.instrument` | Required, one of seven values | It does not read the column: any text, or none, is accepted | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
-| `DS-08.commodity` | Never gold | A commodity named as the gold code is calculated as a commodity | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
-| [Volume](#volume) | At most 500 rows on a position sheet | It reads and calculates every row, with no limit | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
-
-The formula workbook that the engine is compared with has a gap of its own:
-it reads a code of `DS-05`, a direction and a rate type as typed, where the
-engine reads them without the blanks at their ends
-([issue 41](https://github.com/danielep71/K-FRTB-SSA/issues/41)).
+Where the engine does not yet do what this contract says: none. A gap is
+recorded here, with its issue, when a rule of the contract is not enforced.
 
 ## Point-in-time data
 
@@ -440,12 +429,17 @@ for it.
 
 | Dataset | Largest supported | Beyond it |
 | --- | --- | --- |
-| `DS-06` to `DS-09` | 500 rows each | The sheets are formatted, validated and checked for 500 rows. The engine does not stop yet ([gaps](#gaps)) |
+| `DS-06` to `DS-09` | 500 rows each, counted from the row below the header to the last row with a PositionID, blank rows included | The run stops: no result is calculated, `Checks` lists the sheet and the rows found under `C14`, and the status line reads `STOPPED`. A table of exactly 500 rows is not stopped |
 | `DS-05` | 20 currencies, gold included | The table has 20 rows |
 | `DS-03`, `DS-04` | 18 and 15 rows | Fixed by `SRC-02` |
 | Markets of `DS-07`, commodities of `DS-08` | Any number; 30 of each are listed on `Buckets` | The totals include all, and `Checks` warns (`C10`, `C11`) |
 
-No run on full sheets has been timed, in Excel or elsewhere.
+A run of `RunSSA_Silent` on four full sheets, 500 rows each and 2,000
+positions in all, took about 12 seconds in LibreOffice 24.2.7.2 on the
+project's build container: 14.2 seconds from the start of LibreOffice to the
+saved file, less the 2.3 seconds of the same start and save without the run,
+measured once through `tools/devbuild/lo_macro.py`. No run has been timed in
+Excel.
 
 ## Lineage
 
@@ -486,3 +480,5 @@ no portfolio.
 | 2026-11-16 | `DS-05` and `DS-10` have an identifier field, `currency_id` and `risk_class_id`, and the rate of `DS-05` is `fx_rate`; the amount of `DS-09` is `net_position` | A fixture lists the FX rates as records, and a result per currency or per risk class needs a record to be scoped to. A fixture's key needs a unit suffix, which `amount` alone cannot take | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | A fixture gives the reporting date and currency, the FX rates, the positions and the option charges; every other parameter has its reference value | The cases test the rules of `SRC-02`. A changed parameter is a what-if, which the workbook reports and no case needs | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | The project's datasets are numbered from `DS-02` | `DS-01` is the illustrative dataset, which the illustrative test cases still use, and an ID is never reused | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |
+| 2026-11-19 | `Other` stays among the allowed instruments of `DS-06`, and the engine rejects any value outside the list, a blank included | A debt position can be of a kind that has no value of its own, and rejecting it would force a wrong name on it; the list excludes free text, not an unlisted kind. A rejected row is reported and never calculated | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
+| 2026-11-19 | A position table of more than 500 rows is reported under rule `C14`, which stops the run, and the rows of a table are counted from the row below its header to its last row with a PositionID | `C14` already stops the run on an input it cannot use, so no rule and no row of `Checks` is added. The span is what the engine reads and what the template formats, validates and colours: a PositionID below row 504 has no format and no check, whatever number of rows are filled | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |

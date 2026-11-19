@@ -45,12 +45,14 @@ the example suite of the test harness reads them, and I keep that suite as
 the test of the harness itself
 ([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
-The project's cases are 18 JSON fixtures, on the calculations `CALC-02` to
+The project's cases are 20 JSON fixtures, on the calculations `CALC-02` to
 `CALC-08`:
 
 | Cases | Category | Expected values |
 | --- | --- | --- |
 | `mar40-61-table-9` | `nominal` | `published`: the overall net open position and the requirement of the example of table 9 of MAR40.61 of `SRC-02`. Its other values are `illustrative` |
+| `bcbs119-c2-maturity-method` | `nominal` | `published`: the weighted position of each leg, the vertical disallowance, the horizontal disallowance within zone 1, the net position charge and the charge of the worked example C.2 of `SRC-03`, general market risk of interest rate instruments by the maturity method. Its time bands, and the disallowance between zones, which sums two printed values, are `illustrative` |
+| `mar40-27-vertical-disallowance` | `nominal` | `published`: the two weighted positions and the vertical disallowance of the example of MAR40.27 of `SRC-02`. Its other values are `illustrative` |
 | `illustrative-sample-…`, six cases, and `illustrative-option-charges` | `nominal` | `illustrative`: the template's sample portfolio, one case per calculation |
 | `illustrative-ir-time-band-limits`, `illustrative-ir-specific-risk-maturity-limits`, `illustrative-eq-matched-positions`, `illustrative-co-matched-positions`, `illustrative-fx-one-sided-positions`, `illustrative-requirement-fx-and-options-only` | `boundary` | `illustrative`: the limits of the bands, positions that offset in full, a zero amount, a risk class without positions |
 | `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break |
@@ -66,14 +68,19 @@ validates a rule: the derivation is the project's own, LibreOffice is not a
 supported host, and the suite has not run in Excel
 ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
-One [accuracy contract](#accuracy-contracts) covers a calculation of the
-project: `ACC-02`, on the overall net open position and the requirement of
-the FX calculation, `CALC-06`. Its calibration case is
-`illustrative-sample-fx` and its holdout case `mar40-61-table-9`, whose two
-values are published. It is a draft and cannot be frozen yet: a frozen
+Two [accuracy contracts](#accuracy-contracts) cover a calculation of the
+project. `ACC-02` is on the overall net open position and the requirement of
+the FX calculation, `CALC-06`: its calibration case is `illustrative-sample-fx`
+and its holdout case `mar40-61-table-9`, whose two values are published.
+`ACC-03` is on the weighted positions, the vertical and within-zone
+disallowances, the net position charge and the charge of the maturity
+method, `CALC-03`: its calibration case is
+`illustrative-sample-ir-general-market-risk` and its holdout cases
+`bcbs119-c2-maturity-method` and `mar40-27-vertical-disallowance`, whose
+values are published. Both are drafts and cannot be frozen yet: a frozen
 contract needs three holdout cases whose values are `published` or
-`independent`, and the project has one
-([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47)). Its
+`independent`, and the project has one for `CALC-06` and two for `CALC-03`
+([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47)). Their
 results are those the `cases` suite records in an Excel run, in
 `cases-results.json`.
 

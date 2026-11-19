@@ -113,11 +113,21 @@ Attribute VB_Name = "CORE_Config"
         Public Const NM_OPTIONS_PREFIX   As String = "Options"                '+ IR, EQ, CO, FX
 
 '------------------------------------------------------------------------------
+' VOLUME
+'------------------------------------------------------------------------------
+    'Rows of a position sheet that the workbook supports, counted from the row
+    'below the header to the last row with a PositionID: the template formats,
+    'validates and colours this many rows, and the formula workbook calculates
+    'them. A run on a sheet that holds more stops (rule C14).
+        Public Const MAX_POSITION_ROWS As Long = 500
+
+'------------------------------------------------------------------------------
 ' INPUT COLUMNS
 '------------------------------------------------------------------------------
     'Column of each field, counted from the first table column (1 = C).
     'Interest rate positions (IRPositions).
         Public Const IR_ID           As Long = 1     'PositionID
+        Public Const IR_INSTRUMENT   As Long = 3     'Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg or Other
         Public Const IR_CCY          As Long = 4     'Currency
         Public Const IR_DIRECTION    As Long = 5     'Long or Short
         Public Const IR_VALUE        As Long = 6     'Position value, currency units
@@ -378,7 +388,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const RULE_CO_CAP     As String = "C11"    'Commodities beyond Buckets rows
         Public Const RULE_FX_EXCL    As String = "C12"    'FX rows in reporting currency
         Public Const RULE_OPTIONS    As String = "C13"    'Option charges entered
-        Public Const RULE_PARAMS     As String = "C14"    'Unusable parameter or table value
+        Public Const RULE_PARAMS     As String = "C14"    'Unusable parameter or table value, or a position sheet over MAX_POSITION_ROWS
         Public Const RULE_COUNT      As Long = 14         'Rules C01 to C14
         Public Const RULE_SEVERITIES As String = _
             "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR"

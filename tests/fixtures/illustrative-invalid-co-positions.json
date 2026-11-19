@@ -28,6 +28,7 @@
       {"id": "X-DUP", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "x-dup", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-NAME", "inputs": {"commodity_code": null, "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
+      {"id": "X-GOLDNAME", "inputs": {"commodity_code": "XAU", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-DIR", "inputs": {"commodity_code": "Copper", "direction_code": "Sell", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-QTY", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": "ten", "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-NEG", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": -1, "spot_price_amount": 1, "currency_code": "USD"}},
