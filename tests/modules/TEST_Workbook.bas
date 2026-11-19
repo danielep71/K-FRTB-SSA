@@ -53,7 +53,7 @@ Attribute VB_Name = "TEST_Workbook"
 '   (tests/expected/), which tests/derivations/ssa.py derives.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '
 ' AUTHOR
 '   Daniele Penza
@@ -219,6 +219,7 @@ Private Sub RunSuite()
 
         TEST_Harness.BeginRun SUITE_NAME, "NORMAL", EXPECTED_CASES, EXPECTED_ASSERTIONS
         On Error GoTo RunFailed
+        AllowWritingToSheets
         CaseSamplePortfolio
         CaseFailedRun
         CaseOutdatedResults
@@ -439,6 +440,32 @@ End Sub
 '------------------------------------------------------------------------------
 '                                    HELPERS
 '------------------------------------------------------------------------------
+
+Private Sub AllowWritingToSheets()
+'
+'==============================================================================
+'                            AllowWritingToSheets
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Let the suite write the sheets of its workbook, which the template
+'   protects: apply UserInterfaceOnly to each of them, as AllowWriting does
+'   for the sheets that RunSSA writes.
+'
+' STATE OWNERSHIP
+'   Changes the protection mode of every sheet, not who may change it.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Sheet       As Worksheet   'One sheet
+
+        For Each Sheet In ThisWorkbook.Worksheets
+            AllowWriting Sheet
+        Next Sheet
+
+End Sub
+
 
 Private Function RunError() As Long
 '

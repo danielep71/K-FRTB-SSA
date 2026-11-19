@@ -145,7 +145,7 @@ four suites, so that the tests of the core need no workbook:
 | --- | --- | --- | --- |
 | `core` | `TEST_Suite.bas` | The core procedures and the worksheet functions, on inputs written in each case: time bands, ladders, the four risk classes, the validation of rows and parameters, the netting of issues and the fingerprint | The VBA project only. It reads and writes no sheet |
 | `workbook` | `TEST_Workbook.bas` | `RunSSA_Silent`, `CheckStatus_Silent` and `ClearOutputs_Silent` on the template's sample data: the totals of the sample portfolio, a run that fails while it writes or while it reads, and a parameter and a position changed after a run | The workbook with the template's sheets and sample data. It rewrites the output sheets and leaves them cleared. The cell and the name it changes for one operation are put back before it asserts |
-| `probes` | `TEST_Probes.bas` | Six probes of Excel's behaviour: an error value typed in an input cell and read as `#ERROR`, a text written into a cell that is not formatted as text, a range taken as a table, the status line on the other output sheets, and the save state after the status check | The workbook with the template's sheets and sample data. It appends rows under the four position tables and removes them, changes `ScalingIR` and `ThisWorkbook.Saved` for one check and puts both back, rewrites the output sheets and leaves them cleared |
+| `probes` | `TEST_Probes.bas` | Seven probes of Excel's behaviour: an error value typed in an input cell and read as `#ERROR`, a text written into a cell that is not formatted as text, a range taken as a table, the protection of the sheets and of the cells, the status line on the other output sheets, and the save state after the status check | The workbook with the template's sheets and sample data. It appends rows under the four position tables and removes them, changes `ScalingIR` and `ThisWorkbook.Saved` for one check and puts both back, protects `Results` again for one write and applies `UserInterfaceOnly` to it again, rewrites the output sheets and leaves them cleared |
 | `cases` | `TEST_Cases.bas` | The 18 registered test cases of the calculations `CALC-02` to `CALC-08`: each case types the test case's inputs on the input sheets, runs `RunSSA_Silent` and compares every expected output with the cell that holds it | The workbook with the template's sheets. Each case replaces the reporting date and currency, the FX table, the option charges and the four position sheets, then puts back what they held, values and formulas, and clears the output sheets, and asserts that as `inputs-restored` |
 
 Each suite has three entry points:
@@ -243,6 +243,10 @@ is a finding about Excel or about the code, never a test to loosen.
   cell gets its format back.
 - `areas-as-tables` (`HB-13`): the `Value` and the `Formula` of a range of several
   cells are tables from 1, and those of one cell are not.
+- `sheet-protection` (`HB-15`): every sheet is protected, the input cells
+  are unlocked and a label is locked; a write by code to a locked cell is
+  refused on a protected sheet, with error 1004; after `AllowWriting` it is
+  accepted, and the sheet stays protected.
 - `status-on-the-other-sheets` (`HB-10`): after a run, `E1` of each
   calculation sheet and of `Checks` shows the status line of `Results`.
 - `save-state-after-the-check` (`HB-11`): `CheckStatus_OnEvent` leaves a
@@ -252,8 +256,10 @@ is a finding about Excel or about the code, never a test to loosen.
 The events `Workbook_Open` and `Workbook_BeforeSave` cannot be raised by a
 procedure: [the checks by hand](../../INSTALLATION.md#host-checks-by-hand)
 cover them. In LibreOffice a cell given an error value by VBA stays empty,
-so eight assertions of the first two cases fail there; `tools/devbuild/lo_smoke.py`
-knows them, and `tools/prototype/verify.py` does not run this suite.
+so eight assertions of the first two cases fail there. Its VBA mode also
+ignores `UserInterfaceOnly`, so `AllowWriting` unprotects a sheet there, and
+three assertions of `sheet-protection` fail. `tools/devbuild/lo_smoke.py`
+knows the eleven, and `tools/prototype/verify.py` does not run this suite.
 
 ## Relation tests
 

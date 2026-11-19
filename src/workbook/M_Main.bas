@@ -9,23 +9,26 @@ Attribute VB_Name = "M_Main"
 '   and restored around each operation. A run that fails leaves no result,
 '   and a check tells whether an input changed after the last run.
 '
-' PUBLIC SURFACE
+'' PUBLIC SURFACE
 '   RunSSA, RunSSA_Silent, ClearOutputs, ClearOutputs_Silent, CheckStatus,
-'   CheckStatus_Silent (command macros) and CheckStatus_OnEvent (for the
-'   workbook's event procedures); not part of the supported
-'   worksheet-function API.
+'   CheckStatus_Silent (command macros), CheckStatus_OnEvent (for the
+'   workbook's event procedures) and AllowWriting (for the test modules);
+'   not part of the supported worksheet-function API.
 '
 ' DEPENDENCIES
 '   CORE_Config, CORE_Engine, CORE_Util. Locates every table through the
 '   workbook names listed in CORE_Config (TABLE LOCATION).
 '
-' STATE OWNERSHIP
+'' STATE OWNERSHIP
 '   Reads the input sheets and Params; clears and writes the output sheets
 '   (IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder, IR_Zones, Buckets, Results,
 '   Checks). Changes Calculation, ScreenUpdating and EnableEvents for the
-'   duration of an operation and restores them. mSilent holds the silent
-'   flag of the running operation, and mStatusWritten tells whether the
-'   last check changed the status line.
+'   duration of an operation and restores them. Applies UserInterfaceOnly
+'   to the protection of each output sheet, without a password, so that
+'   code may write a sheet that users cannot change; the setting lasts
+'   until the workbook is closed. mSilent holds the silent flag of the
+'   running operation, and mStatusWritten tells whether the last check
+'   changed the status line.
 '
 ' ERROR POLICY
 '   The command macros report a failure in a message box (silent variants:
@@ -37,8 +40,8 @@ Attribute VB_Name = "M_Main"
 ' COMPATIBILITY
 '   Excel for Windows, VBA7; no references beyond the defaults.
 '
-' UPDATED
-'   2026-11-15
+'' UPDATED
+'   2026-11-19
 '
 ' AUTHOR
 '   Daniele Penza
@@ -378,6 +381,7 @@ Private Function ExecuteOperation( _
         Application.ScreenUpdating = False
         Application.EnableEvents = False
         Application.Calculation = xlCalculationManual
+        AllowWritingToOutputs
 
         Select Case Operation
             Case OP_RUN
@@ -411,6 +415,104 @@ Failed:
         Resume CleanUp
 
 End Function
+
+
+Private Sub AllowWritingToOutputs()
+'
+'==============================================================================
+'                            AllowWritingToOutputs
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Let the operation write every output sheet, which the template protects:
+'   apply UserInterfaceOnly to each of them.
+'
+' STATE OWNERSHIP
+'   Changes the protection mode of the output sheets, not who may change
+'   them: users still cannot.
+'
+' ERROR POLICY
+'   Raises the error of AllowWriting for the first sheet it cannot reach.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim SheetNames  As Variant   'Names of the output sheets
+    Dim Item        As Variant   'One name
+
+        SheetNames = Array(SH_RESULTS, SH_IR_ZONES, SH_IR_LADDER, SH_BUCKETS, SH_IR_CALC, _
+                           SH_EQ_CALC, SH_CO_CALC, SH_FX_CALC, SH_CHECKS)
+        For Each Item In SheetNames
+            AllowWriting ThisWorkbook.Worksheets(CStr(Item))
+        Next Item
+
+End Sub
+
+
+Public Sub AllowWriting( _
+    ByVal Sheet As Worksheet)
+'
+'==============================================================================
+'                                AllowWriting
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Let code write a sheet that is protected without a password: protect it
+'   again with UserInterfaceOnly and the options of the template's
+'   protection (docs/methodology/workbook-protection.json): users may select
+'   cells and size columns and rows, and nothing else. Users still cannot
+'   change a locked cell. Nothing changes for a sheet that is not
+'   protected. The setting is not saved with the workbook, so every
+'   operation applies it again.
+'
+' INPUTS
+'   Sheet   The sheet code is about to write.
+'
+' STATE OWNERSHIP
+'   Changes the protection mode of Sheet, and sets its options to those of
+'   the template. It marks the workbook as changed; the caller that must
+'   leave it saved restores that.
+'
+' ERROR POLICY
+'   Raises ERR_LAYOUT, with the sheet and the reason, when Excel refuses:
+'   a sheet that someone protected with a password cannot be protected
+'   again, or unprotected, without it. A host that does not know the options
+'   of Protect, such as LibreOffice's VBA mode, which is not a supported
+'   host, gets the sheet unprotected.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Late           As Object    'Sheet, so that the host binds the options when it runs
+    Dim ErrNumber      As Long      'Primary error number
+    Dim ErrDescription As String    'Primary error description
+
+        If Not Sheet.ProtectContents Then Exit Sub
+        Set Late = Sheet
+        On Error GoTo Narrow
+        Late.Protect DrawingObjects:=False, Contents:=True, Scenarios:=False, _
+                     UserInterfaceOnly:=True, AllowFormattingColumns:=True, _
+                     AllowFormattingRows:=True
+        Exit Sub
+
+Narrow:
+        'A host that does not know those options, as LibreOffice's VBA mode does not
+        'and which clears a protected sheet only after it is unprotected, gets the
+        'sheet unprotected. Excel gets here only when it refuses the call above,
+        'and refuses to unprotect a sheet that has a password too.
+        On Error GoTo Failed
+        Sheet.Unprotect
+        Exit Sub
+
+Failed:
+        ErrNumber = Err.Number
+        ErrDescription = Err.Description
+        On Error GoTo 0
+        Err.Raise ERR_LAYOUT, "M_Main.AllowWriting", "Sheet " & Sheet.Name & _
+                  " is protected and cannot be written by code: " & ErrDescription & _
+                  " (error " & CStr(ErrNumber) & ")"
+
+End Sub
 
 
 Private Function RunCalculation() As String

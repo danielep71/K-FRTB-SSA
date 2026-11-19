@@ -584,3 +584,5 @@ M_Main	Function	CheckStatus_Silent
 # SIG	M_Main	Function	CheckStatus_Silent	Public Function CheckStatus_Silent() As String
 M_Main	Sub	CheckStatus_OnEvent
 # SIG	M_Main	Sub	CheckStatus_OnEvent	Public Sub CheckStatus_OnEvent()
+M_Main	Sub	AllowWriting
+# SIG	M_Main	Sub	AllowWriting	Public Sub AllowWriting(ByVal Sheet As Worksheet)

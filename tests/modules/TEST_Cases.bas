@@ -56,7 +56,7 @@ Attribute VB_Name = "TEST_Cases"
 '   case's file in tests/expected/ (docs/methodology/TEST_CASES.md).
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '
 ' AUTHOR
 '   Daniele Penza
@@ -115,7 +115,7 @@ Public Sub RunCaseTests()
 '   As TEST_Harness.EndRun: raises when the run does not pass.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         RunSuite
@@ -142,7 +142,7 @@ Public Function Test_RunCases() As String
 '   the result line says so.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         On Error Resume Next
@@ -182,7 +182,7 @@ Public Sub CertifyCases( _
 '   trying again.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim RunErrorNumber        As Long     'Error that ended the run; 0 for none
@@ -221,7 +221,7 @@ Private Sub RunSuite()
 '   and re-raises it unchanged. BeginRun's refusal propagates directly.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim ErrNumber        As Long     'Runner error number; 0 for none
@@ -230,6 +230,7 @@ Private Sub RunSuite()
 
         TEST_Harness.BeginRun SUITE_NAME, "NORMAL", EXPECTED_CASES, EXPECTED_ASSERTIONS
         On Error GoTo RunFailed
+        AllowWritingToSheets
         CaseIllustrativeCoMatchedPositions
         CaseIllustrativeEqMatchedPositions
         CaseIllustrativeFxOneSidedPositions
@@ -3230,6 +3231,32 @@ End Sub
 '                                    HELPERS
 '------------------------------------------------------------------------------
 
+Private Sub AllowWritingToSheets()
+'
+'==============================================================================
+'                             AllowWritingToSheets
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Let the suite write the sheets of its workbook, which the template
+'   protects: apply UserInterfaceOnly to each of them, as AllowWriting does
+'   for the sheets that RunSSA writes.
+'
+' STATE OWNERSHIP
+'   Changes the protection mode of every sheet, not who may change it.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Sheet   As Worksheet   'One sheet
+
+        For Each Sheet In ThisWorkbook.Worksheets
+            AllowWriting Sheet
+        Next Sheet
+
+End Sub
+
+
 Private Function InputArea( _
     ByVal Index As Long) _
     As Range
@@ -3247,7 +3274,7 @@ Private Function InputArea( _
 '           option charges.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Header   As Range   'Header of a position sheet
@@ -3292,7 +3319,7 @@ Private Function PositionHeader( _
 '   Index   1 interest rate, 2 equity, 3 commodity, 4 foreign exchange.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         Select Case Index
@@ -3324,7 +3351,7 @@ Private Function PositionRows( _
 '   The rows kept by the last KeepInputs; INPUT_ROWS before the first.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         If mRows(Index) > 0 Then
@@ -3352,7 +3379,7 @@ Private Function TableRows( _
 '   Index   As PositionHeader.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Header   As Range       'Header cell
@@ -3382,7 +3409,7 @@ Private Sub KeepInputs()
 '   Sets mRows, mKept and mFormulas.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim i   As Long   'Input area
@@ -3420,7 +3447,7 @@ Private Function RestoreInputs() As String
 '   result on the success and the error path.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim i             As Long     'Input area
@@ -3483,7 +3510,7 @@ Private Function InputDifferences() As Long
 '   The number of cells; 0 when the inputs are those kept.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Current           As Variant   'What an area holds now: values
@@ -3528,7 +3555,7 @@ Private Function AsTable( _
 '   Value when it is an array, else a table of one cell holding it.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Table(1 To 1, 1 To 1)   As Variant   'The table of one cell
@@ -3554,7 +3581,7 @@ Private Function IsFormula( _
 '   Whether what a cell holds, as its Formula returns it, is a formula.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         If VarType(Value) = vbString Then
@@ -3579,7 +3606,7 @@ Private Function SameValue( _
 '   An error value equals only the same error value.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         If VarType(First) <> VarType(Second) Then
@@ -3609,7 +3636,7 @@ Private Sub ClearInputs()
 '   Clears the contents of those areas; their formats stay.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim i   As Long   'Input area
@@ -3632,7 +3659,7 @@ Private Sub SetNamed( _
 '   Type a value in the cell a workbook name refers to.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         PutValue ThisWorkbook.Names(CellName).RefersToRange, Value
@@ -3657,7 +3684,7 @@ Private Sub PutRate( _
 '   Rate    Its rate; Empty leaves the cell empty.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         PutValue ThisWorkbook.Names(NM_FX_CCY).RefersToRange.Cells(Index, 1), Code
@@ -3686,7 +3713,7 @@ Private Sub PutRow( _
 '                cell empty.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Target   As Range   'First cell of the row
@@ -3728,7 +3755,7 @@ Private Sub PutValue( _
 '   An error of the write is raised again once the format is back.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Saved            As String   'Number format of the cell
@@ -3782,7 +3809,7 @@ Private Function RowCell( _
 '   ColumnOffset   Columns to the right of the PositionID.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         RowCell = ThisWorkbook.Names(HeaderName).RefersToRange.Offset(Index, ColumnOffset).Value
@@ -3807,7 +3834,7 @@ Private Function ResultsCell( _
 '   ColumnOffset   Columns to the right of the risk class.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         ResultsCell = ThisWorkbook.Names(NM_RESULTS_HEADER).RefersToRange _
@@ -3827,7 +3854,7 @@ Private Function NamedCell( _
 '   The value of the cell a workbook name refers to.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         NamedCell = ThisWorkbook.Names(CellName).RefersToRange.Value
@@ -3861,7 +3888,7 @@ Private Function CurrencyRow( _
 '   case records it.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim Header   As Range   'Header cell
@@ -3901,7 +3928,7 @@ Private Function ZonesTotal( _
 '   As CurrencyRow, and NumberOf for a cell that holds no number.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
     Dim First   As Range     'The currency's cell
@@ -3932,7 +3959,7 @@ Private Function FxNet( _
 '   As CurrencyRow.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         FxNet = CurrencyRow(NM_BK_FX_HEADER, FX_BLOCK_CODE, Code).Offset(0, FX_BLOCK_NET).Value
@@ -3955,7 +3982,7 @@ Private Function ZeroIfEmpty( _
 '   As NumberOf for a cell that is not empty.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         If IsEmpty(Value) Then
@@ -3984,7 +4011,7 @@ Private Function NumberOf( _
 '   text or an error value is never compared as 0; the case records it.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-19
 '==============================================================================
 '
         If Not IsNumberValue(Value) Then

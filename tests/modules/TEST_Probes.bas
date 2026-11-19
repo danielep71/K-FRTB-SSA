@@ -7,7 +7,8 @@ Attribute VB_Name = "TEST_Probes"
 '   Excel to do, as cases and assertions of TEST_Harness. It reads an error
 '   value from an input cell, writes a text into a cell whose number format
 '   is not text, takes a range as a table, shows the status line on the
-'   other output sheets, and checks the save state after the status check.
+'   other output sheets, checks the save state after the status check and
+'   checks that the template protects its sheets as the workbook relies on.
 '   Each case is the probe of a behaviour of the Host behaviour table of
 '   docs/methodology/VALIDATION_PLAN.md. A pass measures the behaviour on
 '   the host that ran it; it validates no rule of the calculation.
@@ -56,7 +57,7 @@ Attribute VB_Name = "TEST_Probes"
 '   checks the formula workbook of the same rows.
 '
 ' UPDATED
-'   2026-11-18
+'   2026-11-19
 '
 ' AUTHOR
 '   Daniele Penza
@@ -74,12 +75,14 @@ Attribute VB_Name = "TEST_Probes"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "probes"
-        Private Const EXPECTED_CASES      As Long = 6
-        Private Const EXPECTED_ASSERTIONS As Long = 42
+        Private Const EXPECTED_CASES      As Long = 7
+        Private Const EXPECTED_ASSERTIONS As Long = 49
     'The error values a cell holds: the codes of CVErr.
         Private Const ERR_NA              As Long = 2042   '#N/A
         Private Const ERR_VALUE           As Long = 2015   '#VALUE!
         Private Const ERR_REF             As Long = 2023   '#REF!
+    'The error Excel raises for a write to a locked cell of a protected sheet.
+        Private Const ERR_PROTECTED_WRITE As Long = 1004
     'The text that stands for an error value in an output.
         Private Const ERROR_TEXT          As String = "#ERROR"
 
@@ -104,7 +107,7 @@ Public Sub RunProbeTests()
 ' PURPOSE
 '   Run the probes suite. A passing run ends with
 '   RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE;
-'   cases=6; assertions=42; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=7; assertions=49; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' STATE OWNERSHIP
 '   Rewrites the output sheets and leaves them cleared.
@@ -226,10 +229,12 @@ Private Sub RunSuite()
 
         TEST_Harness.BeginRun SUITE_NAME, "NORMAL", EXPECTED_CASES, EXPECTED_ASSERTIONS
         On Error GoTo RunFailed
+        AllowWritingToSheets
         CaseErrorValuesInInputs
         CaseReadingAnErrorValue
         CaseTextWrittenIntoACell
         CaseAreasAsTables
+        CaseSheetProtection
         CaseStatusOnTheOtherSheets
         CaseSaveStateAfterTheCheck
 
@@ -504,6 +509,76 @@ CaseFailed:
 End Sub
 
 
+Private Sub CaseSheetProtection()
+'
+'==============================================================================
+'                             CaseSheetProtection
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Every sheet of the template is protected, and only the input cells are
+'   unlocked. A write by code to a locked cell is refused on a protected
+'   sheet, and accepted once AllowWriting has applied UserInterfaceOnly to
+'   it, which leaves the sheet protected. HB-15.
+'
+' STATE OWNERSHIP
+'   Protects Results again for one write and applies UserInterfaceOnly to it
+'   again; changes the label of its header for that write and puts it back.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Sheet       As Worksheet   'Output sheet used for the writes
+    Dim Target      As Range       'A locked label on it
+    Dim KeptValue   As Variant     'Its text before the case
+    Dim Written     As Boolean     'True while the label is not its own
+    Dim Raised      As Long        'Err.Number right after a write
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "sheet-protection"
+        Set Target = ThisWorkbook.Names(NM_RESULTS_HEADER).RefersToRange
+        Set Sheet = Target.Worksheet
+        KeptValue = Target.Value
+        TEST_Harness.AssertEqualDouble "sheets-that-are-not-protected", 0, UnprotectedSheets()
+        TEST_Harness.AssertTrue "input-cell-of-params-is-unlocked", _
+            Not ThisWorkbook.Names("AsOfDate").RefersToRange.Locked, _
+            "AsOfDate must be unlocked: users type in it"
+        TEST_Harness.AssertTrue "position-cell-is-unlocked", _
+            Not PositionHeader(1).Offset(1, 0).Locked, _
+            "the first cell of IRPositions under its header must be unlocked"
+        TEST_Harness.AssertTrue "label-is-locked", Target.Locked, _
+            "the header of Results must be locked"
+
+        'Protected as the template protects it, without UserInterfaceOnly.
+        Sheet.Protect Contents:=True
+        Written = True
+        On Error Resume Next
+        Target.Value = "probe"
+        Raised = Err.Number
+        On Error GoTo CaseFailed
+        TEST_Harness.AssertRaised "write-to-a-locked-cell-is-refused", ERR_PROTECTED_WRITE, Raised
+        AllowWriting Sheet
+        On Error Resume Next
+        Target.Value = "probe"
+        Raised = Err.Number
+        On Error GoTo CaseFailed
+        TEST_Harness.AssertRaised "write-after-allow-writing-succeeds", 0, Raised
+        TEST_Harness.AssertTrue "sheet-is-still-protected", Sheet.ProtectContents, _
+            "AllowWriting must leave the sheet protected"
+
+CleanUp:
+        On Error GoTo 0
+        If Written Then Target.Value = KeptValue
+        AllowWriting Sheet
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+
 Private Sub CaseStatusOnTheOtherSheets()
 '
 '==============================================================================
@@ -623,6 +698,32 @@ End Sub
 '------------------------------------------------------------------------------
 '                                    HELPERS
 '------------------------------------------------------------------------------
+
+Private Sub AllowWritingToSheets()
+'
+'==============================================================================
+'                            AllowWritingToSheets
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Let the suite write the sheets of its workbook, which the template
+'   protects: apply UserInterfaceOnly to each of them, as AllowWriting does
+'   for the sheets that RunSSA writes.
+'
+' STATE OWNERSHIP
+'   Changes the protection mode of every sheet, not who may change it.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Sheet       As Worksheet   'One sheet
+
+        For Each Sheet In ThisWorkbook.Worksheets
+            AllowWriting Sheet
+        Next Sheet
+
+End Sub
+
 
 Private Function PositionHeader( _
     ByVal Index As Long) _
@@ -847,6 +948,32 @@ Private Function ErrorCells() As Long
             End If
         Next Item
         ErrorCells = Count
+
+End Function
+
+
+Private Function UnprotectedSheets() As Long
+'
+'==============================================================================
+'                             UnprotectedSheets
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Count the sheets of the workbook that are not protected.
+'
+' RETURNS
+'   The number of sheets whose contents are not protected.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+    Dim Sheet       As Worksheet   'One sheet
+    Dim Count       As Long        'Sheets that are not protected
+
+        For Each Sheet In ThisWorkbook.Worksheets
+            If Not Sheet.ProtectContents Then Count = Count + 1
+        Next Sheet
+        UnprotectedSheets = Count
 
 End Function
 
