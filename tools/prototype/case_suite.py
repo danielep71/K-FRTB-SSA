@@ -42,7 +42,7 @@ ROOT = run_cases.ROOT
 MODULE = ROOT / "tests" / "modules" / "TEST_Cases.bas"
 SUITE = "cases"
 # The date of the fixed text of the module: its helpers and entry points.
-WRITTEN = "2026-11-17"
+WRITTEN = "2026-11-19"
 RULE = "'" + "=" * 78
 THIN = "'" + "-" * 78
 WIDTH = 96
@@ -420,6 +420,7 @@ def runner(names: list[str]) -> list[str]:
         ("ErrDescription", "String", "Runner error description")], [
         "TEST_Harness.BeginRun SUITE_NAME, \"NORMAL\", EXPECTED_CASES, EXPECTED_ASSERTIONS",
         "On Error GoTo RunFailed",
+        "AllowWritingToSheets",
         *names,
         "",
         "Finish:",
@@ -435,6 +436,15 @@ def runner(names: list[str]) -> list[str]:
 
 
 HELPERS: list[tuple[list[str], list[tuple[str, str]], list[tuple[str, str, str]], list[str]]] = [
+    (["Private Sub AllowWritingToSheets()"], [
+        ("PURPOSE", "Let the suite write the sheets of its workbook, which the template\n"
+                    "protects: apply UserInterfaceOnly to each of them, as AllowWriting does\n"
+                    "for the sheets that RunSSA writes."),
+        ("STATE OWNERSHIP", "Changes the protection mode of every sheet, not who may change it."),
+    ], [("Sheet", "Worksheet", "One sheet")], [
+        "For Each Sheet In ThisWorkbook.Worksheets",
+        "    AllowWriting Sheet",
+        "Next Sheet"]),
     (["Private Function InputArea( _", "    ByVal Index As Long) _", "    As Range"], [
         ("PURPOSE", "One of the areas that hold the inputs a test case replaces."),
         ("INPUTS", "Index   1 to 4: the rows of the four position sheets, as many as\n"

@@ -113,8 +113,8 @@ Tab order is the order of the table. Every sheet is visible.
   the row below its header to the last row with a value in its first
   column.
 - Input cells have a yellow fill, and the MAR40 constants on `Params` a grey
-  one. No cell is unlocked and no sheet is protected yet
-  ([protection](#protection)).
+  one. Those cells are unlocked, every other cell is locked, and every sheet
+  is protected without a password ([protection](#protection)).
 - `Results` holds the status line, `Results_Status`, and every other output
   sheet repeats it in `E1`, in the band at its top, with the formula
   `=Results_Status`: `IR_Zones`, `IR_Ladder`, `Buckets`, the four calculation
@@ -298,6 +298,8 @@ for that table.
   marks the results `OUTDATED`; `CheckStatus` reports the error. It leaves
   the workbook marked as saved when it was and the status line did not
   change.
+- Each operation first applies `UserInterfaceOnly` to the output sheets, which
+  the template protects ([protection](#protection)).
 - Each entry point is an adapter procedure that calls the engine,
   `CORE_Engine.Calculate`; it holds no regulatory formula.
 - It captures and restores the Excel settings it changes: calculation
@@ -424,23 +426,45 @@ says how to write the template and how to run the build.
 
 ## Protection
 
-The template carries the protection of each sheet and the lock flag of each
-cell. The protection matrix, `docs/methodology/workbook-protection.json`,
-records them. No sheet is protected yet, and the matrix declares no input or
-output range, so each of its 18 entries reads like these two:
+The template protects every sheet and locks every cell but the input cells.
+The protection matrix, `docs/methodology/workbook-protection.json`, records
+the options of each sheet's protection, its input ranges and the ranges of
+its other cells, which are locked. `tools/prototype/build_prototype.py` writes
+both the template and the matrix, from the colours of the sheets: the cells
+with the yellow input fill on every sheet, and the grey cells of the MAR40
+constants on `Params`, are unlocked. Two entries of the matrix:
 
 ```json
 {
   "schema_version": 1,
   "sheets": {
-    "shParams": {"protection": {}},
-    "shResults": {"protection": {}}
+    "shIRPositions": {
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:P504"
+      ],
+      "output": [
+        "A1:P4",
+        "A5:B504"
+      ]
+    },
+    "shResults": {
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:P23"
+      ]
+    }
   }
 }
 ```
-
-[Issue 26](https://github.com/danielep71/K-FRTB-SSA/issues/26) tracks the
-protection of the sheets and the unlocking of the input cells.
 
 - **Sheets:** one entry for each sheet of the template, by code name. `Test`
   sheets are not in the template and have no entry.
@@ -466,7 +490,36 @@ a protection option, compared when the matrix or the template protects the
 sheet; the options of a sheet that neither protects are not compared. Without the template the check reads the matrix alone, and
 without either it passes as inactive; a template without a matrix fails. It
 compares neither the password nor protection that VBA sets at run time with
-`Worksheet.Protect`.
+`Worksheet.Protect`. `tests/test_prototype.py` compares the matrix with what
+the tool writes.
+
+**What users can do.** On a protected sheet users select cells, change the
+width of a column and the height of a row, and type in the unlocked cells,
+which hold the inputs: the parameters of `Params`, the MAR40 constants among
+them, the specific-risk charges, the ladder, the FX table, the four position
+tables, and the option charges. They cannot change a label, a header, a
+formula or a result, insert or delete a row or a column, sort or filter. A
+position table is the 500 rows of its input range, and its data validation
+stays. There is no password, so a user who needs to change a locked cell
+chooses **Review → Unprotect Sheet**: the protection prevents accidents, and
+is no security.
+
+**How code writes a protected sheet.** A write to a locked cell by code fails
+on a protected sheet, error 1004. Each operation of `M_Main` applies
+`UserInterfaceOnly` to the nine output sheets before it reads or writes
+anything, through `M_Main.AllowWriting`: the sheet stays protected for users,
+with the options above, and code may write it. The setting is not saved with
+the workbook, so each operation applies it again, and none depends on
+`Workbook_Open`. The test modules call `AllowWriting` for every sheet they
+write. A sheet that someone protected with a password cannot be protected
+again without it: the operation raises `ERR_LAYOUT` and names the sheet.
+
+LibreOffice's VBA mode, which is not a supported host, does not know the
+options of `Protect` and clears a protected sheet only after it is
+unprotected, so `AllowWriting` unprotects the sheet there. Excel never takes
+that path unless it refuses the call above, and then it refuses to unprotect a
+sheet with a password too. How Excel treats `UserInterfaceOnly` is
+`HB-15` of the validation plan, assumed until a run measures it.
 
 ## Decisions
 
@@ -482,3 +535,6 @@ compares neither the password nor protection that VBA sets at run time with
 | 2026-11-15 | A changed input is found by a fingerprint of the inputs, which a check compares on request, when the workbook is opened and before it is saved | A change event would mark the results at once, but its first write after a run empties Excel's undo history, it does not fire while events are off, and it cannot be exercised outside Excel | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-15 | Every output sheet repeats the status line of `Results` with a formula, in `E1` | A reader of one sheet can tell whether it belongs to the last run, and one written cell holds the state | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-14 | No sheet is protected and no cell is unlocked yet | The prototype is brought in as received; the change is tracked | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
+| 2026-11-19 | Every sheet is protected, without a password, and only the input cells are unlocked: the cells with the input fill, and the MAR40 constants of `Params` | Users cannot overwrite a label, a header, a formula or a result by accident, and keep the means to try a what-if. A password would have to be stored, or lost, and would add no security to a workbook whose code a user can read | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
+| 2026-11-19 | The options of the protection are those of the standard's default but for two: users may change the width of a column and the height of a row | A user who cannot read a column cannot use the sheet; inserting, deleting, sorting and filtering would break a fixed table | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
+| 2026-11-19 | Code writes the output sheets because each operation applies `UserInterfaceOnly` to them, through `AllowWriting` | The sheets stay protected for users while code writes, with no moment at which a sheet is unprotected, and nothing depends on an event: the setting is not saved with the workbook | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |

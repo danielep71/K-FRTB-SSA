@@ -2,58 +2,224 @@
   "schema_version": 1,
   "sheets": {
     "shHome": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:E33"
+      ]
     },
     "shParams": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "E6:E27",
+        "G31:G48",
+        "D53:F67",
+        "I53:J67",
+        "C72:E91"
+      ],
+      "output": [
+        "A1:K5",
+        "A6:D27",
+        "F6:K27",
+        "A28:K30",
+        "A31:F48",
+        "H31:K48",
+        "A49:K52",
+        "A53:C67",
+        "G53:H67",
+        "K53:K67",
+        "A68:K71",
+        "A72:B91",
+        "F72:K91",
+        "A92:K92"
+      ]
     },
     "shIRPositions": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:P504"
+      ],
+      "output": [
+        "A1:P4",
+        "A5:B504"
+      ]
     },
     "shEQPositions": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:K504"
+      ],
+      "output": [
+        "A1:K4",
+        "A5:B504"
+      ]
     },
     "shCOPositions": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:L504"
+      ],
+      "output": [
+        "A1:L4",
+        "A5:B504"
+      ]
     },
     "shFXPositions": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:H504"
+      ],
+      "output": [
+        "A1:H4",
+        "A5:B504"
+      ]
     },
     "shOptionCharges": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "E5:G8"
+      ],
+      "output": [
+        "A1:G4",
+        "A5:D8"
+      ]
     },
     "shResults": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:P23"
+      ]
     },
     "shIRZones": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:AF26"
+      ]
     },
     "shIRLadder": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:O305"
+      ]
     },
     "shBuckets": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:L100"
+      ]
     },
     "shIRCalc": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:X504"
+      ]
     },
     "shEQCalc": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:N504"
+      ]
     },
     "shCOCalc": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:J504"
+      ]
     },
     "shFXCalc": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:I504"
+      ]
     },
     "shChecks": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:J84"
+      ]
     },
     "shTestCatalogue": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:N25"
+      ]
     },
     "shREADME": {
-      "protection": {}
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "output": [
+        "A1:E40"
+      ]
     }
   }
 }

@@ -65,6 +65,22 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The template protects its sheets. All 18 are protected, without a password,
+  and only the input cells are unlocked: the yellow cells, and on `Params`
+  the grey cells of the MAR40 constants, which a what-if may change. Users
+  can select cells and change the width of a column and the height of a row,
+  and cannot overwrite a label, a header, a formula or a result, insert or
+  delete a row, sort or filter. The macros write the output sheets because
+  each operation applies `UserInterfaceOnly` to them through the new
+  `M_Main.AllowWriting`; the test modules apply it to every sheet they
+  write. The protection matrix states the input and locked ranges of each
+  sheet, `build_prototype.py` writes the template and the matrix from the
+  colours of the sheets, and `tools/check_workbook_protection.py` compares
+  them. A sheet that someone protected with a password makes an operation stop
+  with an error that names it. Nothing was run in Excel: the behaviour is
+  `HB-15` and `HB-16` of the validation plan, assumed, with a probe and a
+  check by hand (#26).
+
 - A guide to the prototype for the person who uses it, `docs/PROTOTYPE.md`:
   what the workbook calculates, what it needs, its 18 sheets and its inputs,
   how to run `RunSSA`, `ClearOutputs` and `CheckStatus` and read the status
@@ -77,7 +93,7 @@ Use only the categories an entry needs.
   project, which keeps the defaults (#23).
 
 - A `probes` suite for the first Excel run, `tests/modules/TEST_Probes.bas`:
-  6 cases and 42 assertions that measure what the workbook relies on Excel
+  7 cases and 49 assertions that measure what the workbook relies on Excel
   to do. An error value typed in an input cell reads as `#ERROR` where an
   output shows that text, and no output cell holds an error value; a text
   that reads as a number keeps its digits when it is written through the
@@ -85,11 +101,12 @@ Use only the categories an entry needs.
   on the other output sheets after a run; and the status check leaves the
   save state as the guides say. It is listed in the evidence policy, so an
   Excel run must hold its logs, and the `Host behaviour` table of the
-  validation plan has an entry, `HB-08` to `HB-14`, for each behaviour,
+  validation plan has an entry, `HB-08` to `HB-16`, for each behaviour,
   all `assumed`. `INSTALLATION.md` has the host checks that only a person
   can make: the two workbook events, the open and close without a change,
-  and the round trip. The suite passes in LibreOffice except for eight
-  assertions on error values, which LibreOffice cannot hold; nothing was
+  the round trip and the protection of the sheets. The suite passes in
+  LibreOffice except for eleven assertions, on error values and on
+  protection, which LibreOffice cannot pass; nothing was
   run in Excel (#22). `tools/devbuild/lo_smoke.py` judges the RESULT line of
   every run on its own, so that a known failure never hides a host state
   that was not restored, a recovery that is required or a run that was

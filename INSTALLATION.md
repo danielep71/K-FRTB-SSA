@@ -335,7 +335,7 @@ from an entry point without arguments:
 | --- | --- | --- |
 | `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=3; assertions=34; failures=0; cleanup=PASS; recovery=NONE` |
-| `probes` | `TEST_Probes.RunProbeTests` | `RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE; cases=6; assertions=42; failures=0; cleanup=PASS; recovery=NONE` |
+| `probes` | `TEST_Probes.RunProbeTests` | `RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE; cases=7; assertions=49; failures=0; cleanup=PASS; recovery=NONE` |
 | `cases` | `TEST_Cases.RunCaseTests` | `RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE; cases=18; assertions=345; failures=0; cleanup=PASS; recovery=NONE` |
 <!-- END generated: project-suite-results -->
 
@@ -343,7 +343,7 @@ The `core` suite calls the engine's procedures and the worksheet functions on
 inputs written in each case, and touches no sheet. The `workbook` suite runs
 the whole calculation on the sample data the template ships: it rewrites the
 output sheets and leaves them cleared. The `probes` suite measures Excel's behaviour on error values, texts,
-ranges and the status check, and appends rows under the position tables and
+ranges, protection and the status check, and appends rows under the position tables and
 removes them, as the harness guide describes. The `cases` suite runs every
 registered [test case](docs/methodology/TEST_CASES.md): each case replaces
 the inputs of the workbook with its own, runs the calculation, puts back the
@@ -636,6 +636,14 @@ calculation sheets.
    `tools/check_excel_run.py` on the export, for the same commit, and record
    the `Note:` lines: each is a re-cased identifier (`HB-01`) or a
    difference.
+6. **Protection, before and after a run (`HB-15`).** Open a fresh copy of the
+   workbook, and before you run anything: type in a cell of `Results` that
+   holds a label, which Excel must refuse, and in a yellow cell of
+   `IRPositions`, which it must accept; widen a column of any sheet, which it
+   must allow; insert a row, which it must refuse. Run `RunSSA`: it must end
+   with no protection error. Then repeat the four attempts: the same must
+   happen. Save, close and open the workbook again: the sheets are still
+   protected, and Excel asks for no password. Run `RunSSA` once more.
 
 Write each result as what you saw, with the Excel build and the Windows
 version, even where it is not what is expected: a difference is a finding.

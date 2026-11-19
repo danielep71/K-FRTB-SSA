@@ -81,6 +81,11 @@ KNOWN_FAILURES = frozenset({
     "error-values-in-inputs/position-id-typed-as-an-error",
     "reading-an-error-value/error-value-is-read-as-an-error",
     "reading-an-error-value/error-value-reads-as-the-error-text",
+    # The probes suite, on protection: LibreOffice's VBA mode ignores UserInterfaceOnly, so
+    # AllowWriting unprotects the sheet there, and code may write a locked cell.
+    "sheet-protection/write-to-a-locked-cell-is-refused",
+    "sheet-protection/sheets-that-are-not-protected",
+    "sheet-protection/sheet-is-still-protected",
 })
 # The failure each deliberate failure mode is designed to produce, by mode.
 DESIGNED = {"INJECTED_FAILURE": frozenset({"exact-double/half-plus-quarter"}),

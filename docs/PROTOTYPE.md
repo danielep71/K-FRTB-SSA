@@ -53,6 +53,15 @@ The workbook has 18 sheets, all visible, in this order
 
 ## The inputs
 
+Every sheet is protected, without a password, and only the input cells are
+unlocked. They are the yellow cells, and on `Params` the grey cells of the MAR40
+constants too: you type in them, and in nothing else. You can select any cell,
+and change the width of a column and the height of a row. You cannot insert or
+delete a row, sort or filter, or change a label, a header, a formula or a
+result. The protection prevents accidents and is no security: to change a
+locked cell, choose **Review → Unprotect Sheet**. The macros write the output
+sheets without unprotecting them for you.
+
 The [data contract](methodology/DATA_CONTRACT.md) defines every field, its
 unit, its allowed values and how a cell is read.
 

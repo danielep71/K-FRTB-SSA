@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the K-FRTB-SSA workbook in one of two forms.
 
-Usage: python tools/prototype/build_prototype.py [OUTPUT] [--template]
+Usage: python tools/prototype/build_prototype.py [OUTPUT] [--template | --matrix]
 
 Without --template the script writes the formula prototype: every output is
 a live formula. With --template it writes the macro-free template for the
@@ -11,6 +11,16 @@ Both forms share layout, names, sample data and the TestCatalogue sheet, so
 the formula prototype is a second implementation to compare the VBA engine
 with. OUTPUT defaults to K-FRTB-SSA_Prototype.xlsx in the current directory.
 The sample data and the expected test values come from ssa_reference.py.
+
+Every sheet is protected, without a password, and only the input cells are
+unlocked: the cells with the yellow input fill on every sheet, and the grey
+cells of MAR40 constants on Params. A user may select cells and change the
+width of columns and the height of rows, and nothing else. With --matrix the
+script writes the protection matrix, docs/methodology/workbook-protection.json,
+which states those inputs and the locked cells of each sheet, instead of a
+workbook:
+
+    python tools/prototype/build_prototype.py docs/methodology/workbook-protection.json --matrix
 
 The template is tracked as src/workbook/Template.xlsx, and
 tools/devbuild/build_workbook.py builds the workbook from it. After a change
@@ -27,6 +37,7 @@ compares the parts as XML.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import zipfile
@@ -39,7 +50,7 @@ from typing import Any, NamedTuple
 import ssa_reference as D
 from openpyxl import Workbook
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Side
 from openpyxl.utils import column_index_from_string as CI
 from openpyxl.utils import get_column_letter as COL
 from openpyxl.workbook.defined_name import DefinedName
@@ -1471,6 +1482,84 @@ def finish_workbook(wb: Book) -> None:
             for part in ws_.title.split("_"))
 
 
+def sheet_code_name(title: str) -> str:
+    """The code name of a sheet: "sh" and its tab name in PascalCase."""
+    return "sh" + "".join(part[:1].upper() + part[1:] for part in title.split("_"))
+
+
+def is_input(sheet: str, cell: Any) -> bool:
+    """Whether users type in the cell, by the colours the README sheet states: the yellow
+    input fill on every sheet, and the grey fill of a MAR40 constant on Params, which a
+    what-if may change and Checks reports. Grey elsewhere is an expected value."""
+    fill = cell.fill
+    if fill is None or fill.fill_type != "solid":
+        return False
+    colour = str(fill.fgColor.rgb)[-6:]
+    return colour == INPUT_FILL or (sheet == "Params" and colour == CONST_FILL)
+
+
+def protect_sheets(wb: Book) -> None:
+    """Protect every sheet, without a password, and unlock its input cells. Users may
+    select cells and size columns and rows; every other action is blocked, and so is
+    every change to a locked cell. Code that writes a sheet applies UserInterfaceOnly
+    to it first, as M_Main does."""
+    for ws_ in wb.worksheets:
+        for cell in list(ws_._cells.values()):
+            if is_input(ws_.title, cell):
+                cell.protection = Protection(locked=False)
+        ws_.protection.sheet = True
+        ws_.protection.formatColumns = False
+        ws_.protection.formatRows = False
+
+
+def cell_ranges(cells: set[tuple[int, int]]) -> list[str]:
+    """The cells as ranges: the runs of each row, joined with the same runs of the rows
+    below, in reading order."""
+    runs: dict[int, list[tuple[int, int]]] = {}
+    for row in sorted({r for r, _ in cells}):
+        columns = sorted(c for r, c in cells if r == row)
+        pieces = [[columns[0], columns[0]]]
+        for column in columns[1:]:
+            if column == pieces[-1][1] + 1:
+                pieces[-1][1] = column
+            else:
+                pieces.append([column, column])
+        runs[row] = [(low, high) for low, high in pieces]
+    blocks: list[list[Any]] = []
+    for row, row_runs in runs.items():
+        for low, high in row_runs:
+            for block in blocks:
+                if block[1] == row - 1 and block[2:] == [low, high]:
+                    block[1] = row
+                    break
+            else:
+                blocks.append([row, row, low, high])
+    blocks.sort(key=lambda b: (b[0], b[2]))
+    names = []
+    for top, bottom, low, high in blocks:
+        first = f"{COL(low)}{top}"
+        last = f"{COL(high)}{bottom}"
+        names.append(first if first == last else f"{first}:{last}")
+    return names
+
+
+def protection_matrix(wb: Book) -> dict[str, Any]:
+    """The protection matrix of the workbook: for each sheet by code name, its protection
+    options, the ranges of its input cells and the ranges of every other cell of its
+    used area, which are locked."""
+    sheets: dict[str, Any] = {}
+    for ws_ in wb.worksheets:
+        inputs = {(c.row, c.column) for c in ws_._cells.values() if is_input(ws_.title, c)}
+        area = {(r, c) for r in range(1, ws_.max_row + 1) for c in range(1, ws_.max_column + 1)}
+        entry: dict[str, Any] = {"protection": {"sheet": True, "formatColumns": False,
+                                                "formatRows": False}}
+        if inputs:
+            entry["input"] = cell_ranges(inputs)
+        entry["output"] = cell_ranges(area - inputs)
+        sheets[sheet_code_name(ws_.title)] = entry
+    return {"schema_version": 1, "sheets": sheets}
+
+
 def blank_outputs(ctx: Context) -> None:
     """Template only. Output areas are written by RunSSA: no formulas or constants in them."""
     wb = ctx.wb
@@ -1531,8 +1620,9 @@ def status_lines(ctx: Context) -> None:
             STATUS_CELL, FormulaRule(formula=[not_to_rely_on("$E$1")], **RED))
 
 
-def build(output: Path, template: bool) -> None:
-    """Build the workbook and save it to output: the template if template is set, else the formula prototype."""
+def assemble(template: bool) -> Book:
+    """The workbook, before it is protected and saved: the template if template is set,
+    else the formula prototype."""
     wb = Workbook()
     wb.remove(wb.active)
     ctx = Context(wb, template)
@@ -1561,8 +1651,21 @@ def build(output: Path, template: bool) -> None:
     finish_workbook(wb)
     if template:
         blank_outputs(ctx)
+    return wb
+
+
+def build(output: Path, template: bool) -> None:
+    """Build the workbook and save it to output: the template if template is set, else the formula prototype."""
+    wb = assemble(template)
+    protect_sheets(wb)
     wb.save(output)
     fix_package_times(output)
+
+
+def build_matrix(output: Path) -> None:
+    """Write the protection matrix of the template to output, as JSON."""
+    output.write_text(json.dumps(protection_matrix(assemble(True)), indent=2) + "\n",
+                      encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1573,8 +1676,13 @@ def main(argv: list[str] | None = None) -> int:
                         help=f"workbook to write (default: {DEFAULT_OUTPUT})")
     parser.add_argument("--template", action="store_true",
                         help="write the template (output areas empty) instead of the formula prototype")
+    parser.add_argument("--matrix", action="store_true",
+                        help="write the protection matrix of the template, as JSON, instead of a workbook")
     args = parser.parse_args(argv)
-    build(args.output, args.template)
+    if args.matrix:
+        build_matrix(args.output)
+    else:
+        build(args.output, args.template)
     print("saved", args.output)
     return 0
 

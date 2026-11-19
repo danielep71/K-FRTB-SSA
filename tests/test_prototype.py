@@ -12,6 +12,7 @@ import contextlib
 import datetime
 import importlib
 import io
+import json
 import os
 import re
 import subprocess
@@ -153,6 +154,119 @@ class Generator(NeedsOpenpyxl):
                     built[name], tracked[name],
                     "write the template again: python tools/prototype/build_prototype.py "
                     "src/workbook/Template.xlsx --template")
+
+    def test_the_tracked_matrix_is_what_the_generator_writes(self) -> None:
+        generator = tool("build_prototype")
+        written = generator.protection_matrix(generator.assemble(True))
+        tracked = json.loads((ROOT / "docs" / "methodology" / "workbook-protection.json")
+                             .read_text(encoding="utf-8"))
+        self.assertEqual(written, tracked,
+                         "write the matrix again: python tools/prototype/build_prototype.py "
+                         "docs/methodology/workbook-protection.json --matrix")
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "matrix.json"
+            generator.build_matrix(target)
+            self.assertEqual(target.read_text(encoding="utf-8"),
+                             (ROOT / "docs" / "methodology" / "workbook-protection.json")
+                             .read_text(encoding="utf-8"))
+
+    def test_every_sheet_is_protected_without_a_password_in_both_forms(self) -> None:
+        for path in (self.template, self.formula):
+            with zipfile.ZipFile(path) as package:
+                sheets = [name for name in package.namelist()
+                          if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name)]
+                self.assertEqual(len(sheets), 18)
+                for name in sheets:
+                    with self.subTest(path=path.name, sheet=name):
+                        element = re.search(rb"<sheetProtection[^>]*>",
+                                            package.read(name))
+                        self.assertIsNotNone(element)
+                        assert element is not None
+                        attributes = dict(re.findall(rb'(\w+)="([^"]*)"', element.group(0)))
+                        self.assertEqual(attributes[b"sheet"], b"1")
+                        # Users may size columns and rows: 0 is allowed, the default blocks.
+                        self.assertEqual(attributes[b"formatColumns"], b"0")
+                        self.assertEqual(attributes[b"formatRows"], b"0")
+                        for key in (b"password", b"hashValue", b"saltValue", b"algorithmName",
+                                    b"spinCount"):
+                            self.assertNotIn(key, attributes)
+
+    def test_only_the_cells_with_the_input_fill_are_unlocked(self) -> None:
+        assert openpyxl is not None
+        generator = tool("build_prototype")
+        for path in (self.template, self.formula):
+            book = openpyxl.load_workbook(path)
+            for sheet in book.worksheets:
+                unlocked = {cell.coordinate for row in sheet.iter_rows() for cell in row
+                            if cell.has_style and not cell.protection.locked}
+                expected = {cell.coordinate for row in sheet.iter_rows() for cell in row
+                            if generator.is_input(sheet.title, cell)}
+                with self.subTest(path=path.name, sheet=sheet.title):
+                    self.assertEqual(unlocked, expected)
+        # The colours: yellow is an input everywhere, grey only on Params, where it is a
+        # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
+        book = openpyxl.load_workbook(self.template)
+        self.assertTrue(book["Params"]["E6"].protection.locked is False)
+        self.assertTrue(book["Params"]["G31"].protection.locked is False)
+        self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
+        self.assertTrue(book["Results"]["C6"].protection.locked)
+        self.assertTrue(book["IRPositions"]["C4"].protection.locked)
+        self.assertFalse(book["IRPositions"]["C5"].protection.locked)
+
+    def test_the_vba_applies_the_options_of_the_matrix_to_the_sheets_it_writes(self) -> None:
+        matrix = json.loads((ROOT / "docs" / "methodology" / "workbook-protection.json")
+                            .read_text(encoding="utf-8"))
+        source = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode(
+            "cp1252").replace("\r\n", "\n")
+        call = re.search(r"Late\.Protect ((?:[^\n]*_\n)*[^\n]*)", source)
+        assert call is not None
+        passed = dict(re.findall(r"(\w+):=(\w+)", call.group(1).replace("_\n", " ")))
+        defaults = {"formatCells": True, "formatColumns": True, "formatRows": True,
+                    "insertColumns": True, "insertRows": True, "insertHyperlinks": True,
+                    "deleteColumns": True, "deleteRows": True, "sort": True,
+                    "autoFilter": True, "pivotTables": True, "objects": False,
+                    "scenarios": False}
+        allow = {"formatCells": "AllowFormattingCells", "formatColumns": "AllowFormattingColumns",
+                 "formatRows": "AllowFormattingRows", "insertColumns": "AllowInsertingColumns",
+                 "insertRows": "AllowInsertingRows", "insertHyperlinks": "AllowInsertingHyperlinks",
+                 "deleteColumns": "AllowDeletingColumns", "deleteRows": "AllowDeletingRows",
+                 "sort": "AllowSorting", "autoFilter": "AllowFiltering",
+                 "pivotTables": "AllowUsingPivotTables"}
+        for sheet in ("shResults", "shIRZones", "shIRLadder", "shBuckets", "shIRCalc", "shEQCalc",
+                      "shCOCalc", "shFXCalc", "shChecks"):
+            options = matrix["sheets"][sheet]["protection"]
+            with self.subTest(sheet=sheet):
+                self.assertTrue(options["sheet"])
+                self.assertEqual(passed["Contents"], "True")
+                self.assertEqual(passed["UserInterfaceOnly"], "True")
+                self.assertEqual(passed["DrawingObjects"] == "True",
+                                 options.get("objects", defaults["objects"]))
+                self.assertEqual(passed["Scenarios"] == "True",
+                                 options.get("scenarios", defaults["scenarios"]))
+                # An action the matrix does not block is passed as allowed, and only those.
+                allowed = {name for name, blocked in defaults.items()
+                           if name in allow and not options.get(name, blocked)}
+                self.assertEqual({key for key, value in passed.items()
+                                  if key.startswith("Allow") and value == "True"},
+                                 {allow[name] for name in allowed})
+
+    def test_the_sheets_that_code_writes_are_those_the_contract_names(self) -> None:
+        contract = (ROOT / "docs" / "methodology" / "WORKBOOK_CONTRACT.md").read_text(
+            encoding="utf-8")
+        table = contract.split("## Sheets\n", 1)[1].split("\n\n- **Code name:**", 1)[0]
+        rows = [[cell.strip() for cell in line.strip("|").split("|")]
+                for line in table.splitlines() if re.match(r"\| +\d+ +\|", line)]
+        self.assertEqual(len(rows), 18)
+        written = {row[1].strip("`") for row in rows if row[4] == "Yes"}
+        source = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode(
+            "cp1252").replace("\r\n", "\n")
+        listed = re.search(r"SheetNames = Array\(([^)]*)\)", source.replace("_\n", " "))
+        assert listed is not None
+        constants = re.findall(r"SH_\w+", listed.group(1))
+        config = (ROOT / "src" / "core" / "CORE_Config.bas").read_bytes().decode("cp1252")
+        names = {re.search(rf'Const {name}\s+As String = "(\w+)"', config).group(1)  # type: ignore[union-attr]
+                 for name in constants}
+        self.assertEqual(names, written)
 
     def test_two_builds_are_byte_identical_and_carry_no_clock(self) -> None:
         generator = tool("build_prototype")
