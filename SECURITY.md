@@ -14,9 +14,10 @@ reproduces in this repository.
 Do **not** disclose a suspected vulnerability in an issue, pull request,
 commit message, sample file or screenshot.
 
-Report it privately through **Security → Report a vulnerability** on this
-repository's GitHub page. The report stays visible only to you and the people
-who manage the repository's security until an advisory is published.
+Open the [repository's security advisories](https://github.com/danielep71/K-FRTB-SSA/security/advisories)
+and select **Report a vulnerability** to submit a private report. The report
+stays visible only to you and the people who manage the repository's security
+until an advisory is published.
 
 If the page has no **Report a vulnerability** button, for example because the
 repository is private, open an issue with the **🔒 Private security contact**
