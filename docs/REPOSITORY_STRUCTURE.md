@@ -16,7 +16,7 @@ them are already set in `.gitattributes`, `.editorconfig` and `.gitignore`.
 | Repository root | The README; the contribution, conduct, security, installation and release guides (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `INSTALLATION.md`, `RELEASING.md`); `CHANGELOG.md`, `AGENTS.md` and `LICENSE`; the Ruff and mypy settings in `pyproject.toml`; the Git and editor rules in `.gitattributes`, `.gitignore` and `.editorconfig`; and the [project website](WEBSITE.md), `index.html`, with the empty `.nojekyll` that publishes it without Jekyll | Present |
 | `VERSION` | The newest released version, published or not, one `X.Y.Z` line, created when the first release is prepared ([releasing](../RELEASING.md#current-status)) | Does not exist yet: no version has been released, as [current status](../RELEASING.md#current-status) also states |
 | `.github/` | Workflows (`workflows/`) and the label scripts they run (`scripts/`); issue forms (`ISSUE_TEMPLATE/`) and the pull request template; the label catalogue `labels.json`; the Dependabot configuration and the hash-locked Python packages of the tests and checks, the configuration parser and openpyxl (`requirements.txt`); the binary allowlist `binary-allowlist.json`; the Excel evidence policy `excel-evidence-policy.json`; and, when needed, the expiring link exceptions `link-exceptions.json` | Present, without `link-exceptions.json` |
-| `docs/` | Governance, setup, structure, style and the API inventory; the templates of the release certification and milestone closeout records and the pre-release maintenance audit (`docs/release/`); and the license texts, the third-party notice and its machine-readable provenance (`docs/licenses/`) | Present |
+| `docs/` | The [prototype guide](PROTOTYPE.md), governance, setup, structure, style and the API inventory; the templates of the release certification and milestone closeout records and the pre-release maintenance audit (`docs/release/`); and the license texts, the third-party notice and its machine-readable provenance (`docs/licenses/`) | Present |
 | `docs/assets/` | The repository's social preview image, `social-preview.png`, shown in the README and on the website, its editable source `social-preview.html`, and the [guide](assets/README.md) to rendering it; and the website's stylesheet, `site.css` | Present |
 | `docs/native-declarations.json` | The [register of native declarations](#native-declarations): each export a `Declare` imports, with its library, whether its zero result is ambiguous and, optionally, its ABI | Present, with no declaration |
 | `docs/methodology/` | The [index](methodology/README.md) of the guides: sources, data contract and its machine-readable form `data-contract.json`, calculation contracts, validation plan, test-case format, [workbook contract](methodology/WORKBOOK_CONTRACT.md) and [VBA test harness](methodology/TEST_HARNESS.md) | Present. The workbook contract describes the prototype; the other guides are still to fill in, with the illustrative dataset `DS-01` |
@@ -85,7 +85,9 @@ review.
 ## Public API inventory
 
 [PUBLIC_API.txt](PUBLIC_API.txt) lists every `Public` declaration under
-`src/`, in two tiers; both are empty for now.
+`src/`, in two tiers: the supported tier holds the four worksheet
+functions of `FRTBSSA_Formulas`, and the project-public tier the other
+public declarations of the engine and the workbook adapters.
 
 - **`[supported]`:** the supported API, the public declarations of the
   standard modules in `src/modules/`. A `Public` declaration is supported
