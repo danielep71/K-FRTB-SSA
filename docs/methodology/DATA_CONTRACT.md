@@ -423,11 +423,6 @@ Where the engine does not yet do what this contract says:
 | `DS-08.commodity` | Never gold | A commodity named as the gold code is calculated as a commodity | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
 | [Volume](#volume) | At most 500 rows on a position sheet | It reads and calculates every row, with no limit | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
 
-The formula workbook that the engine is compared with has a gap of its own:
-it reads a code of `DS-05`, a direction and a rate type as typed, where the
-engine reads them without the blanks at their ends
-([issue 41](https://github.com/danielep71/K-FRTB-SSA/issues/41)).
-
 ## Point-in-time data
 
 Every dataset is that of the reporting date, `as_of_date` of `DS-02`: the

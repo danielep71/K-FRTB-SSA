@@ -262,6 +262,16 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- The formula workbook that `tools/prototype/build_prototype.py` writes reads
+  a currency code of `FX_Table`, a direction and a rate type without the
+  blanks at their ends and without regard to case, as the engine does. Before,
+  a code such as `usd ` in `FX_Table` made 282 of 5,447 output cells differ,
+  and a direction such as ` long ` made 99 differ, so the comparison reported
+  differences that were not the engine's. The currencies shown on `IR_Ladder`,
+  `IR_Zones` and `Buckets` are the trimmed, upper-case codes the engine
+  writes. `tools/prototype/verify.py` types such codes in its scenario of
+  invalid rows. The engine, the template and the sample data's result do not
+  change (#41).
 - The template no longer calls the re-calculation of the sample data
   independent. The `TestCatalogue` sheet and the sheet list on `Home` name it
   as the project's own re-calculation, whose values are illustrative, as the

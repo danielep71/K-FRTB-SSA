@@ -379,12 +379,18 @@ class Generator(NeedsOpenpyxl):
                                             f"{sheet.title}!{cell.coordinate}")
         # A typed text is read as the engine reads it.
         self.assertEqual(calc["C5"].value, '=IFERROR(TRIM(IRPositions!C5),"#ERROR")')
-        self.assertIn('IF(AND(IFERROR(IRPositions!G5,"#ERROR")<>"Long",'
-                      'IFERROR(IRPositions!G5,"#ERROR")<>"Short"),', str(calc["D5"].value))
+        # A direction and a rate type are read without the blanks at their ends.
+        self.assertIn('IF(AND(IFERROR(TRIM(IRPositions!G5),"#ERROR")<>"Long",'
+                      'IFERROR(TRIM(IRPositions!G5),"#ERROR")<>"Short"),', str(calc["D5"].value))
+        self.assertIn('IFERROR(TRIM(IRPositions!I5),"#ERROR")="Floating"', str(calc["D5"].value))
         self.assertIsNone(openpyxl.load_workbook(self.template)["IRCalc"]["Z4"].value)
-        # A blank currency is not one of FX_Table, whose unused rows are blank.
-        self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(FX_Ccy)=UPPER($E5))*1)=0),'
+        # A blank currency is not one of FX_Table, whose unused rows are blank, and a
+        # code of FX_Table is read trimmed and without regard to case.
+        self.assertIn('IF(OR($E5="",SUMPRODUCT((UPPER(TRIM(FX_Ccy))=UPPER(TRIM($E5)))*1)=0),'
                       '"INVALID: currency not in FX_Table"', str(calc["D5"].value))
+        self.assertEqual(book["IR_Ladder"]["C6"].value,
+                         '=IF(OR(UPPER(TRIM(INDEX(FX_Ccy,1)))="",UPPER(TRIM(INDEX(FX_Ccy,1)))=GoldCode),'
+                         '"",UPPER(TRIM(INDEX(FX_Ccy,1))))')
         self.assertEqual(book["IR_Ladder"]["I6"].value,
                          '=IF($C6="",0,SUMPRODUCT((UPPER(IRCalc!$E$5:$E$504)=UPPER($C6))'
                          '*(IRCalc!$K$5:$K$504=$D6)*(IRCalc!$G$5:$G$504>0)*1,IRCalc!$G$5:$G$504))')
