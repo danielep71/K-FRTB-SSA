@@ -29,6 +29,15 @@
       "certification_log": "workbook-certification.log"
     },
     {
+      "name": "probes",
+      "source": "tests/modules/TEST_Probes.bas",
+      "certification_entry_point": "CertifyProbes",
+      "expected_cases": 6,
+      "expected_assertions": 42,
+      "log": "probes.log",
+      "certification_log": "probes-certification.log"
+    },
+    {
       "name": "cases",
       "source": "tests/modules/TEST_Cases.bas",
       "certification_entry_point": "CertifyCases",

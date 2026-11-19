@@ -255,10 +255,11 @@ class ProjectSuitesTest(unittest.TestCase):
             found.append((entry, text, bodies, re.findall(r"^\s+(Case\w+)$", runner, re.M)))
         return found
 
-    def test_the_policy_lists_the_three_suites_of_the_project(self) -> None:
+    def test_the_policy_lists_the_four_suites_of_the_project(self) -> None:
         self.assertEqual([(entry["name"], entry["source"]) for entry in self.suites],
                          [("core", "tests/modules/TEST_Suite.bas"),
                           ("workbook", "tests/modules/TEST_Workbook.bas"),
+                          ("probes", "tests/modules/TEST_Probes.bas"),
                           ("cases", "tests/modules/TEST_Cases.bas")])
 
     def test_the_runner_calls_every_case_once(self) -> None:
@@ -371,6 +372,30 @@ class ProjectSuitesTest(unittest.TestCase):
                 # What a case changes it puts back: as many restorations as changes.
                 self.assertEqual(len(re.findall(r"^\s+Saved(?:Range)? = ", body, re.M)),
                                  len(re.findall(r" = Saved(?:Range)?$", body, re.M)), name)
+
+    def test_the_probes_suite_removes_what_it_appends_and_ends_with_the_outputs_cleared(
+            self) -> None:
+        text = source(ROOT / "tests/modules/TEST_Probes.bas")
+        bodies = procedures(text)
+        called = re.findall(r"^\s+(Case\w+)$", bodies["RunSuite"], re.M)
+        for name in called:
+            body = bodies[name]
+            with self.subTest(case=name):
+                if "AppendRows " in body:
+                    # Rows appended under a table are removed on the success and the
+                    # error path, and the removal is asserted once.
+                    self.assertRegex(body, r"\nCleanUp:\n\s+On Error GoTo 0\n(?:.*\n)*?"
+                                     r"\s+If RestoreDue Then\n\s+Detail = RemoveAppended\(\)")
+                    self.assertEqual(body.count('"appended-rows-removed"'), 1)
+                    self.assertLess(body.index("RestoreDue = True"), body.index("AppendRows "))
+        last = code(bodies[called[-1]])
+        self.assertLess(last.rindex("RunSSA_Silent()"), last.rindex("ClearOutputs_Silent()"))
+        # What a case changes is put back in its cleanup, which runs on both paths.
+        self.assertIn("If Changed Then Target.Value = KeptValue", bodies[called[-1]])
+        self.assertIn("ThisWorkbook.Saved = WasSaved", bodies[called[-1]])
+        # No other record than the harness's own may enter a log: the evidence check
+        # reads the whole sequence, so the suite never writes one itself.
+        self.assertNotRegex(code(text), r"TEST_Harness\.(?:Say|Echo|SaveLog)\b(?![^\n]*Folder)")
 
     def test_the_guides_name_each_suite_and_its_entry_points(self) -> None:
         guide = GUIDE.read_text(encoding="utf-8")

@@ -65,6 +65,25 @@ Use only the categories an entry needs.
 
 ### Added
 
+- A `probes` suite for the first Excel run, `tests/modules/TEST_Probes.bas`:
+  6 cases and 42 assertions that measure what the workbook relies on Excel
+  to do. An error value typed in an input cell reads as `#ERROR` where an
+  output shows that text, and no output cell holds an error value; a text
+  that reads as a number keeps its digits when it is written through the
+  cell's format; a range of several cells is a table; the status line shows
+  on the other output sheets after a run; and the status check leaves the
+  save state as the guides say. It is listed in the evidence policy, so an
+  Excel run must hold its logs, and the `Host behaviour` table of the
+  validation plan has an entry, `HB-08` to `HB-14`, for each behaviour,
+  all `assumed`. `INSTALLATION.md` has the host checks that only a person
+  can make: the two workbook events, the open and close without a change,
+  and the round trip. The suite passes in LibreOffice except for eight
+  assertions on error values, which LibreOffice cannot hold; nothing was
+  run in Excel (#22). `tools/devbuild/lo_smoke.py` judges the RESULT line of
+  every run on its own, so that a known failure never hides a host state
+  that was not restored, a recovery that is required or a run that was
+  refused.
+
 - The registered test cases run in the workbook. `tests/modules/TEST_Cases.bas`
   is the `cases` suite of the test harness: 18 cases and 345 assertions, one
   case per test case and one assertion per expected output, plus the

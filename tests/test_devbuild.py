@@ -931,12 +931,21 @@ class LibreOfficeSmoke(unittest.TestCase):
         self.assertEqual(output.getvalue().strip(),
                          "lo-smoke: FAIL (build: src/forms: forms are not built (frmInput))")
 
-    def smoke(self, project_result: str = "RESULT=PASS; suite=project",
+    @staticmethod
+    def result_line(suite: str = "project", **changed: str) -> str:
+        """The RESULT line of a run of the harness; ``changed`` replaces a field."""
+        fields = {"RESULT": "PASS", "suite": suite, "operation": "PASS",
+                  "completeness": "COMPLETE", "cases": "1", "assertions": "1", "failures": "0",
+                  "cleanup": "PASS", "recovery": "NONE"} | changed
+        return "; ".join(f"{name}={value}" for name, value in fields.items())
+
+    def smoke(self, project_result: str = "",
               project_results: str = '{"kind": "test-results"}'
               ) -> tuple[int, dict[str, Any], list[tuple[str, ...]], check_excel_run.Policy]:
         """Exit code and summary of main with LibreOffice replaced by mocks, on a policy
         with other names and one project suite, whose run ends with ``project_result``
-        and whose results file holds ``project_results``."""
+        (a passing run when empty) and whose results file holds ``project_results``."""
+        project_result = project_result or self.result_line()
         data = json.loads((ROOT / check_excel_run.POLICY).read_text(encoding="utf-8"))
         data["suite"]["source"] = "tests/modules/TEST_Renamed.bas"
         data["suite"]["certification_entry_point"] = "CertifyRenamed"
@@ -958,7 +967,9 @@ class LibreOfficeSmoke(unittest.TestCase):
             called.append(procedures)
             for name in policy.logs.values():
                 failure = "FAILURE=exact-double/half-plus-quarter\n" if name == injected else ""
-                (folder / name).write_text(f"{failure}RESULT=DONE\n", encoding="utf-8")
+                ending = self.result_line("examples", RESULT="FAIL", operation="FAIL",
+                                          failures="1") if failure else self.result_line("examples")
+                (folder / name).write_text(f"{failure}{ending}\n", encoding="utf-8")
             (folder / policy.certification).write_text("CERTIFIED\n", encoding="utf-8")
             (folder / policy.results).write_text('{"kind": "test-results"}', encoding="utf-8")
             (folder / "project.log").write_text(f"{project_result}\n", encoding="utf-8")
@@ -1002,17 +1013,65 @@ class LibreOfficeSmoke(unittest.TestCase):
 
     def test_a_project_suite_whose_run_does_not_pass_is_unexpected(self) -> None:
         # No failure line: a refused start ends so.
-        code, summary, _, _ = self.smoke(
-            project_result="RESULT=FAIL; suite=project; operation=NOT_RUN")
-        self.assertEqual(summary["unexpected"],
-                         ["project.log: RESULT=FAIL; suite=project; operation=NOT_RUN"])
+        refused = self.result_line(RESULT="FAIL", operation="NOT_RUN", completeness="INCOMPLETE",
+                                   cases="0", assertions="0", cleanup="NOT_RUN",
+                                   recovery="REQUIRED")
+        code, summary, _, _ = self.smoke(project_result=refused)
+        self.assertEqual(summary["unexpected"], [
+            f"project.log: operation=NOT_RUN, cleanup=NOT_RUN, recovery=REQUIRED, "
+            f"completeness=INCOMPLETE, it failed and names no failure: {refused}"])
         self.assertEqual(code, 1)
+        # A failure line is judged by what LibreOffice is known to cause.
+        failing = self.result_line(RESULT="FAIL", operation="FAIL", failures="1")
         code, summary, _, _ = self.smoke(
-            project_result="FAILURE=some-case/some-assertion; expected=1\nRESULT=FAIL; x")
+            project_result=f"FAILURE=some-case/some-assertion; expected=1\n{failing}")
         self.assertEqual(summary["unexpected"],
-                         ["project.log: FAILURE=some-case/some-assertion; expected=1",
-                          "project.log: RESULT=FAIL; x"])
+                         ["project.log: FAILURE=some-case/some-assertion; expected=1"])
         self.assertEqual(code, 1)
+        known = sorted(lo_smoke.KNOWN_FAILURES)[0]
+        code, summary, _, _ = self.smoke(project_result=f"FAILURE={known}; expected=1\n{failing}")
+        self.assertEqual((summary["unexpected"], code), ([], 0))
+
+    def test_a_known_failure_does_not_hide_what_the_result_line_says(self) -> None:
+        # The harness reports a host state that was not restored, a recovery that is
+        # required and a refused start in the RESULT line, with no failure line of their
+        # own; a known failure of the run, or one a refused start leaves in the log from
+        # the run before, must not make the tool ignore them.
+        known = sorted(lo_smoke.KNOWN_FAILURES)[0]
+        for changed, reported in (
+                ({"cleanup": "FAIL"}, "cleanup=FAIL"),
+                ({"recovery": "REQUIRED"}, "recovery=REQUIRED"),
+                ({"cleanup": "FAIL", "recovery": "REQUIRED"}, "cleanup=FAIL, recovery=REQUIRED"),
+                ({"operation": "NOT_RUN", "cleanup": "NOT_RUN"}, "operation=NOT_RUN, cleanup=NOT_RUN"),
+                ({"completeness": "INCOMPLETE"}, "completeness=INCOMPLETE")):
+            line = self.result_line(RESULT="FAIL", failures="1", **changed)
+            with self.subTest(changed=changed):
+                code, summary, _, _ = self.smoke(
+                    project_result=f"FAILURE={known}; expected=1\n{line}")
+                self.assertEqual(summary["unexpected"], [f"project.log: {reported}: {line}"])
+                self.assertEqual(code, 1)
+
+    def test_a_run_that_failed_and_names_no_failure_is_unexpected(self) -> None:
+        line = self.result_line(RESULT="FAIL", operation="FAIL", failures="1")
+        code, summary, _, _ = self.smoke(project_result=line)
+        self.assertEqual(summary["unexpected"],
+                         [f"project.log: it failed and names no failure: {line}"])
+        self.assertEqual(code, 1)
+
+    def test_the_example_suite_runs_must_restore_the_host_too(self) -> None:
+        policy = check_excel_run.working_policy(ROOT)
+        logs = {name: {"result": self.result_line("examples", cleanup="FAIL"), "failures": []}
+                for name in policy.logs.values()}
+        problems = lo_smoke.result_problems(logs, policy)
+        self.assertEqual(len(problems), 3)
+        self.assertTrue(all("cleanup=FAIL" in item for item in problems))
+        # The skipped case is incomplete by design, and the injected failure fails by design.
+        logs = {name: {"result": self.result_line("examples", RESULT="FAIL", operation="FAIL",
+                                                 completeness="INCOMPLETE", failures="1"),
+                       "failures": ["FAILURE=x"]} for name in policy.logs.values()}
+        self.assertEqual(lo_smoke.result_problems(logs, policy), [])
+        self.assertEqual(lo_smoke.result_fields("RESULT=PASS; cleanup=PASS"),
+                         {"RESULT": "PASS", "cleanup": "PASS"})
 
     def test_a_project_results_file_that_is_not_one_is_unexpected(self) -> None:
         code, summary, _, _ = self.smoke(project_results="not JSON")

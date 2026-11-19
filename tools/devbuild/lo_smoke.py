@@ -12,8 +12,10 @@ logs and the results files are the names that
 .github/excel-evidence-policy.json gives. Then it prints a JSON summary: the
 modules LibreOffice loaded, the error each certification raised, each run
 log's RESULT and failures, the certification logs, the results files, and the
-failures that LibreOffice is not known to cause: none is known in a project
-suite, whose run must pass. It exits 0 when there is none, 1 when
+failures that LibreOffice is not known to cause, and what the RESULT line of a
+run says that no failure line does: a run that was refused, a host state that
+was not restored, a recovery that is required, and, in a project suite, a run
+that is incomplete. It exits 0 when there is none, 1 when
 there is one, a certification wrote no log, the build of the development
 workbook fails (lo-smoke: FAIL (build: ...)), or LibreOffice could not open
 the workbook or run it, and 2 when an option is unknown, WORKBOOK does not
@@ -30,7 +32,11 @@ valid VBA differently in known ways:
   TEST_Harness.Echo;
 - Application.Build does not exist, so ENVIRONMENT has an empty build;
 - after a call that raised under On Error Resume Next, Err.Number reads 0,
-  so the assertions on raised errors fail (KNOWN_FAILURES below).
+  so the assertions on raised errors fail (KNOWN_FAILURES below);
+- a cell given an error value by VBA, CVErr(#N/A), stays empty, and an error
+  value typed in a cell reads as 0 in the engine, so the probes of the
+  probes suite that read an error value fail (KNOWN_FAILURES below); that
+  suite passes every other assertion.
 """
 
 from __future__ import annotations
@@ -66,6 +72,15 @@ KNOWN_FAILURES = frozenset({
     "cleanup-each-restoration-failure/calculation-cleanup-error",
     "cleanup-each-restoration-failure/screen-cleanup-error",
     "cleanup-only-failure/cleanup-error",
+    # The probes suite, on an error value in a cell.
+    "error-values-in-inputs/issue-key-of-an-issue-id-typed-as-an-error",
+    "error-values-in-inputs/issue-key-of-another-issue-id-typed-as-an-error",
+    "error-values-in-inputs/net-of-the-issue-of-error-ids",
+    "error-values-in-inputs/net-of-the-issue-on-its-second-row",
+    "error-values-in-inputs/currency-typed-as-an-error",
+    "error-values-in-inputs/position-id-typed-as-an-error",
+    "reading-an-error-value/error-value-is-read-as-an-error",
+    "reading-an-error-value/error-value-reads-as-the-error-text",
 })
 # The failure each deliberate failure mode is designed to produce, by mode.
 DESIGNED = {"INJECTED_FAILURE": frozenset({"exact-double/half-plus-quarter"}),
@@ -274,7 +289,7 @@ def main(argv: list[str] | None = None) -> int:
     summary["project_results"] = {name: content for name, content in results.items()
                                   if name != policy.results}
     found = unexpected(summary["logs"], designed(policy))  # type: ignore[arg-type]
-    found += not_passed(summary["logs"], policy)  # type: ignore[arg-type]
+    found += result_problems(summary["logs"], policy)  # type: ignore[arg-type]
     found += [f"{name}: not written as a test-results file" for name, content in results.items()
               if not isinstance(content, dict) or content.get("kind") != "test-results"]
     summary["unexpected"] = found
@@ -299,13 +314,53 @@ def unexpected(logs: dict[str, Any], expected: Mapping[str, frozenset[str]]) -> 
     return found
 
 
-def not_passed(logs: dict[str, Any], policy: check_excel_run.Policy) -> list[str]:
-    """The project suites whose run did not pass: no failure is known in one, so a
-    run that was refused, or that ended without a failure line, is reported too."""
-    return [f"{item.log}: {logs[item.log]['result'] or 'no RESULT'}"
-            for item in policy.project_suites
-            if isinstance(logs.get(item.log), dict)
-            and not logs[item.log]["result"].startswith("RESULT=PASS;")]
+def result_fields(line: str) -> dict[str, str]:
+    """The fields of a RESULT line of the harness, such as ``cleanup`` and ``recovery``."""
+    fields = {}
+    for part in line.split("; "):
+        name, _, value = part.partition("=")
+        fields[name] = value
+    return fields
+
+
+def result_problems(logs: dict[str, Any], policy: check_excel_run.Policy) -> list[str]:
+    """What the RESULT line of each run log says that no failure line does. A failure
+    line is judged by ``unexpected``, which knows the few that LibreOffice causes; the
+    result is judged here whether or not such a line is there, because the harness
+    reports a host state that was not restored, or a run that was refused, without one:
+
+    - every run must have been executed (``operation`` is not ``NOT_RUN``), and ended
+      with ``cleanup=PASS`` and ``recovery=NONE``;
+    - a project suite's run must also be complete, and may end ``FAIL`` only with a
+      failure line to account for it: a run that passes ends ``RESULT=PASS``.
+
+    The deliberate failure modes of the example suite end ``FAIL``, and the skipped
+    case is incomplete, by design."""
+    names = [*policy.logs.values(), *(item.log for item in policy.project_suites)]
+    project = {item.log for item in policy.project_suites}
+    found = []
+    for name in names:
+        content = logs.get(name)
+        if not isinstance(content, dict):
+            continue
+        fields = result_fields(content["result"])
+        problems = []
+        if fields.get("RESULT") not in ("PASS", "FAIL"):
+            problems.append("no RESULT")
+        if fields.get("operation") in (None, "NOT_RUN", "ERROR"):
+            problems.append(f"operation={fields.get('operation')}")
+        if fields.get("cleanup") != "PASS":
+            problems.append(f"cleanup={fields.get('cleanup')}")
+        if fields.get("recovery") != "NONE":
+            problems.append(f"recovery={fields.get('recovery')}")
+        if name in project:
+            if fields.get("completeness") != "COMPLETE":
+                problems.append(f"completeness={fields.get('completeness')}")
+            if fields.get("RESULT") != "PASS" and not content["failures"]:
+                problems.append("it failed and names no failure")
+        if problems:
+            found.append(f"{name}: {', '.join(problems)}: {content['result'] or 'no RESULT'}")
+    return found
 
 
 if __name__ == "__main__":
