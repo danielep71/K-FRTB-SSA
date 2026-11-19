@@ -178,12 +178,14 @@ leaves out.
 
 - **MAR40.** Every parameter of the engine equals the text of the Basel
   Framework chapter in force from 2023-01-01, compared on 2026-11-16.
-- **Test cases.** 18 [test cases](methodology/TEST_CASES.md) run on the
-  engine in LibreOffice and agree with their expected values. Two values are
-  published in MAR40.61, the overall net open position and the requirement
-  of the example of table 9. The other 325 are `illustrative`: I derived them
-  from the contracts, as I wrote the engine from them, so their agreement
-  validates no rule.
+- **Test cases.** 20 [test cases](methodology/TEST_CASES.md) run on the
+  engine in LibreOffice and agree with their expected values. 16 values are
+  published: two of the example of table 9 of MAR40.61, the overall net open
+  position and the requirement; three of the example of MAR40.27, the
+  vertical disallowance of one band; and eleven of the worked example of the
+  maturity method in the 2005 update of the 1996 Amendment. The other 350 are
+  `illustrative`: I derived them from the contracts, as I wrote the engine
+  from them, so their agreement validates no rule.
 - **Tests of the code.** Four VBA suites run under the
   [test harness](methodology/TEST_HARNESS.md), in LibreOffice only.
 - **Excel.** The workbook has not been compiled or run in Excel, so no

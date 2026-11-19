@@ -65,6 +65,22 @@ Use only the categories an entry needs.
 
 ### Added
 
+- Two test cases with `published` values for the interest rate calculation,
+  the maturity method, which had none: `mar40-27-vertical-disallowance`, the
+  example of MAR40.27 (USD 100 million of weighted longs and USD 90 million of
+  weighted shorts give a vertical disallowance of USD 9 million), and
+  `bcbs119-c2-maturity-method`, the worked example C.2 of the Basel
+  Committee's 2005 update of its 1996 market risk amendment, which the Basel
+  Framework does not repeat: six legs, their weighted positions, the vertical
+  and within-zone disallowances, the net position charge and a charge of
+  $4,580,000. The amendment is registered as `SRC-03` for those printed
+  values only, because the ladder weights, the disallowance percentages and
+  the zones are those of MAR40.26 to MAR40.28. The engine reproduces them in
+  LibreOffice, to a tolerance of 500 for the example that prints positions to
+  0.01 mn. The validation plan records where each calculation's reference
+  values come from: no other has a published example, no independent
+  implementation was found, and the accuracy contract `ACC-03` is a draft, as
+  a frozen one needs three holdout cases. Nothing was run in Excel (#47).
 - The template protects its sheets. All 18 are protected, without a password,
   and only the input cells are unlocked: the yellow cells, and on `Params`
   the grey cells of the MAR40 constants, which a what-if may change. Users

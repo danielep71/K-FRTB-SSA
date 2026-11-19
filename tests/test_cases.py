@@ -164,7 +164,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 18)
+        self.assertEqual(len(self.cases), 20)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -208,7 +208,28 @@ class Registered(unittest.TestCase):
                 if reference["class"] == "published":
                     published.append((name, output["quantity"], output["value"], reference["source"],
                                       reference["locator"], output["tolerance"]["absolute"]))
+        # What each source prints: table 10 and paragraphs 2 and 3 of example C.2 of SRC-03,
+        # whose positions are printed to 0.01 mn (tolerance 500); MAR40.27, which prints whole
+        # millions (tolerance 500,000); table 9 of MAR40.61.
+        c2 = "bcbs119-c2-maturity-method"
+        v27 = "mar40-27-vertical-disallowance"
         self.assertEqual(published, [
+            (c2, "ir_weighted_position", 500000.0, "SRC-03", "Part C.2, table 10, 7 to 10 years", 500),
+            (c2, "ir_weighted_position", 150000.0, "SRC-03", "Part C.2, table 10, 1 to 3 months", 500),
+            (c2, "ir_weighted_position", 1050000.0, "SRC-03", "Part C.2, table 10, 6 to 12 months", 500),
+            (c2, "ir_weighted_position", -5625000.0, "SRC-03", "Part C.2, table 10, 7 to 10 years", 500),
+            (c2, "ir_weighted_position", 1125000.0, "SRC-03",
+             "Part C.2, table 10, the position of the future in zone 2", 500),
+            (c2, "ir_weighted_position", -200000.0, "SRC-03", "Part C.2, table 10, 3 to 6 months", 500),
+            (c2, "ir_vertical_disallowance", 50000.0, "SRC-03", "Part C.2, paragraph 2(a)", 500),
+            (c2, "ir_horizontal_disallowance_within_zones", 80000.0, "SRC-03",
+             "Part C.2, paragraph 2(b)", 500),
+            (c2, "ir_net_position_charge", 3000000.0, "SRC-03", "Part C.2, paragraph 2(e)", 500),
+            (c2, "ir_general_market_risk_charge", 4580000.0, "SRC-03", "Part C.2, paragraph 3", 500),
+            (c2, "ir_general_market_risk_charge", 4580000.0, "SRC-03", "Part C.2, paragraph 3", 500),
+            (v27, "ir_weighted_position", 100000000.0, "SRC-02", "MAR40.27", 500000),
+            (v27, "ir_weighted_position", -90000000.0, "SRC-02", "MAR40.27", 500000),
+            (v27, "ir_vertical_disallowance", 9000000.0, "SRC-02", "MAR40.27", 500000),
             ("mar40-61-table-9", "fx_overall_net_open_position", 335.0, "SRC-02", "MAR40.61, table 9",
              0.5),
             ("mar40-61-table-9", "fx_charge", 26.8, "SRC-02", "MAR40.61, table 9", 0.05)])
@@ -227,7 +248,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 18)
+        self.assertEqual(len(names), 20)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])
