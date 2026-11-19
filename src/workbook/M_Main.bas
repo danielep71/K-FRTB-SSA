@@ -475,9 +475,12 @@ Public Sub AllowWriting( _
 ' ERROR POLICY
 '   Raises ERR_LAYOUT, with the sheet and the reason, when Excel refuses:
 '   a sheet that someone protected with a password cannot be protected
-'   again, or unprotected, without it. A host that does not know the options
-'   of Protect, such as LibreOffice's VBA mode, which is not a supported
-'   host, gets the sheet unprotected.
+'   again, or unprotected, without it. The attempt to unprotect passes an
+'   empty password, so that Excel raises the error and never asks for the
+'   password: a run that nobody watches, such as the check when the
+'   workbook opens or is saved, is not stopped by a dialog. A host that
+'   does not know the options of Protect, such as LibreOffice's VBA mode,
+'   which is not a supported host, gets the sheet unprotected.
 '
 ' UPDATED
 '   2026-11-19
@@ -496,12 +499,18 @@ Public Sub AllowWriting( _
         Exit Sub
 
 Narrow:
+        'Leave the handler before the next call, so that an error of that call
+        'reaches Failed and not the caller.
+        Resume Unprotecting
+
+Unprotecting:
         'A host that does not know those options, as LibreOffice's VBA mode does not
         'and which clears a protected sheet only after it is unprotected, gets the
         'sheet unprotected. Excel gets here only when it refuses the call above,
-        'and refuses to unprotect a sheet that has a password too.
+        'and refuses to unprotect a sheet that has a password too: the empty
+        'password makes it raise an error instead of asking for one.
         On Error GoTo Failed
-        Sheet.Unprotect
+        Sheet.Unprotect ""
         Exit Sub
 
 Failed:
