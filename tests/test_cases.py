@@ -42,6 +42,10 @@ def derived(case: dict[str, Any]) -> dict[tuple[str, str | None], Any]:
             output.get("value", output.get("text")) for output in ssa.derive(case)}
 
 
+INSTRUMENT = ("INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg "
+              "or Other")
+
+
 def ir_case(**inputs: object) -> dict[str, Any]:
     """A fixture with one interest rate row, valid unless inputs change it."""
     row = {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long",
@@ -87,6 +91,13 @@ class Derivation(unittest.TestCase):
             # A row that fails several tests reports the first of the contract's list.
             ({"currency_code": "ZAR", "direction_code": "Buy"}, "INVALID: currency not in FX_Table"),
             ({"currency_code": " eur "}, "OK"),
+            # An instrument is one of the seven values of DS-06, whatever its case and blanks;
+            # the test comes before the currency's.
+            ({"instrument_code": " swap LEG "}, "OK"),
+            ({"instrument_code": "Swap  leg"}, INSTRUMENT),
+            ({"instrument_code": "Securitisation"}, INSTRUMENT),
+            ({"instrument_code": None}, INSTRUMENT),
+            ({"instrument_code": "Equity", "currency_code": "ZAR"}, INSTRUMENT),
             ({"currency_code": "XAU"}, "INVALID: gold is FX risk; enter it on FXPositions"),
             ({"direction_code": " long "}, "OK"),
             ({"position_value_amount": True}, "INVALID: Position value must be a number"),
@@ -107,6 +118,23 @@ class Derivation(unittest.TestCase):
         for inputs, status in cases:
             with self.subTest(inputs=inputs):
                 self.assertEqual(derived(ir_case(**inputs))[("ir_position_status", "P1")], status)
+
+    def test_a_commodity_that_is_gold_is_rejected_before_its_other_fields_are_read(self) -> None:
+        records = [{"id": f"C{number}", "inputs": {
+            "commodity_code": commodity, "direction_code": "Sell", "quantity_count": 1,
+            "spot_price_amount": 1, "currency_code": "USD"}}
+            for number, commodity in enumerate((" xau ", "Copper", None))]
+        case = {"calculation": "CALC-05", "reporting_date": "2026-12-31",
+                "reporting_currency_code": "EUR",
+                "datasets": {"DS-05": [{"id": "EUR", "inputs": {"fx_rate": 1.0}},
+                                       {"id": "USD", "inputs": {"fx_rate": 0.9}}],
+                             "DS-08": records}}
+        outputs = derived(case)
+        self.assertEqual(outputs[("co_position_status", "C0")],
+                         "INVALID: gold is FX risk; enter it on FXPositions")
+        self.assertEqual(outputs[("co_position_status", "C1")],
+                         "INVALID: Direction must be Long or Short")
+        self.assertEqual(outputs[("co_position_status", "C2")], "INVALID: Commodity missing")
 
     def test_an_entered_issue_never_nets_with_a_position_without_one(self) -> None:
         case = ir_case(sr_category_code="OTHER", rating_grade_code="BB+ to BB-")

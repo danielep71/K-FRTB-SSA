@@ -75,7 +75,7 @@ Attribute VB_Name = "TEST_Cases"
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "cases"
         Private Const EXPECTED_CASES      As Long = 18
-        Private Const EXPECTED_ASSERTIONS As Long = 345
+        Private Const EXPECTED_ASSERTIONS As Long = 348
     'The inputs a test case replaces (InputArea).
         Private Const INPUT_AREAS         As Long = 11    'Areas kept and put back
         Private Const INPUT_ROWS          As Long = 500   'Fewest rows of a position sheet kept
@@ -105,7 +105,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=18; assertions=345; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=18; assertions=348; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' STATE OWNERSHIP
 '   Replaces the inputs for each case and puts them back; leaves the
@@ -624,7 +624,7 @@ Private Sub InputsIllustrativeInvalidCoPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
         ClearInputs
@@ -646,15 +646,18 @@ Private Sub InputsIllustrativeInvalidCoPositions()
         PutRow NM_CO_POS_HEADER, 1, Array("X-DUP", Empty, "Copper", "Long", 1, Empty, 1, "USD")
         PutRow NM_CO_POS_HEADER, 2, Array("x-dup", Empty, "Copper", "Long", 1, Empty, 1, "USD")
         PutRow NM_CO_POS_HEADER, 3, Array("X-NAME", Empty, Empty, "Long", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 4, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 5, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
+        PutRow NM_CO_POS_HEADER, 4, Array("X-GOLDNAME", Empty, "XAU", "Long", 1, Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 6, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 7, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, Empty, _
+        PutRow NM_CO_POS_HEADER, 5, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 6, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 8, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
-        PutRow NM_CO_POS_HEADER, 9, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, "XAU")
-        PutRow NM_CO_POS_HEADER, 10, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 7, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 8, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, Empty, _
+            "USD")
+        PutRow NM_CO_POS_HEADER, 9, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
+        PutRow NM_CO_POS_HEADER, 10, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, _
+            "XAU")
+        PutRow NM_CO_POS_HEADER, 11, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
 
 End Sub
 
@@ -674,7 +677,7 @@ Private Sub CaseIllustrativeInvalidCoPositions()
 '   sheets; puts the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
     Dim ResultText   As String    'RunSSA_Silent result line, not compared
@@ -693,22 +696,25 @@ Private Sub CaseIllustrativeInvalidCoPositions()
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_CO_CALC_HEADER, 2, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-name", _
             "INVALID: Commodity missing", PlainText(RowCell(NM_CO_CALC_HEADER, 3, 1))
+        TEST_Harness.AssertEqualText "co-position-status-of-x-goldname", _
+            "INVALID: gold is FX risk; enter it on FXPositions", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 4, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_CO_CALC_HEADER, _
-            4, 1))
+            5, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-qty", _
-            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 5, 1))
+            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-neg", _
             "INVALID: Quantity must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 7, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-price", _
-            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 7, 1))
+            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
-        TEST_Harness.AssertEqualText "co-position-status-of-x-gold", _
             "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 9, 1))
+        TEST_Harness.AssertEqualText "co-position-status-of-x-gold", _
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
         TEST_Harness.AssertEqualText "co-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 11, 1))
 
 CleanUp:
         On Error GoTo 0
@@ -974,7 +980,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
         ClearInputs
@@ -997,37 +1003,41 @@ Private Sub InputsIllustrativeInvalidIrPositions()
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
         PutRow NM_IR_POS_HEADER, 2, Array("x-dup", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 3, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 4, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 5, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
-            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 6, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
+        PutRow NM_IR_POS_HEADER, 3, Array("X-INSTR", Empty, "Securitisation", "EUR", "Long", _
+            1, "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 4, Array("X-NOINSTR", Empty, Empty, "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 7, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 5, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 8, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 6, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 7, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 8, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 9, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 10, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
             "Variable", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 9, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
-            0.05, Empty, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 10, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 11, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, _
+            "Fixed", 0.05, Empty, Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 12, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, 20311231, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 11, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 13, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2026, 9, 29), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 12, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 14, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 13, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 15, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 14, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 16, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), 20270101, "NONE")
-        PutRow NM_IR_POS_HEADER, 15, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 17, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), DateSerial(2029, 6, 27), "NONE")
-        PutRow NM_IR_POS_HEADER, 16, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 18, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "CORP", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 17, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 19, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "OTHER", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 18, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 20, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
 
 End Sub
@@ -1049,7 +1059,7 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '   sheets; puts the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-19
 '==============================================================================
 '
     Dim ResultText   As String    'RunSSA_Silent result line, not compared
@@ -1066,51 +1076,57 @@ Private Sub CaseIllustrativeInvalidIrPositions()
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-instr", _
+            "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-noinstr", _
+            "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-gold", _
             "INVALID: gold is FX risk; enter it on FXPositions", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            5, 1))
+            7, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-text", _
             "INVALID: Position value must be a number", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            6, 1))
+            8, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-neg", _
             "INVALID: Position value must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 7, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-type", _
             "INVALID: Rate type must be Fixed or Floating", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 8, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 10, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nomat", _
-            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
+            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 11, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-notdate", _
             "INVALID: Final maturity date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            10, 1))
+            12, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-past", _
             "INVALID: final maturity before AsOfDate", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            11, 1))
+            13, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nocpn", _
             "INVALID: Coupon required for a fixed-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 12, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 14, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-norep", _
             "INVALID: Next repricing date required for a floating-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 13, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-repnotdate", _
             "INVALID: Next repricing date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            14, 1))
+            16, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-replate", _
             "INVALID: repricing date outside AsOfDate to final maturity", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-cat", _
             "INVALID: SR category must be GOV, QUAL, OTHER or NONE", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 16, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 18, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-grade", _
             "INVALID: no MAR40.6 charge for this category and rating grade", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 19, 1))
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 18, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 20, 1))
 
 CleanUp:
         On Error GoTo 0

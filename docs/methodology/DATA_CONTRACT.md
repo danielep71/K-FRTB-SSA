@@ -153,7 +153,7 @@ Read from the sheet `IRPositions`.
 | --- | --- | --- | --- | --- | --- |
 | `position_id` | Text | — | Yes | Any | Column PositionID. Unique on the sheet, without regard to case |
 | `portfolio` | Text | — | No | Any | Column Portfolio. Not read |
-| `instrument` | Text | — | Yes | `Bond`, `FRN`, `Swap leg`, `Future leg`, `FRA leg`, `Forward leg`, `Other` | Column Instrument. Not read yet: issue 44 |
+| `instrument` | Text | — | Yes | `Bond`, `FRN`, `Swap leg`, `Future leg`, `FRA leg`, `Forward leg`, `Other` | Column Instrument, read without regard to case. A row with another value, or none, is rejected |
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code excepted |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `position_value` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Position value (ccy). The market value of the principal or of the notional underlying; Direction gives the sign |
@@ -190,7 +190,7 @@ Read from the sheet `COPositions`.
 | --- | --- | --- | --- | --- | --- |
 | `position_id` | Text | — | Yes | Any | Column PositionID. Unique on the sheet, without regard to case |
 | `portfolio` | Text | — | No | Any | Column Portfolio. Not read |
-| `commodity` | Text | — | Yes | Any | Column Commodity. Rows with the same name are netted. Never gold: issue 44 |
+| `commodity` | Text | — | Yes | Any | Column Commodity. Rows with the same name are netted. Never gold: a row whose commodity is the gold code is rejected |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `quantity` | Decimal | Units of the commodity | Yes | ≥ 0 | Column Quantity. Direction gives the sign |
 | `unit` | Text | — | No | Any | Column Unit. The standard unit of the quantity; not read |
@@ -409,9 +409,8 @@ diversified entered in `DS-07` as `Index` is charged as one. This is a
 stated limit: you decide what is entered, and the
 [support matrix](README.md#support-matrix) says what must not be.
 
-What a field can exclude, the contract excludes: `instrument` has a list of
-allowed values, and a commodity is never gold. The engine does not enforce
-either yet ([gaps](#gaps)).
+What a field can exclude, the contract excludes, and the engine rejects:
+`instrument` has a list of allowed values, and a commodity is never gold.
 
 ## Gaps
 
@@ -419,8 +418,6 @@ Where the engine does not yet do what this contract says:
 
 | Field or rule | The contract says | The engine does | Issue |
 | --- | --- | --- | --- |
-| `DS-06.instrument` | Required, one of seven values | It does not read the column: any text, or none, is accepted | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
-| `DS-08.commodity` | Never gold | A commodity named as the gold code is calculated as a commodity | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
 | [Volume](#volume) | At most 500 rows on a position sheet | It reads and calculates every row, with no limit | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
 
 ## Point-in-time data
@@ -481,3 +478,4 @@ no portfolio.
 | 2026-11-16 | `DS-05` and `DS-10` have an identifier field, `currency_id` and `risk_class_id`, and the rate of `DS-05` is `fx_rate`; the amount of `DS-09` is `net_position` | A fixture lists the FX rates as records, and a result per currency or per risk class needs a record to be scoped to. A fixture's key needs a unit suffix, which `amount` alone cannot take | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | A fixture gives the reporting date and currency, the FX rates, the positions and the option charges; every other parameter has its reference value | The cases test the rules of `SRC-02`. A changed parameter is a what-if, which the workbook reports and no case needs | [20](https://github.com/danielep71/K-FRTB-SSA/issues/20) |
 | 2026-11-16 | The project's datasets are numbered from `DS-02` | `DS-01` is the illustrative dataset, which the illustrative test cases still use, and an ID is never reused | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |
+| 2026-11-19 | `Other` stays among the allowed instruments of `DS-06`, and the engine rejects any value outside the list, a blank included | A debt position can be of a kind that has no value of its own, and rejecting it would force a wrong name on it; the list excludes free text, not an unlisted kind. A rejected row is reported and never calculated | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |

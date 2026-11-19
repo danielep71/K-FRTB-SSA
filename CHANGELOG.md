@@ -204,6 +204,18 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The engine rejects two inputs that the data contract excludes. An interest
+  rate row whose instrument is not one of `Bond`, `FRN`, `Swap leg`,
+  `Future leg`, `FRA leg`, `Forward leg` and `Other`, or whose instrument is
+  blank, is `INVALID: Instrument must be ...` and is not calculated; before,
+  the column was not read. A commodity row whose commodity is the gold code
+  is `INVALID: gold is FX risk; enter it on FXPositions`; before, it was
+  calculated as a commodity, which MAR40.63 excludes. `Other` stays among the
+  instruments. The formula workbook applies the same two tests, the data
+  contract no longer lists them as gaps, and `illustrative-invalid-ir-positions`
+  and `illustrative-invalid-co-positions` hold a row for each. The list
+  cannot tell a supported instrument from one entered under its name, which
+  stays a stated limit. The figures of the sample data do not change (#44).
 - The social preview says *Prototype* and that the workbook has not been run
   in Excel yet, where it said *In development*; its only figures are still
   the four scaling factors of MAR40.2. The sentence of the structure guide

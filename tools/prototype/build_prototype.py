@@ -361,6 +361,25 @@ def neither(cell: str, first: str, second: str) -> str:
     return f'AND({text(cell)}<>"{first}",{text(cell)}<>"{second}")'
 
 
+# The instruments of an interest rate position that DS-06 allows, as the list of the
+# IRPositions column offers them.
+INSTRUMENTS = ("Bond", "FRN", "Swap leg", "Future leg", "FRA leg", "Forward leg", "Other")
+INSTRUMENT_REASON = "INVALID: Instrument must be " + ", ".join(INSTRUMENTS[:-1]) + " or " + INSTRUMENTS[-1]
+
+
+def listed_instrument(cell: str) -> str:
+    """TRUE when an Instrument cell is one of INSTRUMENTS, without regard to case and to
+    the blanks at its ends, as the engine reads it.
+
+    Excel's TRIM also collapses the blanks inside a text, which VBA's Trim$ does not:
+    "Swap  leg" would pass. So the name must stand in the cell as it is, with only
+    blanks around it: TRIM leaves nothing else, and the characters from the first
+    letter of the name are the name."""
+    return "OR(" + ",".join(
+        f'IFERROR(AND(TRIM({cell})="{name}",MID({cell},SEARCH("{name[0]}",{cell}),{len(name)})="{name}"),FALSE)'
+        for name in INSTRUMENTS) + ")"
+
+
 def issue_rows(last: str) -> str:
     """The interest rate rows, down to row last, of the issue of row {r}.
 
@@ -588,7 +607,7 @@ def build_ir_positions(ctx: Context) -> None:
          ("Next repricing date (floating)", 12.6), ("SR category", 10.6), ("Rating grade", 13.6),
          ("Issue ID (specific-risk netting)", 22.6), ("Comment", 44)],
         [[p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]] for p in D.IR],
-        "P", {"E": '"Bond,FRN,Swap leg,Future leg,FRA leg,Forward leg,Other"', "F": "=FX_Ccy", "G": '"Long,Short"',
+        "P", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
               "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,NONE"', "N": GRADES},
         {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "#,##0", "I": "@", "J": "0.000%", "K": NF_DATE,
          "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@"})
@@ -678,6 +697,7 @@ def calc_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[t
 def build_ir_calc(ctx: Context) -> None:
     ir_status = (
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        'IF(NOT(' + listed_instrument("IRPositions!E{r}") + '),"' + INSTRUMENT_REASON + '",'
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
         'IF(' + neither("IRPositions!G{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
@@ -693,7 +713,7 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
         'IF(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
-        '"OK")))))))))))))))))')
+        '"OK"))))))))))))))))))')
     grd = text("IRPositions!N{r}")
     issue = text("IRPositions!O{r}")
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'
@@ -792,12 +812,13 @@ def build_co_calc(ctx: Context) -> None:
     co_status = (
         '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
         'IF($E{r}="","INVALID: Commodity missing",'
+        'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
         'IF(' + neither("COPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(COPositions!G{r})),"INVALID: Quantity must be a number",'
         'IF(COPositions!G{r}<0,"INVALID: Quantity must be >= 0 (Direction gives the sign)",'
         'IF(NOT(ISNUMBER(COPositions!I{r})),"INVALID: Spot price must be a number",'
         'IF(OR(' + no_currency(co_currency) + ',UPPER(' + co_currency + ')=GoldCode),"INVALID: currency not in FX_Table",'
-        '"OK"))))))))')
+        '"OK")))))))))')
     calc_sheet(
         ctx.wb, "COCalc", "Commodity position calculation",
         "Per COPositions row: value at spot in reporting currency. Aggregation per commodity (net and gross) is on Buckets.",

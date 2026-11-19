@@ -166,9 +166,9 @@ says how to open it, how to compile it and how to record an Excel run.
   standardised approach.
 - **More than 500 rows** on a position sheet: the template is formatted for
   500, and a run above that is not stopped yet
-  ([issue 45](https://github.com/danielep71/K-FRTB-SSA/issues/45)). It does
-  not reject every instrument it cannot calculate either
-  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
+  ([issue 45](https://github.com/danielep71/K-FRTB-SSA/issues/45)). It
+  rejects an instrument that is not in the list of `IRPositions`, but it
+  cannot tell a supported instrument from one entered under its name.
 
 The [support matrix](methodology/README.md#support-matrix) lists each feature
 with its status, and each contract's *Limits and non-goals* name what it

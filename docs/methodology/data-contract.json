@@ -545,7 +545,7 @@
               "Other"
             ]
           },
-          "notes": "Column Instrument. Not read yet: issue 44"
+          "notes": "Column Instrument, read without regard to case. A row with another value, or none, is rejected"
         },
         {
           "name": "currency",
@@ -801,7 +801,7 @@
           "unit": null,
           "required": true,
           "allowed": null,
-          "notes": "Column Commodity. Rows with the same name are netted. Never gold: issue 44"
+          "notes": "Column Commodity. Rows with the same name are netted. Never gold: a row whose commodity is the gold code is rejected"
         },
         {
           "name": "direction",

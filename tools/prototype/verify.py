@@ -118,6 +118,17 @@ def negative(source: Path, target: Path) -> None:
     workbook = load(source)
     day = datetime.date
     append_rows(workbook["IRPositions"], FIRST_ROW + len(ssa_reference.IR), [
+        # An instrument outside the list of the data contract, and none at all.
+        ["IR-INST1", "T", "Securitisation", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        ["IR-INST2", "T", None, "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        # The instrument is read without regard to case and the blanks at its ends.
+        ["IR-INST3", "T", " swap LEG ", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        # Not the blanks inside it: Excel's TRIM would collapse them, VBA's Trim$ does not.
+        ["IR-INST4", "T", "Swap  leg", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
         # No coupon; a currency outside the FX table; a duplicate PositionID.
         ["IR-BAD1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", None, day(2030, 1, 1), None,
          "OTHER", "BB+ to BB-", ""],
@@ -189,6 +200,8 @@ def negative(source: Path, target: Path) -> None:
     append_rows(workbook["COPositions"], FIRST_ROW + len(ssa_reference.CO), [
         ["CO-BAD", "T", "Gold bar", "Long", "ten", "oz", 3500, "EUR"],
         ["CO-007", "T", "Wheat", "short ", 1000, "t", 250, "EUR"],
+        # Gold is FX risk: a commodity that is the gold code is rejected, in any case.
+        ["CO-GOLD", "T", " xau ", "Long", 1, "oz", 3500, "EUR"],
         # Commodities that would match others as patterns.
         ["CO-W1", "T", "C*", "Long", 10, "t", 9800, "USD"],
         ["CO-W2", "T", "Whea?", "Long", 500, "t", 250, WILD_CURRENCY],

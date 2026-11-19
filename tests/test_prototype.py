@@ -548,19 +548,22 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 20)]
-        self.assertEqual(added, ["IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
+        added = [positions.cell(row, 3).value for row in range(first, first + 24)]
+        self.assertEqual(added, ["IR-INST1", "IR-INST2", "IR-INST3", "IR-INST4", "IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
                                  "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
                                  "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2"])
-        self.assertIsNone(positions.cell(first + 20, 3).value)
+        self.assertIsNone(positions.cell(first + 24, 3).value)
+        # An instrument outside the list, none at all, and one typed in another case with blanks.
+        self.assertEqual([positions.cell(first + offset, 5).value for offset in range(4)],
+                         ["Securitisation", None, " swap LEG ", "Swap  leg"])
         # Error values, not texts that read like them: the Issue ID of a
         # rejected row, which has no coupon, and a direction.
-        self.assertIsNone(positions.cell(first + 18, 10).value)
-        for offset, column in ((18, 15), (19, 7)):
+        self.assertIsNone(positions.cell(first + 22, 10).value)
+        for offset, column in ((22, 15), (23, 7)):
             with self.subTest(offset=offset, column=column):
                 self.assertEqual(positions.cell(first + offset, column).data_type, "e")
         # Keys that a criteria function would read as patterns or comparisons.
-        self.assertEqual([positions.cell(first + offset, 15).value for offset in range(10, 15)],
+        self.assertEqual([positions.cell(first + offset, 15).value for offset in range(14, 19)],
                          ["ISS-?", "ISS-A", "ISS-*", "<>ISS-A", "POS:R1"])
         codes = verify.first_cell(book, "FX_Ccy")
         self.assertEqual(codes.offset(len(ssa_reference.FX) - 1).value, ssa_reference.FX[-1][0])
@@ -570,9 +573,9 @@ class Verification(NeedsOpenpyxl):
         # The maturity that is not a date, and the Issue ID equal to a PositionID.
         # openpyxl reads a number above the date range in a date cell as an
         # error, so the number is looked for in the sheet itself.
-        self.assertRegex(sheet_xml, rf'<c r="K{first + 6}"[^>]*><v>20311231</v>')
-        self.assertEqual(positions.cell(first + 8, 15).value, "R1")
-        self.assertIsNone(positions.cell(first + 7, 15).value)
+        self.assertRegex(sheet_xml, rf'<c r="K{first + 10}"[^>]*><v>20311231</v>')
+        self.assertEqual(positions.cell(first + 12, 15).value, "R1")
+        self.assertIsNone(positions.cell(first + 11, 15).value)
         self.assertEqual(verify.named_cell(book, "ScalingIR").value, 1.5)
         self.assertEqual(verify.named_cell(book, "OptionsFX").value, 1000)
         for sheet, rows in (("EQPositions", ssa_reference.EQ), ("COPositions", ssa_reference.CO),
