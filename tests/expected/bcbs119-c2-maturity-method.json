@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "bcbs119-c2-maturity-method",
+  "outputs": [
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-QUAL"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-QUAL"}, "rule": "CALC-03.3", "value": 10, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-QUAL"}, "rule": "CALC-03.4", "value": 500000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, 7 to 10 years", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, 7 to 10 years), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-GOV"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-GOV"}, "rule": "CALC-03.3", "value": 2, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-GOV"}, "rule": "CALC-03.4", "value": 150000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, 1 to 3 months", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, 1 to 3 months), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FLOAT"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FLOAT"}, "rule": "CALC-03.3", "value": 4, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FLOAT"}, "rule": "CALC-03.4", "value": 1050000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, 6 to 12 months", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, 6 to 12 months), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FIXED"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FIXED"}, "rule": "CALC-03.3", "value": 10, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-SWAP-FIXED"}, "rule": "CALC-03.4", "value": -5625000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, 7 to 10 years", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, 7 to 10 years), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-FUT-LONG"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-FUT-LONG"}, "rule": "CALC-03.3", "value": 7, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-FUT-LONG"}, "rule": "CALC-03.4", "value": 1125000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, the position of the future in zone 2", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, the position of the future in zone 2), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "C2-FUT-SHORT"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "C2-FUT-SHORT"}, "rule": "CALC-03.3", "value": 3, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "C2-FUT-SHORT"}, "rule": "CALC-03.4", "value": -200000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, table 10, 3 to 6 months", "derivation": "Printed in the worked example C.2 of SRC-03 (table 10, 3 to 6 months), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_vertical_disallowance", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.5", "value": 50000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, paragraph 2(a)", "derivation": "Printed in the worked example C.2 of SRC-03 (paragraph 2(a)), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_within_zones", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.6", "value": 80000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, paragraph 2(b)", "derivation": "Printed in the worked example C.2 of SRC-03 (paragraph 2(b)), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_between_zones", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.7", "value": 1450000.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract. The example prints the two components, 450,000 between adjacent zones and 1,000,000 between zones 1 and 3 (C.2, paragraph 2(c) and (d)); the engine's value is their sum, a derivation within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_net_position_charge", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.8", "value": 3000000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, paragraph 2(e)", "derivation": "Printed in the worked example C.2 of SRC-03 (paragraph 2(e)), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.9", "value": 4580000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, paragraph 3", "derivation": "Printed in the worked example C.2 of SRC-03 (paragraph 3), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": null, "rule": "CALC-03.9", "value": 4580000.0, "unit": "USD", "tolerance": {"absolute": 500, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-03", "locator": "Part C.2, paragraph 3", "derivation": "Printed in the worked example C.2 of SRC-03 (paragraph 3), in $ mn. The example's positions are the fixture's rows (paragraph 1); the coupon of a leg that the example does not state is taken as 5%, any coupon of 3% or more giving the same bands. The positions are printed to 0.01 mn, so the tolerance is 500: the rounding of 13.33 mn, at most 0.005 mn x 3.75% = 187.5 in a weighted position, enters a printed charge at most in full. tests/derivations/ssa.py gives the same value within it", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    }
+  ]
+}

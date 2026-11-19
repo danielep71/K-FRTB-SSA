@@ -34,6 +34,8 @@ EQ_SPECIFIC, EQ_INDEX, EQ_GENERAL = 0.08, 0.02, 0.08
 FX_RATE = 0.08
 CO_DIRECTIONAL, CO_GROSS = 0.15, 0.03
 GOLD = "XAU"
+# The instruments of an interest rate row that DS-06 allows, as codes.
+INSTRUMENTS = frozenset(("BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"))
 # Table 4 of MAR40.26: zone, upper limit in years for a coupon of 3% or more,
 # upper limit for a lower coupon (None: no upper limit, or no such band), and
 # risk weight. A term equal to an upper limit belongs to the band.
@@ -162,6 +164,8 @@ def ir_value_reason(case: Case, record: Record, repeated: set[str]) -> str | Non
     value = inputs.get("position_value_amount")
     if code(record["id"]) in repeated:
         return "duplicate PositionID"
+    if code(inputs.get("instrument_code")) not in INSTRUMENTS:
+        return "Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg or Other"
     if currency == "" or currency not in case.rates:
         return "currency not in FX_Table"
     if currency == GOLD:
@@ -363,6 +367,8 @@ def co_status(case: Case, record: Record, repeated: set[str]) -> str:
         reason = "duplicate PositionID"
     elif code(inputs.get("commodity_code")) == "":
         reason = "Commodity missing"
+    elif code(inputs.get("commodity_code")) == GOLD:
+        reason = "gold is FX risk; enter it on FXPositions"
     elif sign(inputs.get("direction_code")) == 0:
         reason = "Direction must be Long or Short"
     elif not is_number(quantity):

@@ -118,6 +118,17 @@ def negative(source: Path, target: Path) -> None:
     workbook = load(source)
     day = datetime.date
     append_rows(workbook["IRPositions"], FIRST_ROW + len(ssa_reference.IR), [
+        # An instrument outside the list of the data contract, and none at all.
+        ["IR-INST1", "T", "Securitisation", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        ["IR-INST2", "T", None, "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        # The instrument is read without regard to case and the blanks at its ends.
+        ["IR-INST3", "T", " swap LEG ", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
+        # Not the blanks inside it: Excel's TRIM would collapse them, VBA's Trim$ does not.
+        ["IR-INST4", "T", "Swap  leg", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", ""],
         # No coupon; a currency outside the FX table; a duplicate PositionID.
         ["IR-BAD1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", None, day(2030, 1, 1), None,
          "OTHER", "BB+ to BB-", ""],
@@ -128,7 +139,8 @@ def negative(source: Path, target: Path) -> None:
         # An issue of the sample with another specific-risk key: MIXED.
         ["IR-MIX", "T", "Bond", "EUR", "Long", 2e6, "Fixed", 0.04, day(2034, 3, 1), None,
          "QUAL", "A+ to BBB-", "BTP 4.00% 03/34"],
-        ["IR-FRN", "T", "FRN", "EUR", "Short", 3e6, "floating", None, day(2029, 1, 1),
+        # A direction and a rate type typed with blanks and in lower case.
+        ["IR-FRN", "T", "FRN", "EUR", " short ", 3e6, " floating ", None, day(2029, 1, 1),
          day(2027, 1, 1), "GOV", "AAA to AA-", ""],
         # No specific-risk charge for this category and grade.
         ["IR-OTH", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
@@ -178,7 +190,7 @@ def negative(source: Path, target: Path) -> None:
     ])
     append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
         ["EQ-BAD", "T", "IT", "Basket", "B", "EUR", "Long", 1e6],
-        ["EQ-NEG", "T", "FR", "Single name", "BNP", "EUR", "Short", 2e6],
+        ["EQ-NEG", "T", "FR", "Single name", "BNP", "EUR", " Short", 2e6],
         # A stock and a market that would match others as patterns.
         ["EQ-W1", "T", "FR", "Single name", "A*", "EUR", "Long", 1e6],
         ["EQ-W2", "T", "FR", "Single name", "ABC", "EUR", "Short", 4e5],
@@ -187,7 +199,9 @@ def negative(source: Path, target: Path) -> None:
     ])
     append_rows(workbook["COPositions"], FIRST_ROW + len(ssa_reference.CO), [
         ["CO-BAD", "T", "Gold bar", "Long", "ten", "oz", 3500, "EUR"],
-        ["CO-007", "T", "Wheat", "Short", 1000, "t", 250, "EUR"],
+        ["CO-007", "T", "Wheat", "short ", 1000, "t", 250, "EUR"],
+        # Gold is FX risk: a commodity that is the gold code is rejected, in any case.
+        ["CO-GOLD", "T", " xau ", "Long", 1, "oz", 3500, "EUR"],
         # Commodities that would match others as patterns.
         ["CO-W1", "T", "C*", "Long", 10, "t", 9800, "USD"],
         ["CO-W2", "T", "Whea?", "Long", 500, "t", 250, WILD_CURRENCY],
@@ -201,6 +215,10 @@ def negative(source: Path, target: Path) -> None:
         ["FX-W2", "FX", WILD_CURRENCY, "Short", 6e6],
         ["FX-E1", "FX", "CHF", NOT_AVAILABLE, 1e6],
     ])
+    # USD, typed in FX_Table with a blank at each end and in lower case: the
+    # positions in USD, and the ladders and sums of the currency, do not change.
+    first_cell(workbook, "FX_Ccy").offset(next(
+        row for row, (ccy, *_) in enumerate(ssa_reference.FX) if ccy == "USD")).value = " usd "
     # A currency of FX_Table that is a pattern for another one, USD.
     code = first_cell(workbook, "FX_Ccy").offset(len(ssa_reference.FX))
     code.value = WILD_CURRENCY

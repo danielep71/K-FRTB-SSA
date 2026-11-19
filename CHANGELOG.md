@@ -65,6 +65,22 @@ Use only the categories an entry needs.
 
 ### Added
 
+- Two test cases with `published` values for the interest rate calculation,
+  the maturity method, which had none: `mar40-27-vertical-disallowance`, the
+  example of MAR40.27 (USD 100 million of weighted longs and USD 90 million of
+  weighted shorts give a vertical disallowance of USD 9 million), and
+  `bcbs119-c2-maturity-method`, the worked example C.2 of the Basel
+  Committee's 2005 update of its 1996 market risk amendment, which the Basel
+  Framework does not repeat: six legs, their weighted positions, the vertical
+  and within-zone disallowances, the net position charge and a charge of
+  $4,580,000. The amendment is registered as `SRC-03` for those printed
+  values only, because the ladder weights, the disallowance percentages and
+  the zones are those of MAR40.26 to MAR40.28. The engine reproduces them in
+  LibreOffice, to a tolerance of 500 for the example that prints positions to
+  0.01 mn. The validation plan records where each calculation's reference
+  values come from: no other has a published example, no independent
+  implementation was found, and the accuracy contract `ACC-03` is a draft, as
+  a frozen one needs three holdout cases. Nothing was run in Excel (#47).
 - The template protects its sheets. All 18 are protected, without a password,
   and only the input cells are unlocked: the yellow cells, and on `Params`
   the grey cells of the MAR40 constants, which a what-if may change. Users
@@ -204,6 +220,29 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- A run stops when a position sheet holds more rows than the workbook
+  supports. The limit is `MAX_POSITION_ROWS`, 500, the rows the template is
+  formatted, validated and coloured for, counted from the row below the
+  header to the last row with a PositionID. On more, the status line reads
+  `STOPPED`, no result is calculated, and `Checks` lists the sheet and the
+  rows found under rule `C14`, which already stops the run on an unusable
+  `Params` value; a table of exactly 500 rows runs as before. Before, such a
+  run calculated every row and wrote results that no format, formula or check
+  covered. The stop text of the status line reads `unusable input(s)`. A run
+  of four full sheets took about 12 seconds in LibreOffice, and none has been
+  timed in Excel. The data contract no longer lists the limit as a gap (#45).
+- The engine rejects two inputs that the data contract excludes. An interest
+  rate row whose instrument is not one of `Bond`, `FRN`, `Swap leg`,
+  `Future leg`, `FRA leg`, `Forward leg` and `Other`, or whose instrument is
+  blank, is `INVALID: Instrument must be ...` and is not calculated; before,
+  the column was not read. A commodity row whose commodity is the gold code
+  is `INVALID: gold is FX risk; enter it on FXPositions`; before, it was
+  calculated as a commodity, which MAR40.63 excludes. `Other` stays among the
+  instruments. The formula workbook applies the same two tests, the data
+  contract no longer lists them as gaps, and `illustrative-invalid-ir-positions`
+  and `illustrative-invalid-co-positions` hold a row for each. The list
+  cannot tell a supported instrument from one entered under its name, which
+  stays a stated limit. The figures of the sample data do not change (#44).
 - The social preview says *Prototype* and that the workbook has not been run
   in Excel yet, where it said *In development*; its only figures are still
   the four scaling factors of MAR40.2. The sentence of the structure guide
@@ -262,6 +301,16 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- The formula workbook that `tools/prototype/build_prototype.py` writes reads
+  a currency code of `FX_Table`, a direction and a rate type without the
+  blanks at their ends and without regard to case, as the engine does. Before,
+  a code such as `usd ` in `FX_Table` made 282 of 5,447 output cells differ,
+  and a direction such as ` long ` made 99 differ, so the comparison reported
+  differences that were not the engine's. The currencies shown on `IR_Ladder`,
+  `IR_Zones` and `Buckets` are the trimmed, upper-case codes the engine
+  writes. `tools/prototype/verify.py` types such codes in its scenario of
+  invalid rows. The engine, the template and the sample data's result do not
+  change (#41).
 - The template no longer calls the re-calculation of the sample data
   independent. The `TestCatalogue` sheet and the sheet list on `Home` name it
   as the project's own re-calculation, whose values are illustrative, as the

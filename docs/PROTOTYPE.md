@@ -165,10 +165,10 @@ says how to open it, how to compile it and how to record an Excel run.
 - **Everything outside MAR40,** such as the sensitivities-based method of the
   standardised approach.
 - **More than 500 rows** on a position sheet: the template is formatted for
-  500, and a run above that is not stopped yet
-  ([issue 45](https://github.com/danielep71/K-FRTB-SSA/issues/45)). It does
-  not reject every instrument it cannot calculate either
-  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
+  500, and a run on more stops. The status line reads `STOPPED`, no result
+  is calculated, and `Checks` names the sheet and the rows found. The
+  workbook rejects an instrument that is not in the list of `IRPositions`,
+  but it cannot tell a supported instrument from one entered under its name.
 
 The [support matrix](methodology/README.md#support-matrix) lists each feature
 with its status, and each contract's *Limits and non-goals* name what it
@@ -178,12 +178,14 @@ leaves out.
 
 - **MAR40.** Every parameter of the engine equals the text of the Basel
   Framework chapter in force from 2023-01-01, compared on 2026-11-16.
-- **Test cases.** 18 [test cases](methodology/TEST_CASES.md) run on the
-  engine in LibreOffice and agree with their expected values. Two values are
-  published in MAR40.61, the overall net open position and the requirement
-  of the example of table 9. The other 325 are `illustrative`: I derived them
-  from the contracts, as I wrote the engine from them, so their agreement
-  validates no rule.
+- **Test cases.** 20 [test cases](methodology/TEST_CASES.md) run on the
+  engine in LibreOffice and agree with their expected values. 16 values are
+  published: two of the example of table 9 of MAR40.61, the overall net open
+  position and the requirement; three of the example of MAR40.27, the
+  vertical disallowance of one band; and eleven of the worked example of the
+  maturity method in the 2005 update of the 1996 Amendment. The other 350 are
+  `illustrative`: I derived them from the contracts, as I wrote the engine
+  from them, so their agreement validates no rule.
 - **Tests of the code.** Four VBA suites run under the
   [test harness](methodology/TEST_HARNESS.md), in LibreOffice only.
 - **Excel.** The workbook has not been compiled or run in Excel, so no

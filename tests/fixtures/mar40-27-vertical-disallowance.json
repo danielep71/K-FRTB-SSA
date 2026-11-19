@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "mar40-27-vertical-disallowance",
+  "synthetic": true,
+  "description": "The example of MAR40.27 of SRC-02: weighted longs of USD 100 million and weighted shorts of USD 90 million in one time band give a vertical disallowance of 10% of USD 90 million, USD 9 million. The two positions are sized so that the 1.25% weight of the band of 1 to 2 years gives those weighted amounts",
+  "category": "nominal",
+  "calculation": "CALC-03",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "USD",
+  "datasets": {
+    "DS-05": [
+      {"id": "USD", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "V1-LONG", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 8000000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-03-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "V1-SHORT", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Short", "position_value_amount": 7200000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-03-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}}
+    ]
+  }
+}
