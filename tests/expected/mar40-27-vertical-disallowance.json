@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "mar40-27-vertical-disallowance",
+  "outputs": [
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "V1-LONG"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "V1-LONG"}, "rule": "CALC-03.3", "value": 5, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "V1-LONG"}, "rule": "CALC-03.4", "value": 100000000.0, "unit": "USD", "tolerance": {"absolute": 500000, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-02", "locator": "MAR40.27", "derivation": "Printed in MAR40.27 of SRC-02: a sum of weighted longs of USD 100 million and of weighted shorts of USD 90 million in one time band, and a vertical disallowance of 10% of USD 90 million, USD 9 million. The fixture sizes two positions of the band of 1 to 2 years, whose weight is 1.25%, to give those weighted amounts. The text prints whole millions, so the tolerance is half a million. tests/derivations/ssa.py gives the same value", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "V1-SHORT"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "V1-SHORT"}, "rule": "CALC-03.3", "value": 5, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "V1-SHORT"}, "rule": "CALC-03.4", "value": -90000000.0, "unit": "USD", "tolerance": {"absolute": 500000, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-02", "locator": "MAR40.27", "derivation": "Printed in MAR40.27 of SRC-02: a sum of weighted longs of USD 100 million and of weighted shorts of USD 90 million in one time band, and a vertical disallowance of 10% of USD 90 million, USD 9 million. The fixture sizes two positions of the band of 1 to 2 years, whose weight is 1.25%, to give those weighted amounts. The text prints whole millions, so the tolerance is half a million. tests/derivations/ssa.py gives the same value", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_vertical_disallowance", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.5", "value": 9000000.0, "unit": "USD", "tolerance": {"absolute": 500000, "relative": 0},
+      "reference": {"class": "published", "source": "SRC-02", "locator": "MAR40.27", "derivation": "Printed in MAR40.27 of SRC-02: a sum of weighted longs of USD 100 million and of weighted shorts of USD 90 million in one time band, and a vertical disallowance of 10% of USD 90 million, USD 9 million. The fixture sizes two positions of the band of 1 to 2 years, whose weight is 1.25%, to give those weighted amounts. The text prints whole millions, so the tolerance is half a million. tests/derivations/ssa.py gives the same value", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_within_zones", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.6", "value": 0.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_between_zones", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.7", "value": 0.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_net_position_charge", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.8", "value": 10000000.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-03.9", "value": 19000000.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": null, "rule": "CALC-03.9", "value": 19000000.0, "unit": "USD", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-19"}
+    }
+  ]
+}

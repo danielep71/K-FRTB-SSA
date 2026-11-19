@@ -285,10 +285,16 @@ interest rate row of `Results`, with its components per currency on
 The first test that fails gives the text. A rejected row enters neither
 `CALC-02` nor this calculation.
 
-**Validation:** the test cases `illustrative-invalid-ir-positions`,
-`illustrative-ir-time-band-limits` and
-`illustrative-sample-ir-general-market-risk`. Their expected values are
-`illustrative`: derived within the project, they validate nothing. See the
+**Validation:** the test cases `bcbs119-c2-maturity-method`,
+`illustrative-invalid-ir-positions`, `illustrative-ir-time-band-limits`,
+`illustrative-sample-ir-general-market-risk` and
+`mar40-27-vertical-disallowance`. Two of them hold `published` values: the
+weighted positions, the vertical and within-zone disallowances, the net
+position charge and the charge of the worked example C.2 of `SRC-03`
+(`bcbs119-c2-maturity-method`), and the weighted positions and the vertical
+disallowance of the example of MAR40.27 (`mar40-27-vertical-disallowance`).
+The expected values of the others are `illustrative`: derived within the
+project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-03` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
