@@ -601,12 +601,13 @@ Private Function RowStatus( _
 '   IdUses       InputRows sharing this PositionID (1 = unique).
 '
 ' RETURNS
-'   "OK" or "INVALID: reason". A final maturity, or the next repricing
-'   date of a floating-rate row, that is a number but not the serial of a
-'   date (CORE_Util.IsDateSerial) is a reason.
+'   "OK" or "INVALID: reason". An instrument that is not one of the values
+'   the data contract allows (IsKnownInstrument) is a reason. A final
+'   maturity, or the next repricing date of a floating-rate row, that is a
+'   number but not the serial of a date (CORE_Util.IsDateSerial) is a reason.
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-19
 '==============================================================================
 '
     Dim Maturity    As Variant   'Final maturity cell
@@ -618,6 +619,9 @@ Private Function RowStatus( _
         RateType = CodeText(InputRows(r, IR_RATE_TYPE))
         If IdUses > 1 Then
             RowStatus = ST_INVALID & "duplicate PositionID"
+        ElseIf Not IsKnownInstrument(InputRows(r, IR_INSTRUMENT)) Then
+            RowStatus = ST_INVALID & "Instrument must be Bond, FRN, Swap leg, Future leg, " & _
+                        "FRA leg, Forward leg or Other"
         ElseIf FindCode(FxCodes, CurrencyCode) < 1 Then
             RowStatus = ST_INVALID & "currency not in FX_Table"
         ElseIf CurrencyCode = GoldCode Then
@@ -653,6 +657,40 @@ Private Function RowStatus( _
         Else
             RowStatus = ST_OK
         End If
+
+End Function
+
+
+Private Function IsKnownInstrument( _
+    ByVal Value As Variant) _
+    As Boolean
+'
+'==============================================================================
+'                              IsKnownInstrument
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Tell whether an Instrument cell holds one of the seven values that
+'   DS-06 allows, without regard to case and to the blanks at its ends.
+'
+' INPUTS
+'   Value   Instrument cell of any type.
+'
+' RETURNS
+'   True for Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg and
+'   Other; False for anything else, a blank cell and an error value
+'   included. The workbook calculates every instrument alike: the value
+'   cannot make it recognise one that is entered under a supported name.
+'
+' UPDATED
+'   2026-11-19
+'==============================================================================
+'
+        Select Case CodeText(Value)
+            Case "BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"
+                IsKnownInstrument = True
+            Case Else
+                IsKnownInstrument = False
+        End Select
 
 End Function
 

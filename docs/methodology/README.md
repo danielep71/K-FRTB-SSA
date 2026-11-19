@@ -55,8 +55,8 @@ The workbook's scope, feature by feature:
   The workbook cannot meet this for an instrument entered as a supported
   one, as the rows say: it is a stated limit of the
   [data contract](DATA_CONTRACT.md#unsupported-input). What a field can
-  exclude, the engine is to reject
-  ([issue 44](https://github.com/danielep71/K-FRTB-SSA/issues/44)).
+  exclude, the engine rejects: an instrument outside the list of `DS-06`,
+  and a commodity that is gold.
 - **Entered by the user:** the workbook does not calculate it: the user
   enters the value, which the [data contract](DATA_CONTRACT.md) or the
   [workbook contract](WORKBOOK_CONTRACT.md) defines and validates, and the

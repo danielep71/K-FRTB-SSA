@@ -15,7 +15,7 @@
       "source": "tests/modules/TEST_Suite.bas",
       "certification_entry_point": "CertifyCore",
       "expected_cases": 11,
-      "expected_assertions": 90,
+      "expected_assertions": 93,
       "log": "core.log",
       "certification_log": "core-certification.log"
     },
@@ -42,7 +42,7 @@
       "source": "tests/modules/TEST_Cases.bas",
       "certification_entry_point": "CertifyCases",
       "expected_cases": 18,
-      "expected_assertions": 345,
+      "expected_assertions": 348,
       "log": "cases.log",
       "certification_log": "cases-certification.log",
       "results": "cases-results.json"

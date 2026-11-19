@@ -98,14 +98,15 @@ Public Sub CalculateCommodity( _
 '                    TOT_BUCKETS (commodities).
 '
 ' ERROR POLICY
-'   Raises ERR_ARGUMENT when InputRows is not CO_INPUT_WIDTH wide.
+'   Raises ERR_ARGUMENT when InputRows is not CO_INPUT_WIDTH wide. A row whose
+'   commodity is the gold code is rejected: gold is FX risk.
 '
 ' REFERENCE
 '   MAR40.72 (15% of the net position per commodity), MAR40.73 (3% of the
-'   gross position, valued at spot).
+'   gross position, valued at spot), MAR40.63 (gold is FX risk).
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-19
 '==============================================================================
 '
     Dim RowCount    As Long        'Input rows
@@ -149,6 +150,8 @@ Public Sub CalculateCommodity( _
                     Status = ST_INVALID & "duplicate PositionID"
                 ElseIf Len(Commodity) = 0 Then
                     Status = ST_INVALID & "Commodity missing"
+                ElseIf Commodity = GoldCode Then
+                    Status = ST_INVALID & "gold is FX risk; enter it on FXPositions"
                 ElseIf DirectionSign(InputRows(r, CO_DIRECTION)) = 0 Then
                     Status = ST_INVALID & "Direction must be Long or Short"
                 ElseIf Not IsNumberValue(InputRows(r, CO_QUANTITY)) Then

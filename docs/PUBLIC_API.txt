@@ -124,6 +124,8 @@ CORE_Config	Const	NM_OPTIONS_PREFIX
 # SIG	CORE_Config	Const	NM_OPTIONS_PREFIX	Public Const NM_OPTIONS_PREFIX As String = "Options"
 CORE_Config	Const	IR_ID
 # SIG	CORE_Config	Const	IR_ID	Public Const IR_ID As Long = 1
+CORE_Config	Const	IR_INSTRUMENT
+# SIG	CORE_Config	Const	IR_INSTRUMENT	Public Const IR_INSTRUMENT As Long = 3
 CORE_Config	Const	IR_CCY
 # SIG	CORE_Config	Const	IR_CCY	Public Const IR_CCY As Long = 4
 CORE_Config	Const	IR_DIRECTION

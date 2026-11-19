@@ -118,6 +118,7 @@ Attribute VB_Name = "CORE_Config"
     'Column of each field, counted from the first table column (1 = C).
     'Interest rate positions (IRPositions).
         Public Const IR_ID           As Long = 1     'PositionID
+        Public Const IR_INSTRUMENT   As Long = 3     'Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg or Other
         Public Const IR_CCY          As Long = 4     'Currency
         Public Const IR_DIRECTION    As Long = 5     'Long or Short
         Public Const IR_VALUE        As Long = 6     'Position value, currency units

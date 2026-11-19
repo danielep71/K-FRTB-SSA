@@ -67,7 +67,7 @@ Attribute VB_Name = "TEST_Suite"
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
         Private Const EXPECTED_CASES      As Long = 11
-        Private Const EXPECTED_ASSERTIONS As Long = 90
+        Private Const EXPECTED_ASSERTIONS As Long = 93
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=11; assertions=90; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=11; assertions=93; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -476,7 +476,8 @@ Private Sub CaseCommodity()
         InputRows = RowsFrom(CO_INPUT_WIDTH, Array( _
             Array("C1", "", "Oil", "Long", 10, "bbl", 10, "EUR"), _
             Array("C2", "", "OIL ", "Short", 3, "bbl", 10, "EUR"), _
-            Array("C3", "", "Oil", "Long", "ten", "bbl", 10, "EUR")))
+            Array("C3", "", "Oil", "Long", "ten", "bbl", 10, "EUR"), _
+            Array("C4", "", " xau ", "Long", 1, "oz", 3500, "EUR")))
         CalculateCommodity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, Commodities, _
                            Totals
         TEST_Harness.AssertNear "directional", 10.5, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
@@ -484,6 +485,8 @@ Private Sub CaseCommodity()
         TEST_Harness.AssertEqualDouble "commodities", 1, Totals(TOT_BUCKETS)
         TEST_Harness.AssertEqualText "quantity-status", _
             ST_INVALID & "Quantity must be a number", CStr(RowOutput(3, 2))
+        TEST_Harness.AssertEqualText "gold-status", _
+            ST_INVALID & "gold is FX risk; enter it on FXPositions", CStr(RowOutput(4, 2))
         Exit Sub
 
 CaseFailed:
@@ -544,6 +547,10 @@ Private Sub CaseInterestRateRows()
             Array("R4", "", "Bond", "EUR", "Long", 1000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
                   Empty, "OTHER", "A+ to BBB-", ""), _
             Array("R5", "", "Bond", "XAU", "Long", 1000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "GOV", "AAA to AA-", ""), _
+            Array("R6", "", "Securitisation", "EUR", "Long", 1000, "Fixed", 0.05, _
+                  DateSerial(2031, 10, 1), Empty, "GOV", "AAA to AA-", ""), _
+            Array("R7", "", Empty, "EUR", "Long", 1000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
                   Empty, "GOV", "AAA to AA-", "")))
         CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
                               SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
@@ -561,10 +568,16 @@ Private Sub CaseInterestRateRows()
             ST_INVALID & "no MAR40.6 charge for this category and rating grade", CStr(RowOutput(4, 2))
         TEST_Harness.AssertEqualText "row-5-status", _
             ST_INVALID & "gold is FX risk; enter it on FXPositions", CStr(RowOutput(5, 2))
+        TEST_Harness.AssertEqualText "row-6-status", _
+            ST_INVALID & "Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, " & _
+            "Forward leg or Other", CStr(RowOutput(6, 2))
+        TEST_Harness.AssertEqualText "row-7-status", _
+            ST_INVALID & "Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, " & _
+            "Forward leg or Other", CStr(RowOutput(7, 2))
         TEST_Harness.AssertNear "specific-total", 16000, _
             Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
         TEST_Harness.AssertNear "general-total", 32500, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
-        TEST_Harness.AssertEqualDouble "rows-rejected", 4, Totals(TOT_REJECTED)
+        TEST_Harness.AssertEqualDouble "rows-rejected", 6, Totals(TOT_REJECTED)
         Exit Sub
 
 CaseFailed:
