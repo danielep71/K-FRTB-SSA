@@ -65,6 +65,14 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The scope of the CRR regime, recorded in the *Decisions* table of
+  `docs/methodology/VALIDATION_PLAN.md`: the simplified standardised approach
+  of Article 325(2) of Regulation (EU) No 575/2013 as amended by Regulation
+  (EU) 2024/1623, selected by a `Regime` parameter of the one workbook, with
+  the transitional multiplier of 0.9 of Article 495s(2) and a calculation of
+  the size conditions of Article 325a. It is a decision only: no rule of the
+  CRR is implemented or validated, and nothing was run in Excel
+  ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)).
 - Two test cases with `published` values for the interest rate calculation,
   the maturity method, which had none: `mar40-27-vertical-disallowance`, the
   example of MAR40.27 (USD 100 million of weighted longs and USD 90 million of
