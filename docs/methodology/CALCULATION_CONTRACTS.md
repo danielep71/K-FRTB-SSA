@@ -68,7 +68,7 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | --- | --- | --- | --- |
 | `ScalingIR`, `ScalingEQ`, `ScalingCO`, `ScalingFX` | 1.30, 3.50, 1.90, 1.20 | `SRC-02`, MAR40.2 | Equal |
 | `RWAMultiplier` | 12.5 | `SRC-02`, MAR40.1 | Equal |
-| Specific-risk table, `SR_Key` and `SR_Charge`, 18 rows | The charges of table 1 | `SRC-02`, MAR40.6, table 1 | Equal. The table gives the qualifying category one set of charges; the workbook lists it under the two investment grades. It gives *BB+ to B–* for governments and *Below BB–* for other issuers; the workbook lists each under the grades it spans |
+| Specific-risk table, `SR_Key` and `SR_Charge`, 31 rows | The 18 charges of table 1, and 13 rows of the category `CRR`: 0%, half of the second category, the second category, 8% and 12% | `SRC-02`, MAR40.6, table 1; `SRC-04`, Article 336(1), table 1, and (3) | Equal, for the 18 rows. The 13 rows of the CRR were compared with Article 336 on 2026-11-20. The table gives the qualifying category one set of charges; the workbook lists it under the two investment grades. It gives *BB+ to B–* for governments and *Below BB–* for other issuers; the workbook lists each under the grades it spans |
 | Time bands: `Ladder_Zone`, `Ladder_UpperHigh`, `Ladder_UpperLow`, `Ladder_RW`, 15 rows | The bands, zones and risk weights of table 4 | `SRC-02`, MAR40.26, table 4, and MAR40.28 for the zones | Equal. *1 month* is 1/12 of a year, and *3 months* 0.25 |
 | `CouponThreshold` | 0.03 | `SRC-02`, MAR40.26 | Equal |
 | `VerticalDisallowance` | 0.10 | `SRC-02`, MAR40.27 | Equal |
@@ -171,6 +171,7 @@ positions, the *Specific risk* of the interest rate row of `Results`.
 | 2 | Positions in the identical issue are netted: the rows with the same *Issue ID*, without regard to case. A row without an *Issue ID* is an issue of its own. No other offsetting is made | `SRC-02`, MAR40.5 |
 | 3 | The charge rate is that of table 1, for the category, the rating grade and, where the table has them, the three ranges of the residual term to final maturity: 6 months or less, over 6 and up to 24 months, over 24 months | `SRC-02`, MAR40.6, table 1 |
 | 4 | The charge of an issue is the absolute net value multiplied by the rate, and the requirement is the sum over the issues | `SRC-02`, MAR40.4 and MAR40.5 |
+| 5 | Under the `CRR` regime a position's category is `CRR` (or `NONE`), and its grade the risk weight that the issuer or the security would receive under the standardised approach for credit risk, `RW 0%`, `RW 10%`, `RW 20%`, `RW 50%`, `RW 75%`, `RW 100%` or `RW 150%`. The rate is 0% at `RW 0%`; 0.25%, 1.00% and 1.60% at `RW 20%` and `RW 50%`, by the three ranges of the residual term of step 3; half of those, 0.125%, 0.50% and 0.80%, at `RW 10%`, the covered bonds of Article 336(3); 8% at `RW 75%` and `RW 100%`; and 12% at `RW 150%`. The rest of steps 1, 2 and 4 is as under the Basel regime | `SRC-04`, Article 336(1), table 1, and (3) |
 
 **Outputs:**
 
@@ -201,6 +202,25 @@ positions, the *Specific risk* of the interest rate row of `Results`.
   cannot tell a supported instrument from one entered under its name.
 - A category and grade that table 1 does not list, such as `OTHER` with an
   investment grade, reject the row.
+- A weight of 75%, which table 1 of Article 336 does not name, is charged as
+  the category of 100%, 8%, by my decision of 2026-11-20
+  ([#79](https://github.com/danielep71/K-FRTB-SSA/issues/79)). The text of the
+  CRR does not say which category applies: this is an assumption.
+- The user places a position in a category of Article 336 by entering the risk
+  weight, which the workbook does not derive from an exposure class, a credit
+  quality step or a rating. A security of the other qualifying items of
+  Article 336(4) is entered at `RW 50%`, since the article gives it the
+  category of 20% and 50%. The condition of Article 336(2) for an institution on
+  the IRB approach, and the notification of the methodology of Article 336(4),
+  are the institution's.
+- Holdings of the institution's own debt instruments are disregarded for
+  specific risk (Article 327(1)): enter them with category `NONE`, which keeps
+  their general risk. A derivative leg is `NONE`, as under the Basel regime:
+  Articles 328 to 330 do not say in terms that a leg carries specific risk, and
+  this is an assumption.
+- Not supported under the `CRR` regime: the cap of Article 335 at the maximum
+  possible default-risk loss, which is optional, as MAR40.15 is, and which needs
+  that loss as an input.
 
 **Failure behaviour:** `ir_position_status`, on `IRCalc`, is `OK` or one of
 the texts listed under `CALC-03`, which shares the rows.
@@ -294,6 +314,14 @@ interest rate row of `Results`, with its components per currency on
 - `INVALID: repricing date outside AsOfDate to final maturity`
 - `INVALID: SR category must be GOV, QUAL, OTHER or NONE`
 - `INVALID: no MAR40.6 charge for this category and rating grade`
+- `INVALID: SR category must be CRR or NONE under the CRR`
+- `INVALID: no Article 336 charge for this risk weight`
+
+The last two are the texts under the `CRR` regime: the first replaces the test of
+the category, which then accepts `CRR` and `NONE` only, and the second replaces
+the text before them for a category and grade that the table lacks. Under the
+Basel regime the category `CRR` is rejected with the text that lists `GOV`,
+`QUAL`, `OTHER` and `NONE`.
 
 The first test that fails gives the text. A rejected row enters neither
 `CALC-02` nor this calculation.

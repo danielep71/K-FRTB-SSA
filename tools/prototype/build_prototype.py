@@ -103,7 +103,7 @@ RED: dict[str, Any] = dict(font=Font(color="FF9C0006"), fill=PatternFill(bgColor
 GREEN: dict[str, Any] = dict(font=Font(color="FF375623"), fill=PatternFill(bgColor="FFE2EFDA"))
 AMBER: dict[str, Any] = dict(font=Font(color="FF9C5700"), fill=PatternFill(bgColor="FFFFEB9C"))
 
-GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated"'
+GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated,RW 0%,RW 10%,RW 20%,RW 50%,RW 75%,RW 100%,RW 150%"'
 # Status test shared by the four calculation sheets; {r} is the row number.
 # The PositionIDs are compared as the engine compares them, as text without
 # regard to case. COUNTIF would read "*", "?" and "~" in a PositionID as a
@@ -506,14 +506,16 @@ def params_sr_table(wb: Book, ws: Sheet, r: int) -> int:
         put(ws, f"E{r}", grd, kind=None, align="center")
         put(ws, f"F{r}", {"Any": "Any", "<=6m": "6 months or less", "6m-24m": "over 6 to 24 months", ">24m": "over 24 months"}[mb], kind=None, align="center")
         put(ws, f"G{r}", ch, NF_PCT, "const", align="center")
-        put(ws, f"H{r}", "MAR40.6", kind=None, color=GREY_TXT)
+        put(ws, f"H{r}", "CRR Art. 336" if cat == "CRR" else "MAR40.6", kind=None, color=GREY_TXT)
         r += 1
     sr_last = r - 1
     name(wb, "SR_Key", f"Params!$C${sr_first}:$C${sr_last}")
     name(wb, "SR_Charge", f"Params!$G${sr_first}:$G${sr_last}")
     put(ws, f"C{r}", "GOV = central governments and central banks; QUAL = qualifying (investment-grade PSEs, MDBs, corporates); "
         "OTHER = all other issuers; NONE = derivative legs and positions without issuer risk. A category / grade pair not in "
-        "this table is rejected (for example OTHER with an investment-grade rating: use QUAL).", kind=None, color=GREY_TXT)
+        "this table is rejected (for example OTHER with an investment-grade rating: use QUAL). CRR = the category of the CRR regime, "
+        "where the grade is the risk weight of the credit risk standardised approach: under the CRR a position is CRR or NONE, "
+        "and under Basel it is GOV, QUAL, OTHER or NONE.", kind=None, color=GREY_TXT)
     return r + 2
 
 
@@ -619,7 +621,7 @@ def build_ir_positions(ctx: Context) -> None:
          ("Issue ID (specific-risk netting)", 22.6), ("Comment", 44)],
         [[p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]] for p in D.IR],
         "P", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
-              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,NONE"', "N": GRADES},
+              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,CRR,NONE"', "N": GRADES},
         {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "#,##0", "I": "@", "J": "0.000%", "K": NF_DATE,
          "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@"})
 
@@ -722,9 +724,11 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",NOT(ISNUMBER(IRPositions!L{r}))),"INVALID: Next repricing date required for a floating-rate position",'
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",' + NOT_A_DATE.format(cell="IRPositions!L{r}") + '),"INVALID: Next repricing date is not a date",'
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
-        'IF(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
+        'IF(AND(UPPER(TRIM(Regime))="CRR",$O{r}<>"CRR",$O{r}<>"NONE"),"INVALID: SR category must be CRR or NONE under the CRR",'
+        'IF(AND(UPPER(TRIM(Regime))<>"CRR",OR(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),$O{r}="CRR")),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
+        'IF(AND($Q{r}="NO MATCH",UPPER(TRIM(Regime))="CRR"),"INVALID: no Article 336 charge for this risk weight",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
-        '"OK"))))))))))))))))))')
+        '"OK"))))))))))))))))))))')
     grd = text("IRPositions!N{r}")
     issue = text("IRPositions!O{r}")
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'

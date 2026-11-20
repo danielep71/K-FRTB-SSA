@@ -223,8 +223,8 @@ class DataContract(unittest.TestCase):
             first, last = names[name].attr_text.split("!")[1].replace("$", "").split(":")
             return int(re.sub(r"\D", "", last)) - int(re.sub(r"\D", "", first)) + 1
 
-        self.assertEqual((rows("SR_Key"), rows("Ladder_RW"), rows("FX_Ccy")), (18, 15, 20))
-        for dataset, count in (("DS-03", "18 rows"), ("DS-04", "15 rows"), ("DS-05", "20 rows")):
+        self.assertEqual((rows("SR_Key"), rows("Ladder_RW"), rows("FX_Ccy")), (31, 15, 20))
+        for dataset, count in (("DS-03", "31 rows"), ("DS-04", "15 rows"), ("DS-05", "20 rows")):
             with self.subTest(dataset=dataset):
                 self.assertIn(count, self.datasets[dataset]["granularity"])
 

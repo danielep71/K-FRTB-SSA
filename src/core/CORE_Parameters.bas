@@ -115,7 +115,7 @@ Public Function BuildParameters( _
             Err.Raise ERR_ARGUMENT, "CORE_Parameters.BuildParameters", _
                 "RawNumeric must be (1 To " & PI_COUNT & ")."
         End If
-        ReDim Parameters(1 To PI_COUNT)
+        ReDim Parameters(1 To PI_VECTOR)
 
         'Scalars of text and date type.
         If IsDateSerial(RawAsOfDate) Then
@@ -329,7 +329,8 @@ Public Sub ReferenceParameters( _
 '   Return the MAR40 reference parameter vector.
 '
 ' RETURNS
-'   Parameters(1 To PI_COUNT), from PRM_REFERENCE_VALUES.
+'   Parameters(1 To PI_VECTOR): the first PI_COUNT items from
+'   PRM_REFERENCE_VALUES, and 0 (the Basel regime) in PI_REGIME_FLAG.
 '
 ' REFERENCE
 '   MAR40.1-40.2, 40.27-40.28, 40.43, 40.47, 40.61, 40.72-40.73.
@@ -339,6 +340,7 @@ Public Sub ReferenceParameters( _
 '==============================================================================
 '
         ParseList PRM_REFERENCE_VALUES, PI_COUNT, 0#, Parameters
+        ReDim Preserve Parameters(1 To PI_VECTOR)
 
 End Sub
 

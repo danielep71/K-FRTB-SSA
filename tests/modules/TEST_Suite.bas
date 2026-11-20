@@ -66,8 +66,8 @@ Attribute VB_Name = "TEST_Suite"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
-        Private Const EXPECTED_CASES      As Long = 13
-        Private Const EXPECTED_ASSERTIONS As Long = 130
+        Private Const EXPECTED_CASES      As Long = 14
+        Private Const EXPECTED_ASSERTIONS As Long = 143
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=13; assertions=130; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=14; assertions=143; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -205,6 +205,7 @@ Private Sub RunSuite()
         CaseEquity
         CaseCommodity
         CaseInterestRateRows
+        CaseSpecificRiskCrr
         CaseIssueNetting
         CaseDateBounds
         CaseParameters
@@ -580,6 +581,112 @@ Private Sub CaseInterestRateRows()
             Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
         TEST_Harness.AssertNear "general-total", 32500, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
         TEST_Harness.AssertEqualDouble "rows-rejected", 6, Totals(TOT_REJECTED)
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+
+Private Sub CaseSpecificRiskCrr()
+'
+'==============================================================================
+'                             CaseSpecificRiskCrr
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Specific risk under the CRR regime: the category CRR with the risk weight
+'   as its grade, the three ranges of the residual term, a weight that the
+'   table does not list, and the categories of the other regime.
+'
+' REFERENCE
+'   Article 336(1), table 1, and (3): 0% at a weight of 0%; 0.25%, 1.00% and
+'   1.60% at 20% and 50%, by the residual term; half of that at 10%; 8% at
+'   100%, and, by decision (#79), at 75%; 12% at 150%. Each position is
+'   1,000,000; the rows without an Issue ID do not net.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+    Dim InputRows()      As Variant   'IRPositions cells
+    Dim FxCodes()        As String    'FX table codes
+    Dim FxRates()        As Double    'FX table rates
+    Dim Parameters()     As Double    'MAR40 parameters
+    Dim Ladder()         As Double    'MAR40 ladder
+    Dim Labels()         As String    'Ladder labels
+    Dim SrKeys()         As String    'Specific-risk keys
+    Dim SrCharges()      As Double    'Specific-risk charges
+    Dim RowOutput()      As Variant   'IRCalc
+    Dim LadderOutput()   As Variant   'IR_Ladder
+    Dim ZoneOutput()     As Variant   'IR_Zones
+    Dim Totals()         As Double    'Totals
+    Dim AsOfDate         As Double    'Reporting date
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "specific-risk-crr"
+        ReferenceParameters Parameters
+        ReferenceLadder Ladder
+        ReDim Labels(1 To BAND_COUNT, 1 To 2)
+        FxTable "EUR|XAU", FxCodes, FxRates
+        ReDim SrKeys(1 To 6)
+        ReDim SrCharges(1 To 6)
+        SrKeys(1) = "CRR|RW 0%|ANY": SrCharges(1) = 0
+        SrKeys(2) = "CRR|RW 10%|>24M": SrCharges(2) = 0.008
+        SrKeys(3) = "CRR|RW 20%|<=6M": SrCharges(3) = 0.0025
+        SrKeys(4) = "CRR|RW 75%|ANY": SrCharges(4) = 0.08
+        SrKeys(5) = "CRR|RW 150%|ANY": SrCharges(5) = 0.12
+        SrKeys(6) = "GOV|AAA TO AA-|ANY": SrCharges(6) = 0
+        AsOfDate = CDbl(DateSerial(2026, 9, 30))
+        Parameters(PI_REGIME_FLAG) = 1#
+        InputRows = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R1", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "CRR", "RW 10%", ""), _
+            Array("R2", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2026, 12, 31), _
+                  Empty, "CRR", "RW 20%", ""), _
+            Array("R3", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "CRR", "RW 75%", ""), _
+            Array("R4", "", "Bond", "EUR", "Short", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "crr", "RW 150%", ""), _
+            Array("R5", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "GOV", "AAA to AA-", ""), _
+            Array("R6", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "CRR", "RW 33%", ""), _
+            Array("R7", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "NONE", "", ""), _
+            Array("R8", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "CRR", "RW 0%", "")))
+        CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
+                              SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
+        TEST_Harness.AssertEqualText "weight-10-status", ST_OK, CStr(RowOutput(1, 2))
+        TEST_Harness.AssertNear "weight-10-over-24-months", 8000, _
+            NumberOf(RowOutput(1, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "weight-20-up-to-6-months", 2500, _
+            NumberOf(RowOutput(2, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "weight-75-as-100", 80000, _
+            NumberOf(RowOutput(3, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "weight-150-short-lower-case-category", 120000, _
+            NumberOf(RowOutput(4, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualText "basel-category-under-the-crr", _
+            ST_INVALID & "SR category must be CRR or NONE under the CRR", CStr(RowOutput(5, 2))
+        TEST_Harness.AssertEqualText "weight-not-in-the-table", _
+            ST_INVALID & "no Article 336 charge for this risk weight", CStr(RowOutput(6, 2))
+        TEST_Harness.AssertEqualText "category-none-under-the-crr", ST_OK, CStr(RowOutput(7, 2))
+        TEST_Harness.AssertNear "weight-0", 0, NumberOf(RowOutput(8, 20)), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "specific-total-under-the-crr", 210500, _
+            Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualDouble "rows-rejected-under-the-crr", 2, Totals(TOT_REJECTED)
+        Parameters(PI_REGIME_FLAG) = 0#
+        InputRows = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R9", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "CRR", "RW 20%", ""), _
+            Array("R10", "", "Bond", "EUR", "Long", 1000000, "Fixed", 0.05, DateSerial(2031, 10, 1), _
+                  Empty, "GOV", "AAA to AA-", "")))
+        CalculateInterestRate InputRows, AsOfDate, Parameters, FxCodes, FxRates, "XAU", SrKeys, _
+                              SrCharges, Ladder, Labels, RowOutput, LadderOutput, ZoneOutput, Totals
+        TEST_Harness.AssertEqualText "crr-category-under-basel", _
+            ST_INVALID & "SR category must be GOV, QUAL, OTHER or NONE", CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualText "basel-category-under-basel", ST_OK, CStr(RowOutput(2, 2))
         Exit Sub
 
 CaseFailed:

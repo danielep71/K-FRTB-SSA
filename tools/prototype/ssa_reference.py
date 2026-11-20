@@ -198,6 +198,22 @@ SR: dict[tuple[str, str, str], float] = {
     ("OTHER", "B+ to B-", "Any"): 0.12,
     ("OTHER", "Below B-", "Any"): 0.12,
     ("OTHER", "Unrated", "Any"): 0.08,
+    # CRR Article 336, table 1, by the risk weight of the credit risk standardised approach. A weight of 10%
+    # (Article 336(3)) is half of the second category; a weight of 75%, which the table does not name, is read
+    # as the category of 100%, by decision (#79).
+    ("CRR", "RW 0%", "Any"): 0.0,
+    ("CRR", "RW 10%", "<=6m"): 0.00125,
+    ("CRR", "RW 10%", "6m-24m"): 0.005,
+    ("CRR", "RW 10%", ">24m"): 0.008,
+    ("CRR", "RW 20%", "<=6m"): 0.0025,
+    ("CRR", "RW 20%", "6m-24m"): 0.01,
+    ("CRR", "RW 20%", ">24m"): 0.016,
+    ("CRR", "RW 50%", "<=6m"): 0.0025,
+    ("CRR", "RW 50%", "6m-24m"): 0.01,
+    ("CRR", "RW 50%", ">24m"): 0.016,
+    ("CRR", "RW 75%", "Any"): 0.08,
+    ("CRR", "RW 100%", "Any"): 0.08,
+    ("CRR", "RW 150%", "Any"): 0.12,
 }
 
 

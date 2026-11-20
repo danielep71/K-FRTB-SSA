@@ -246,7 +246,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 | Area | Sheet | Kind | Written by | Holds |
 | --- | --- | --- | --- | --- |
 | Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `FXDeMinimisRate`: code, description, value, reference, MAR40 value and a *Changed* flag |
-| Specific-risk table | `shParams` | Input | Users | 18 rows: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
+| Specific-risk table | `shParams` | Input | Users | 31 rows, 18 of MAR40 and 13 of the CRR: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
 | Maturity ladder | `shParams` | Input | Users | 15 time bands: zone, upper bounds and labels by coupon, and risk weight (the `Ladder_` names) |
 | FX table | `shParams` | Input | Users | Up to 20 currencies with their rate to the reporting currency (`FX_Ccy`, `FX_Rate`) |
 | `IRPositions_Header` | `shIRPositions` | Input | Users | One row per debt position or derivative leg; the rows vary |

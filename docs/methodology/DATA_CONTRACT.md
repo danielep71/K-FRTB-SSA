@@ -20,7 +20,7 @@ This table and the field tables are rendered from the
 | --- | --- | --- | --- | --- | --- | --- |
 | *Illustrative:* `DS-01` | Example positions | Upstream system or manual input | Per reporting date | One row per position | `positions.csv` | `UTF-8` |
 | `DS-02` | Parameters | Typed by the user | Per reporting date for the first two fields; the others are the reference values of SRC-02 unless a what-if changes them | One record: the Value column of the parameter list, one field per row | `Params` |  |
-| `DS-03` | Specific-risk charges | Typed by the user | Fixed: the reference values of SRC-02 unless a what-if changes them | One row per category, rating grade and range of residual maturity; 18 rows | `Params` |  |
+| `DS-03` | Specific-risk charges | Typed by the user | Fixed: the reference values of SRC-02 unless a what-if changes them; the rows of the category CRR are those of SRC-04 | One row per category, rating grade and range of residual maturity; 31 rows | `Params` |  |
 | `DS-04` | Maturity ladder | Typed by the user | Fixed: the reference values of SRC-02 unless a what-if changes them | One row per time band; 15 rows | `Params` |  |
 | `DS-05` | FX rates | Typed by the user | Per reporting date | One row per currency, and one for gold; up to 20 rows | `Params` |  |
 | `DS-06` | Interest rate positions | Typed by the user | Per reporting date | One row per debt position or derivative leg; up to 500 rows | `IRPositions` |  |
@@ -119,8 +119,8 @@ Read from the sheet `Params`.
 | Field | Type | Unit or currency | Required | Allowed values or range | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `key` | Text | — | Yes | Any | Column SR_Key, name SR_Key. Category, rating grade and maturity range joined by a vertical bar, as the workbook builds it for each position |
-| `category` | Text | — | Yes | `GOV`, `QUAL`, `OTHER` | Column Category. Repeats the first part of the key; not read |
-| `rating_grade` | Text | — | Yes | `AAA to AA-`, `A+ to BBB-`, `BB+ to BB-`, `B+ to B-`, `Below B-`, `Unrated` | Column Rating grade. Repeats the second part of the key; not read |
+| `category` | Text | — | Yes | `GOV`, `QUAL`, `OTHER`, `CRR` | Column Category. Repeats the first part of the key; not read |
+| `rating_grade` | Text | — | Yes | `AAA to AA-`, `A+ to BBB-`, `BB+ to BB-`, `B+ to B-`, `Below B-`, `Unrated`, `RW 0%`, `RW 10%`, `RW 20%`, `RW 50%`, `RW 75%`, `RW 100%`, `RW 150%` | Column Rating grade. Repeats the second part of the key; not read. Under the category CRR, the risk weight of the credit risk standardised approach |
 | `residual_maturity` | Text | — | Yes | `Any`, `6 months or less`, `over 6 to 24 months`, `over 24 months` | Column Residual maturity. Describes the third part of the key; not read |
 | `charge` | Decimal | Decimal fraction | Yes | 0 to 1 | Column Charge, name SR_Charge |
 | `reference` | Text | — | No | Any | Column Reference. Not read |
@@ -166,8 +166,8 @@ Read from the sheet `IRPositions`.
 | `coupon` | Decimal | Decimal fraction | No | Any | Column Coupon (decimal). Required for a fixed-rate position |
 | `final_maturity_date` | Date, `YYYY-MM-DD` | — | Yes | Any | Column Final maturity date. Not before the reporting date |
 | `next_repricing_date` | Date, `YYYY-MM-DD` | — | No | Any | Column Next repricing date (floating). Required for a floating-rate position: from the reporting date to the final maturity |
-| `sr_category` | Text | — | Yes | `GOV`, `QUAL`, `OTHER`, `NONE` | Column SR category. NONE: no specific risk |
-| `rating_grade` | Text | — | No | `AAA to AA-`, `A+ to BBB-`, `BB+ to BB-`, `B+ to B-`, `Below B-`, `Unrated` | Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03 |
+| `sr_category` | Text | — | Yes | `GOV`, `QUAL`, `OTHER`, `CRR`, `NONE` | Column SR category. NONE: no specific risk. CRR: the category of the CRR regime, the only one of the two (with NONE) that regime accepts; GOV, QUAL and OTHER are those of the Basel regime |
+| `rating_grade` | Text | — | No | `AAA to AA-`, `A+ to BBB-`, `BB+ to BB-`, `B+ to B-`, `Below B-`, `Unrated`, `RW 0%`, `RW 10%`, `RW 20%`, `RW 50%`, `RW 75%`, `RW 100%`, `RW 150%` | Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03. Under the category CRR, the risk weight of the credit risk standardised approach that the issuer or the security would receive, as RW 20%; a security that would receive 75% is charged as one at 100%, and a covered bond at 10% as half the category of 20% and 50% |
 | `issue_id` | Text | — | No | Any | Column Issue ID (specific-risk netting). Rows with the same value are one issue; empty: an issue of its own |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
