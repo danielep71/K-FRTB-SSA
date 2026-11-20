@@ -52,6 +52,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unittest.mock
 import warnings
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -498,6 +499,52 @@ def crr_regime(run: Run) -> str:
     return "\n".join(lines)
 
 
+def zone_rows() -> list[list[object]]:
+    """Two swap legs in one currency that leave a position to offset between zones 1 and 3 only.
+
+    The long leg reprices in nine months and the short one in twelve years, so that the zone 2 is empty
+    and the whole of the zone 1 position is matched against the zone 3."""
+    day = datetime.timedelta
+    return [
+        ["IR-Z13A", "T", "Swap leg", "USD", "Long", 100e6, "Floating", None,
+         ssa_reference.AS_OF + day(days=3650), ssa_reference.AS_OF + day(days=270), "NONE", "", ""],
+        ["IR-Z13B", "T", "Swap leg", "USD", "Short", 100e6, "Floating", None,
+         ssa_reference.AS_OF + day(days=5000), ssa_reference.AS_OF + day(days=4380), "NONE", "", ""]]
+
+
+def crr_zones(run: Run) -> str:
+    """The offset between zones 1 and 3 of both regimes, against the reference model, in both workbooks."""
+    lines: list[str] = []
+    extra = [(*row, "") for row in zone_rows()]
+    for name, rate, field in (("Basel", 1.00, "SSA_Requirement"),
+                              ("CRR", 1.50, "SSA_RequirementBeforeTransition")):
+        paths = []
+        for source, suffix in ((run.formula, "xlsx"), (run.workbook, "xlsm")):
+            staged = run.folder / f"zone-source.{suffix}"
+            workbook = load(source)
+            append_rows(workbook["IRPositions"], FIRST_ROW + len(ssa_reference.IR), zone_rows())
+            workbook.save(staged)
+            target = run.folder / f"zone-{name}.{suffix}"
+            regime(staged, target, name, datetime.date(2029, 12, 31), 1e10)
+            paths.append(target)
+        formula, workbook_path = paths
+        values, output = run.folder / "zone-formula-values.xlsx", run.folder / "vba-zone.xlsx"
+        run.macro(formula, "-", values)
+        result = run.macro(workbook_path, RUN, output)
+        if not result.startswith("RESULT=OK;"):
+            raise Failure(f"{name}: {result}")
+        compared = run.compare(output, values)
+        with unittest.mock.patch.object(ssa_reference, "IR", [*ssa_reference.IR, *extra]):
+            expected = ssa_reference.calc_all(rate)["total"]
+        for path in (output, values):
+            (given,) = read_names(path, field)
+            if not compare_outputs.same(given, expected):
+                raise Failure(f"{name}, {path.name}: {field} {given}, the reference model {expected} "
+                              f"with {rate:.0%} between zones 1 and 3")
+        lines.append(f"{name}: {rate:.0%} between zones 1 and 3, requirement {expected:,.2f}, {compared}")
+    return "\n".join(lines)
+
+
 def crr_categories(run: Run) -> str:
     """The categories of the other regime, and a weight that the table lacks, in both workbooks."""
     lines: list[str] = []
@@ -551,6 +598,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Unusable Params values stop the run", stopped_run),
     ("The CRR regime: the transitional factor and the stops", crr_regime),
     ("The categories of each regime", crr_categories),
+    ("The offset between zones 1 and 3 of each regime", crr_zones),
     ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
 )

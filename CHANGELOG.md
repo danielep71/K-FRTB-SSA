@@ -65,6 +65,16 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The general market risk of debt instruments under the `CRR` regime: the
+  offset between zones 1 and 3 of the maturity method is charged at 150%,
+  Article 339(9), point (f), of Regulation (EU) No 575/2013, in place of the
+  100% of MAR40.28, from the new parameter `HorizontalZone13CRR`. The bands,
+  the weights and the other disallowances are the same as in MAR40, and the
+  results under Basel do not change. The reversal of the first two offsets
+  that paragraph 6 allows and the duration-based calculation of Article 340
+  are not supported, and no registered test case has an expected value under
+  the `CRR`; nothing was run in Excel
+  ([#80](https://github.com/danielep71/K-FRTB-SSA/issues/80)).
 - The specific risk of debt instruments under the `CRR` regime, by Article 336
   of Regulation (EU) No 575/2013: the category `CRR` of the specific-risk table,
   whose grade is the risk weight that the issuer or the security would receive

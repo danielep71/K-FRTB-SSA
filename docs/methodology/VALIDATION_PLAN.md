@@ -95,6 +95,7 @@ and to the test cases that test it, with its validation status:
 | `SRC-02` | MAR40.28, table 5 | `CALC-03.7` | `CORE_InterestRate.LadderCharges`, `CORE_InterestRate.Offset` | `bcbs119-c2-maturity-method`, `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
 | `SRC-02` | MAR40.23 | `CALC-03.8` | `CORE_InterestRate.LadderCharges` | `bcbs119-c2-maturity-method`, `mar40-27-vertical-disallowance`, `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
 | `SRC-02` | MAR40.23 | `CALC-03.9` | `CORE_InterestRate.LadderCharges` | `bcbs119-c2-maturity-method`, `mar40-27-vertical-disallowance`, `illustrative-ir-time-band-limits`, `illustrative-sample-ir-general-market-risk` | Exercised |
+| `SRC-04` | Article 339(9), point (f) | `CALC-03.10` | `CORE_InterestRate.LadderCharges` | — | Not validated |
 | `SRC-02` | MAR40.46 | `CALC-04.1` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
 | `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.2` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
 | `SRC-02` | MAR40.47, and table 8 of MAR40.52 | `CALC-04.3` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |

@@ -475,6 +475,8 @@ def params_list(wb: Book, ws: Sheet) -> int:
          "CRR Art. 351", None),
         ("FXDeMinimisRate", "CRR: no FX requirement unless the overall net open position exceeds this share of the total own funds",
          0.02, "const", NF_PCT, "CRR Art. 351", 0.02),
+        ("HorizontalZone13CRR", "CRR: horizontal disallowance between zones 1 and 3", 1.50, "const", NF_PCT,
+         "CRR Art. 339(9)(f)", 1.50),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -919,7 +921,8 @@ def build_ir_ladder(ctx: Context) -> None:
 def build_ir_zones(ctx: Context) -> None:
     ws = new_sheet(ctx.wb, "IR_Zones", "Interest rate zones and charges",
                    "Per currency (MAR40.28): net band positions offset within each zone, then between zones 1-2, 2-3 and 1-3 "
-                   "in that order; the residual net position is charged at 100%. No offsetting across currencies.",
+                   "in that order; the residual net position is charged at 100%. Under the CRR regime the zone 1-3 offset "
+                   "is charged at 150% (Article 339(9)(f)). No offsetting across currencies.",
                    "AF", "output",
                    {**{COL(c): 12.6 for c in range(4, 33)}, "C": 8.6, "D": 9.6})
     labels = ["Ccy", "Positions used", "Vertical disallowance",
@@ -970,7 +973,7 @@ def zone_formulas(ccy: int, rr: int) -> dict[str, str]:
         "X": f"=IF($W{rr}*$T{rr}<0,MIN(ABS($W{rr}),ABS($T{rr})),0)",
         "Y": f"=$W{rr}-SIGN($W{rr})*$X{rr}", "Z": f"=$T{rr}-SIGN($T{rr})*$X{rr}",
         "AA": f"=IF($V{rr}*$Z{rr}<0,MIN(ABS($V{rr}),ABS($Z{rr})),0)",
-        "AB": f"=HorizontalAdjacent*($U{rr}+$X{rr})+HorizontalZone13*$AA{rr}",
+        "AB": f'=HorizontalAdjacent*($U{rr}+$X{rr})+IF(UPPER(TRIM(Regime))="CRR",HorizontalZone13CRR,HorizontalZone13)*$AA{rr}',
         "AC": f"=ABS($J{rr}+$O{rr}+$T{rr})",
         "AD": f"=$E{rr}+$I{rr}+$N{rr}+$S{rr}+$AB{rr}+$AC{rr}",
         "AE": f'=IF($C{rr}="",0,{sum_where(IC("V"), same(IC("E"), currency))})',
@@ -1423,7 +1426,7 @@ def build_readme(ctx: Context) -> None:
          "by residual maturity, floating-rate positions by next repricing date; coupons below 3% use the low-coupon bands. "
          "Weighted position = value x risk weight. Charge = 10% of the matched weighted position in each band + 40% / 30% / 30% "
          "of the matched band positions within zones 1 / 2 / 3 + 40% of the zone 1-2 and zone 2-3 offsets + 100% of the zone "
-         "1-3 offset + 100% of the residual net position. No offsetting across currencies."),
+         "1-3 offset (150% under the CRR regime) + 100% of the residual net position. No offsetting across currencies."),
         ("Equity (MAR40.41-40.50)", "Positions in the same stock (or index) in a market net. Specific risk = 8% x |net| per "
          "single name; index contracts carry a further 2% x |net| per index; general market risk = 8% x |net| per market, "
          "single names and indices together."),

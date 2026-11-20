@@ -479,8 +479,9 @@ Public Sub LadderCharges( _
 '                  reporting currency.
 '   WeightedShort  (1 To BAND_COUNT) weighted short positions, >= 0.
 '   Ladder         (1 To BAND_COUNT, 1 To LD_WIDTH); LD_ZONE is used.
-'   Parameters     Vector (1 To PI_COUNT); PI_VERTICAL, PI_ZONE1 to 3,
-'                  PI_ADJACENT and PI_ZONE13 are used.
+'   Parameters     Vector (1 To PI_VECTOR); PI_VERTICAL, PI_ZONE1 to 3,
+'                  PI_ADJACENT and PI_ZONE13 are used, and PI_ZONE13_CRR in
+'                  place of PI_ZONE13 where PI_REGIME_FLAG is 1.
 '
 ' RETURNS
 '   Components(1 To ZC_COUNT), reporting currency: ZC_VERTICAL; per zone z
@@ -492,10 +493,12 @@ Public Sub LadderCharges( _
 '   MAR40.27 (10% of the matched weighted position per band), MAR40.28 and
 '   Table 5 (40% / 30% / 30% within zones, 40% between adjacent zones,
 '   100% between zones 1 and 3, offsets in the order 1-2, 2-3, 1-3; 100%
-'   of the residual net position).
+'   of the residual net position). Under the CRR regime, Article 339(9),
+'   points (e) and (f): 40% between adjacent zones and 150% between zones
+'   1 and 3.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-20
 '==============================================================================
 '
     Dim ZoneLong(1 To ZONE_COUNT)  As Double    'Net long band positions per zone
@@ -505,6 +508,7 @@ Public Sub LadderCharges( _
     Dim BlockStart  As Long        'First component of the zone block
     Dim BandNet     As Double      'Net weighted position of a band
     Dim Matched     As Double      'An offset
+    Dim Rate13      As Double      'Disallowance between zones 1 and 3 of the regime
     Dim Zone1       As Double      'Zone 1 net, updated by the offsets
     Dim Zone2       As Double      'Zone 2 net, updated by the offsets
     Dim Zone3       As Double      'Zone 3 net, updated by the offsets
@@ -556,9 +560,11 @@ Public Sub LadderCharges( _
         Components(ZC_Z2_AFTER23) = Zone2
         Components(ZC_Z3_AFTER23) = Zone3
         Components(ZC_MATCHED13) = Offset(Zone1, Zone3)
+        Rate13 = Parameters(PI_ZONE13)
+        If Parameters(PI_REGIME_FLAG) = 1# Then Rate13 = Parameters(PI_ZONE13_CRR)
         Components(ZC_BETWEEN) = Parameters(PI_ADJACENT) _
             * (Components(ZC_MATCHED12) + Components(ZC_MATCHED23)) _
-            + Parameters(PI_ZONE13) * Components(ZC_MATCHED13)
+            + Rate13 * Components(ZC_MATCHED13)
         Components(ZC_NET) = Abs(ZoneNet(1) + ZoneNet(2) + ZoneNet(3))
         Components(ZC_GENERAL) = Components(ZC_VERTICAL) _
             + Components(ZC_ZONE_FIRST + 3) + Components(ZC_ZONE_FIRST + 8) _

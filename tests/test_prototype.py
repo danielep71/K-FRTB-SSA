@@ -106,6 +106,19 @@ class Reference(unittest.TestCase):
             # 8% of each position, not of a net of zero.
             self.assertAlmostEqual(ssa_reference.calc_ir()["EUR"]["sr"], 160_000.0, places=6)
 
+    def test_the_published_example_under_the_crr(self) -> None:
+        # The worked example C.2 of SRC-03: 1,000,000 of the zone 1 position is matched against zone 3,
+        # so the CRR's 150% (Article 339(9)(f)) adds 50% of it to the published charge of 4,580,000.
+        weighted = {2: [150_000.0, 0.0], 3: [0.0, 200_000.0], 4: [1_050_000.0, 0.0],
+                    7: [1_125_000.0, 0.0], 10: [500_000.0, 5_625_000.0]}
+        zone = {band: z for band, z, _, _, _ in ssa_reference.LADDER}
+        basel = ssa_reference.ladder_charges(weighted, zone)
+        crr = ssa_reference.ladder_charges(weighted, zone, 1.50)
+        self.assertEqual((basel["between"], basel["gmr"]), (1_450_000.0, 4_580_000.0))
+        self.assertEqual((crr["between"], crr["gmr"]), (1_950_000.0, 5_080_000.0))
+        self.assertEqual((crr["vd"], crr["within"], crr["net"]),
+                         (basel["vd"], basel["within"], basel["net"]))
+
     def test_offsets_between_zones(self) -> None:
         self.assertEqual(ssa_reference.offset(100.0, -30.0), (30.0, 70.0, 0.0))
         self.assertEqual(ssa_reference.offset(-100.0, 30.0), (30.0, -70.0, 0.0))
@@ -207,7 +220,7 @@ class Generator(NeedsOpenpyxl):
         # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
         book = openpyxl.load_workbook(self.template)
         self.assertTrue(book["Params"]["E6"].protection.locked is False)
-        self.assertTrue(book["Params"]["G36"].protection.locked is False)
+        self.assertTrue(book["Params"]["G37"].protection.locked is False)
         self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
         self.assertTrue(book["Results"]["C6"].protection.locked)
         self.assertTrue(book["IRPositions"]["C4"].protection.locked)
