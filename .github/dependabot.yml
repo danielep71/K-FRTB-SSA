@@ -2,7 +2,7 @@
 # parser in .github/requirements.txt, and the hash-locked quality tools in
 # tools/requirements-quality-ci.txt. Every update arrives as a pull request
 # for my review; nothing merges automatically.
-# Pull requests target the active release branch, release/0.2.0, named in
+# Pull requests target the active release branch, release/0.3.0, named in
 # target-branch. Remove target-branch again when no release branch is active,
 # and name the next one when it opens. Repository integrity fails while
 # target-branch names a branch that does not exist.
@@ -21,7 +21,7 @@ updates:
       day: monday
       time: "05:00"
       timezone: Europe/Rome
-    target-branch: release/0.2.0
+    target-branch: release/0.3.0
     open-pull-requests-limit: 5
     labels:
       - ci
@@ -43,7 +43,7 @@ updates:
       day: monday
       time: "05:00"
       timezone: Europe/Rome
-    target-branch: release/0.2.0
+    target-branch: release/0.3.0
     open-pull-requests-limit: 5
     labels:
       - ci
@@ -65,7 +65,7 @@ updates:
       day: monday
       time: "05:00"
       timezone: Europe/Rome
-    target-branch: release/0.2.0
+    target-branch: release/0.3.0
     open-pull-requests-limit: 5
     labels:
       - ci
