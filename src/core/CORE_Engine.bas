@@ -87,6 +87,7 @@ Public Sub Calculate( _
     Dim GoldCode       As String     'Gold code
     Dim Regime         As String     'REGIME_BASEL or REGIME_CRR
     Dim TransitionEnd  As Double     'Last date of the transitional multiplier
+    Dim OwnFunds       As Double     'Total own funds
     Dim Ladder()       As Double     'Validated ladder
     Dim LadderLabels() As String     'Band labels
     Dim SrKeys()       As String     'Specific-risk keys
@@ -140,7 +141,8 @@ Public Sub Calculate( _
                                           Inputs(IN_GOLD), Parameters, AsOfDate, ReportingCcy, _
                                           GoldCode, Findings, FindingCount)
         ParameterErrors = ParameterErrors + BuildRegime(Inputs(IN_REGIME), Inputs(IN_TRANSITION_END), _
-                                                        Regime, TransitionEnd, Findings, FindingCount)
+                                                        Inputs(IN_OWN_FUNDS), Regime, TransitionEnd, _
+                                                        OwnFunds, Findings, FindingCount)
         RawLadder = Inputs(IN_LADDER)
         TableErrors = BuildLadder(RawLadder, Ladder, Findings, FindingCount)
         RawSrTable = Inputs(IN_SR_TABLE)
@@ -204,6 +206,10 @@ Public Sub Calculate( _
         Outputs(OUT_FX_CALC) = FxCalc
         Outputs(OUT_CURRENCIES) = CurrencyTable
         AddRowFindings FxCalc, SH_FX_POS, CLng(Inputs(IN_FX_FIRST_ROW)), Findings, FindingCount
+        'CRR Article 351: no requirement below the share of the total own funds.
+        If DeMinimisWaived(Regime, FxTotals(TOT_ONOP), OwnFunds, Parameters(PI_FX_DE_MINIMIS)) Then
+            FxTotals(TOT_GENERAL) = 0#
+        End If
         Summary(1, 1) = FxTotals(TOT_ONOP)
         Summary(2, 1) = FxTotals(TOT_GENERAL)
         Outputs(OUT_FX_SUMMARY) = Summary

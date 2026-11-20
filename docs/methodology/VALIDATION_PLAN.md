@@ -107,6 +107,7 @@ and to the test cases that test it, with its validation status:
 | `SRC-02` | MAR40.60 | `CALC-06.1` | `CORE_ForeignExchange.CalculateForeignExchange` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
 | `SRC-02` | MAR40.60 | `CALC-06.2` | `CORE_ForeignExchange.NetOpenPositionCharge` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
 | `SRC-02` | MAR40.61 | `CALC-06.3` | `CORE_ForeignExchange.NetOpenPositionCharge` | `illustrative-fx-one-sided-positions`, `illustrative-sample-fx`, `mar40-61-table-9` | Exercised |
+| `SRC-04` | Article 351 | `CALC-06.4` | `CORE_ForeignExchange.DeMinimisWaived`, `CORE_Engine.Calculate`, `CORE_Parameters.BuildRegime` | — | Not validated |
 | `SRC-02` | MAR40.74 to MAR40.85 | `CALC-07.1` | `CORE_Parameters.BuildOptionCharges` | `illustrative-option-charges` | Exercised |
 | `SRC-02` | MAR40.2 and MAR40.75 | `CALC-07.2` | `CORE_Engine.ResultsTable` | — | Not validated |
 | `SRC-02` | MAR40.2 and MAR40.4 | `CALC-08.1` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |

@@ -10,7 +10,7 @@ Attribute VB_Name = "CORE_ForeignExchange"
 '
 ' PUBLIC SURFACE
 '   None outside this VBA project (Option Private Module).
-'     CalculateForeignExchange, NetOpenPositionCharge.
+'     CalculateForeignExchange, NetOpenPositionCharge, DeMinimisWaived.
 '
 ' DEPENDENCIES
 '   CORE_Config, CORE_Util.
@@ -226,6 +226,45 @@ Public Sub CalculateForeignExchange( _
                                                     Totals(TOT_ONOP))
 
 End Sub
+
+
+Public Function DeMinimisWaived( _
+    ByVal Regime As String, _
+    ByVal OverallNetOpen As Double, _
+    ByVal OwnFunds As Double, _
+    ByVal Rate As Double) _
+    As Boolean
+'
+'==============================================================================
+'                               DeMinimisWaived
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Tell whether the FX requirement is waived by the de minimis of the CRR:
+'   no requirement unless the overall net open position exceeds a share of
+'   the total own funds.
+'
+' INPUTS
+'   Regime          REGIME_BASEL or REGIME_CRR, from BuildRegime.
+'   OverallNetOpen  Overall net open position, with gold, reporting currency.
+'   OwnFunds        Total own funds, reporting currency.
+'   Rate            Decimal share of the own funds; PI_FX_DE_MINIMIS (0.02).
+'
+' RETURNS
+'   True when Regime is REGIME_CRR and OverallNetOpen does not exceed
+'   Rate x OwnFunds; False otherwise, so that the Basel regime never waives.
+'
+' REFERENCE
+'   Article 351 of Regulation (EU) No 575/2013, from Regulation (EU)
+'   2024/1623: the requirement is calculated if the sum exceeds 2% of total
+'   own funds.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+        DeMinimisWaived = (Regime = REGIME_CRR) And (OverallNetOpen <= Rate * OwnFunds)
+
+End Function
 
 
 Public Function NetOpenPositionCharge( _

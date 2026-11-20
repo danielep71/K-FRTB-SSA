@@ -273,11 +273,12 @@ def unusable(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
-def regime(source: Path, target: Path, name: str, end: object) -> None:
-    """Save ``source`` with the regime and the last date of the transitional multiplier set."""
+def regime(source: Path, target: Path, name: str, end: object, own_funds: object = None) -> None:
+    """Save ``source`` with the regime, the last date of the transitional multiplier and the total own funds set."""
     workbook = load(source)
     named_cell(workbook, "Regime").value = name
     named_cell(workbook, "TransitionalEndDate").value = end
+    named_cell(workbook, "TotalOwnFunds").value = own_funds
     workbook.save(target)
 
 
@@ -409,44 +410,54 @@ def stopped_run(run: Run) -> str:
 
 
 def crr_regime(run: Run) -> str:
-    """The CRR regime on the sample data: the transitional factor in both workbooks, and the stops."""
+    """The CRR regime on the sample data: the transitional factor and the de minimis in both workbooks, and the stops."""
     day = datetime.date
     reporting = ssa_reference.AS_OF
+    last = day(2029, 12, 31)
+    # The overall net open position of the sample is 335 million: 2% of 10 billion is 200 million, of 17 billion
+    # 340 million, of 16 billion 320 million.
+    cases: tuple[tuple[str, str, object, float, float, bool], ...] = (
+        ("the default last date", "crr", last, 1e10, 0.9, False),
+        ("the reporting date as last date", "CRR", reporting, 1e10, 0.9, False),
+        ("the day before the reporting date as last date", "CRR",
+         reporting - datetime.timedelta(days=1), 1e10, 1.0, False),
+        ("own funds whose 2% is above the position", "CRR", last, 1.7e10, 0.9, True),
+        ("own funds whose 2% is below the position", "CRR", last, 1.6e10, 0.9, False))
     lines: list[str] = []
-    # A date, as typed: lower case regime, the last date, the reporting date itself, the day before it.
-    for label, name, end, factor in (
-            ("the default last date", "crr", day(2029, 12, 31), 0.9),
-            ("the reporting date as last date", "CRR", reporting, 0.9),
-            ("the day before the reporting date as last date", "CRR", reporting - datetime.timedelta(days=1), 1.0)):
+    for label, name, end, own_funds, factor, waived in cases:
         formula, workbook = run.folder / "crr-formula.xlsx", run.folder / "crr.xlsm"
         values, output = run.folder / "crr-formula-values.xlsx", run.folder / "vba-crr.xlsx"
-        regime(run.formula, formula, name, end)
-        regime(run.workbook, workbook, name, end)
+        regime(run.formula, formula, name, end, own_funds)
+        regime(run.workbook, workbook, name, end, own_funds)
         run.macro(formula, "-", values)
         result = run.macro(workbook, RUN, output)
         if not result.startswith("RESULT=OK;"):
             raise Failure(f"{label}: {result}")
         compared = run.compare(output, values)
         for path in (output, values):
-            before, after, rwa = read_names(path, "SSA_RequirementBeforeTransition",
-                                            "SSA_Requirement", "SSA_RWA")
+            before, after, rwa, onop, charge = read_names(
+                path, "SSA_RequirementBeforeTransition", "SSA_Requirement", "SSA_RWA", "FX_ONOP", "FX_Charge")
+            expected_charge = 0.0 if waived else 0.08 * onop
             if not (compare_outputs.same(after, before * factor)
-                    and compare_outputs.same(rwa, after * 12.5)):
-                raise Failure(f"{label}, {path.name}: before {before}, after {after}, "
-                              f"RWA {rwa}, factor expected {factor}")
-        lines.append(f"{label}: factor {factor}, {compared}")
-    # A regime and a last date that stop the run.
-    stops: tuple[tuple[str, str, object], ...] = (
-        ("an unknown regime", "EU", day(2029, 12, 31)),
-        ("the CRR with a last date that is no date", "CRR", "never"))
-    for label, name, last in stops:
+                    and compare_outputs.same(rwa, after * 12.5)
+                    and compare_outputs.same(charge, expected_charge)):
+                raise Failure(f"{label}, {path.name}: before {before}, after {after}, RWA {rwa}, "
+                              f"FX charge {charge} on {onop}, factor expected {factor}, "
+                              f"waived expected {waived}")
+        lines.append(f"{label}: factor {factor}, FX {'waived' if waived else 'charged'}, {compared}")
+    # A regime, a last date and total own funds that stop the run.
+    stops: tuple[tuple[str, str, object, object], ...] = (
+        ("an unknown regime", "EU", last, 1e10),
+        ("the CRR with a last date that is no date", "CRR", "never", 1e10),
+        ("the CRR without total own funds", "CRR", last, None))
+    for stop, name, end, funds in stops:
         workbook, output = run.folder / "crr-stop.xlsm", run.folder / "vba-crr-stop.xlsx"
-        regime(run.workbook, workbook, name, last)
+        regime(run.workbook, workbook, name, end, funds)
         result = run.macro(workbook, RUN, output)
         listed = findings(output)
         if not result.startswith("RESULT=STOPPED; errors=1;") or len(listed) != 1:
-            raise Failure(f"{label}: {result}; findings: {sorted(map(str, listed))}")
-        lines.append(f"{label}: stopped, one finding")
+            raise Failure(f"{stop}: {result}; findings: {sorted(map(str, listed))}")
+        lines.append(f"{stop}: stopped, one finding")
     return "\n".join(lines)
 
 

@@ -313,6 +313,27 @@
           "required": false,
           "allowed": null,
           "notes": "Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31"
+        },
+        {
+          "name": "total_own_funds",
+          "type": "decimal",
+          "unit": "Reporting currency",
+          "required": false,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name TotalOwnFunds. Must be a number greater than 0 under the CRR, where the FX requirement is waived while the overall net open position does not exceed FXDeMinimisRate of it"
+        },
+        {
+          "name": "fx_de_minimis_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name FXDeMinimisRate. Reference value 0.02"
         }
       ]
     },
