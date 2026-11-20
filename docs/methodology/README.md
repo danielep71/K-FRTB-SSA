@@ -13,6 +13,7 @@ and the evidence they require, show that the figures are right.
 | [✅ Validation plan](VALIDATION_PLAN.md) | Who checks what, the reference values and cross-checks for each calculation, how each rule traces to its procedure, cases and status, what an evidence record contains, and which Excel host behaviour has been measured. |
 | [🧪 Numerical test cases](TEST_CASES.md) | The format of the synthetic inputs and expected results, with their provenance and tolerances, that the checks enforce. |
 | [📊 Workbook contract](WORKBOOK_CONTRACT.md) | The workbook's sheets, code names, defined names and areas, what each operation writes, and how a failure marks earlier results. |
+| [🔍 CRR comparison](CRR_COMPARISON.md) | For the CRR regime, each rule of the calculation contracts compared with Article 325(2) of the CRR and the articles it points to: what is the same, what differs, what the CRR adds, and the task that takes each. |
 | [🧪 VBA test harness](TEST_HARNESS.md) | The harness that runs the VBA suites in Excel, its outcomes, the log and certification formats, and the evidence an Excel run leaves. |
 
 Read the first five in that order: a rule cites a source, consumes the data
