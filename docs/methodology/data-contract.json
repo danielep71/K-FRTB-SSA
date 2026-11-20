@@ -281,6 +281,38 @@
             "max": 1
           },
           "notes": "Name COMGrossRate"
+        },
+        {
+          "name": "regime",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Basel",
+              "CRR"
+            ]
+          },
+          "notes": "Name Regime. Basel is MAR40, CRR is Article 325(2) of Regulation (EU) No 575/2013; read without regard to case. Reference value Basel"
+        },
+        {
+          "name": "transitional_multiplier",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name TransitionalMultiplier. Multiplies the requirement under the CRR, on a reporting date up to TransitionalEndDate. Reference value 0.9"
+        },
+        {
+          "name": "transitional_end_date",
+          "type": "date",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Name TransitionalEndDate. Read under the CRR only, where it must be a date. Reference value 2029-12-31"
         }
       ]
     },

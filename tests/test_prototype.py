@@ -207,7 +207,7 @@ class Generator(NeedsOpenpyxl):
         # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
         book = openpyxl.load_workbook(self.template)
         self.assertTrue(book["Params"]["E6"].protection.locked is False)
-        self.assertTrue(book["Params"]["G31"].protection.locked is False)
+        self.assertTrue(book["Params"]["G34"].protection.locked is False)
         self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
         self.assertTrue(book["Results"]["C6"].protection.locked)
         self.assertTrue(book["IRPositions"]["C4"].protection.locked)

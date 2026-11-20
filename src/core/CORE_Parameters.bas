@@ -11,7 +11,8 @@ Attribute VB_Name = "CORE_Parameters"
 '
 ' PUBLIC SURFACE
 '   None outside this VBA project (Option Private Module).
-'     BuildParameters, BuildLadder, BuildSpecificRiskTable, BuildFxTable,
+'     BuildParameters, BuildRegime, TransitionalFactor, BuildLadder,
+'     BuildSpecificRiskTable, BuildFxTable,
 '     BuildOptionCharges, ChangedParameterCount, ReferenceParameters,
 '     ReferenceLadder.
 '
@@ -160,6 +161,108 @@ Public Function BuildParameters( _
             End If
         Next i
         BuildParameters = ErrorCount
+
+End Function
+
+
+Public Function BuildRegime( _
+    ByVal RawRegime As Variant, _
+    ByVal RawEndDate As Variant, _
+    ByRef Regime As String, _
+    ByRef EndDate As Double, _
+    ByRef Findings() As String, _
+    ByRef FindingCount As Long) _
+    As Long
+'
+'==============================================================================
+'                                  BuildRegime
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Validate the regime and the last date of the transitional multiplier.
+'
+' INPUTS
+'   RawRegime    Cell value of Regime; Basel or CRR, without regard to case.
+'   RawEndDate   Cell value of TransitionalEndDate; must be a date when the
+'                regime is the CRR, and is not read otherwise.
+'   Findings     Findings list, appended to (CORE_Util.AddFinding).
+'   FindingCount Findings in use; incremented.
+'
+' RETURNS
+'   Number of unusable values. Output parameters: Regime as REGIME_BASEL or
+'   REGIME_CRR (REGIME_BASEL when it is unusable); EndDate as a date serial,
+'   0 when it is not read or unusable.
+'
+' REFERENCE
+'   Article 325(2) and Article 495s(2) of Regulation (EU) No 575/2013, as
+'   amended by Regulation (EU) 2024/1623 and Delegated Regulation (EU)
+'   2026/1221.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+    Dim ErrorCount  As Long      'Unusable values found
+
+        Regime = REGIME_BASEL
+        EndDate = 0#
+        Select Case CodeText(RawRegime)
+            Case REGIME_BASEL
+                Regime = REGIME_BASEL
+            Case REGIME_CRR
+                Regime = REGIME_CRR
+            Case Else
+                AddError Findings, FindingCount, ErrorCount, PRM_REGIME, "must be Basel or CRR"
+        End Select
+        If Regime = REGIME_CRR Then
+            If IsDateSerial(RawEndDate) Then
+                EndDate = NumberValue(RawEndDate)
+            Else
+                AddError Findings, FindingCount, ErrorCount, PRM_TRANSITION_END, "must be a date"
+            End If
+        End If
+        BuildRegime = ErrorCount
+
+End Function
+
+
+Public Function TransitionalFactor( _
+    ByVal Regime As String, _
+    ByVal AsOfDate As Double, _
+    ByVal EndDate As Double, _
+    ByVal Multiplier As Double) _
+    As Double
+'
+'==============================================================================
+'                              TransitionalFactor
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The factor that the requirement of the simplified standardised approach
+'   is multiplied by on a date: the transitional multiplier under the CRR
+'   until its last date, and 1 under the Basel regime and after that date.
+'
+' INPUTS
+'   Regime       REGIME_BASEL or REGIME_CRR, from BuildRegime.
+'   AsOfDate     Reporting date, a date serial.
+'   EndDate      Last date of the multiplier, a date serial.
+'   Multiplier   The multiplier, a decimal; PI_TRANSITIONAL.
+'
+' RETURNS
+'   Multiplier when Regime is REGIME_CRR and AsOfDate is on or before
+'   EndDate; 1 otherwise.
+'
+' REFERENCE
+'   Article 495s(2) of Regulation (EU) No 575/2013, from Delegated
+'   Regulation (EU) 2026/1221.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+        If Regime = REGIME_CRR And AsOfDate <= EndDate Then
+            TransitionalFactor = Multiplier
+        Else
+            TransitionalFactor = 1#
+        End If
 
 End Function
 

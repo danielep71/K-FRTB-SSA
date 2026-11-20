@@ -85,6 +85,8 @@ Public Sub Calculate( _
     Dim AsOfDate       As Double     'Reporting date serial
     Dim ReportingCcy   As String     'Reporting currency
     Dim GoldCode       As String     'Gold code
+    Dim Regime         As String     'REGIME_BASEL or REGIME_CRR
+    Dim TransitionEnd  As Double     'Last date of the transitional multiplier
     Dim Ladder()       As Double     'Validated ladder
     Dim LadderLabels() As String     'Band labels
     Dim SrKeys()       As String     'Specific-risk keys
@@ -137,6 +139,8 @@ Public Sub Calculate( _
         ParameterErrors = BuildParameters(RawNumeric, Inputs(IN_ASOF), Inputs(IN_REPCCY), _
                                           Inputs(IN_GOLD), Parameters, AsOfDate, ReportingCcy, _
                                           GoldCode, Findings, FindingCount)
+        ParameterErrors = ParameterErrors + BuildRegime(Inputs(IN_REGIME), Inputs(IN_TRANSITION_END), _
+                                                        Regime, TransitionEnd, Findings, FindingCount)
         RawLadder = Inputs(IN_LADDER)
         TableErrors = BuildLadder(RawLadder, Ladder, Findings, FindingCount)
         RawSrTable = Inputs(IN_SR_TABLE)
@@ -205,10 +209,12 @@ Public Sub Calculate( _
         Outputs(OUT_FX_SUMMARY) = Summary
 
         '--- Results: MAR40.2 aggregation ----------------------------------------
-        ResultTable = ResultsTable(IrTotals, EqTotals, CoTotals, FxTotals, OptionCharges, Parameters)
+        ResultTable = ResultsTable(IrTotals, EqTotals, CoTotals, FxTotals, OptionCharges, Parameters, _
+                                   Regime, AsOfDate, TransitionEnd)
         Outputs(OUT_RESULTS) = ResultTable
-        Outputs(OUT_REQUIREMENT) = ResultTable(RC_COUNT + 1, 7)
-        Outputs(OUT_RWA) = ResultTable(RC_COUNT + 1, 8)
+        Outputs(OUT_REQUIREMENT_BEFORE) = ResultTable(RC_COUNT + 1, 7)
+        Outputs(OUT_REQUIREMENT) = ResultTable(RC_COUNT + 2, 7)
+        Outputs(OUT_RWA) = ResultTable(RC_COUNT + 2, 8)
         Outputs(OUT_USED) = ResultTable(RC_COUNT + 1, 10)
 
         '--- Checks rules --------------------------------------------------------
@@ -301,7 +307,10 @@ Private Function ResultsTable( _
     ByRef CoTotals() As Double, _
     ByRef FxTotals() As Double, _
     ByRef OptionCharges() As Double, _
-    ByRef Parameters() As Double) _
+    ByRef Parameters() As Double, _
+    ByVal Regime As String, _
+    ByVal AsOfDate As Double, _
+    ByVal TransitionEnd As Double) _
     As Variant
 '
 '==============================================================================
@@ -310,24 +319,32 @@ Private Function ResultsTable( _
 ' PURPOSE
 '   Build the Results table: per risk class the specific, general and other
 '   charges, the option charge, the requirement before and after scaling,
-'   RWA, share, positions used and rows rejected; then a total row.
+'   RWA, share, positions used and rows rejected; then a total row, and a
+'   row for the transitional multiplier.
 '
 ' INPUTS
 '   IrTotals, EqTotals, CoTotals, FxTotals   Totals vectors of each class.
 '   OptionCharges                            (1 To RC_COUNT), reporting ccy.
-'   Parameters                               Vector; scaling and RWA used.
+'   Parameters                               Vector; scaling, RWA and the
+'                                            transitional multiplier used.
+'   Regime, AsOfDate, TransitionEnd          Regime from BuildRegime, reporting
+'                                            date and last date of the multiplier.
 '
 ' RETURNS
-'   Variant (1 To RC_COUNT + 1, 1 To RESULTS_WIDTH): Results columns E:O.
+'   Variant (1 To RC_COUNT + 2, 1 To RESULTS_WIDTH): Results columns E:O. The
+'   row after the total holds the factor of TransitionalFactor in column 6, the
+'   requirement multiplied by it in column 7 and its RWA in column 8; the
+'   other columns are empty. Under the Basel regime the factor is 1.
 '
 ' REFERENCE
-'   MAR40.1-40.2.
+'   MAR40.1-40.2; Article 325(2) and Article 495s(2) of Regulation (EU)
+'   No 575/2013 for the transitional row.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-20
 '==============================================================================
 '
-    Dim Table(1 To 5, 1 To 11) As Variant    'Result (RC_COUNT + 1 rows, RESULTS_WIDTH columns)
+    Dim Table(1 To 6, 1 To 11) As Variant    'Result (RESULTS_ROWS rows, RESULTS_WIDTH columns)
     Dim Total       As Double    'Column total
     Dim i           As Long      'Risk class
     Dim c           As Long      'Column
@@ -387,6 +404,15 @@ Private Function ResultsTable( _
             Total = Total + Table(i, 9)
         Next i
         Table(RC_COUNT + 1, 9) = Total
+
+        'Transitional row: the factor, the requirement after it and its RWA.
+        For c = 1 To RESULTS_WIDTH
+            Table(RC_COUNT + 2, c) = Empty
+        Next c
+        Table(RC_COUNT + 2, 6) = TransitionalFactor(Regime, AsOfDate, TransitionEnd, _
+                                                    Parameters(PI_TRANSITIONAL))
+        Table(RC_COUNT + 2, 7) = Table(RC_COUNT + 1, 7) * Table(RC_COUNT + 2, 6)
+        Table(RC_COUNT + 2, 8) = Table(RC_COUNT + 2, 7) * Parameters(PI_RWA_MULTIPLIER)
         ResultsTable = Table
 
 End Function

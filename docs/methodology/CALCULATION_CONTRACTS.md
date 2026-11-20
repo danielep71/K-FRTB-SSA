@@ -79,8 +79,17 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `FXChargeRate` | 0.08 | `SRC-02`, MAR40.61 | Equal |
 | `COMDirectionalRate` | 0.15 | `SRC-02`, MAR40.72 | Equal |
 | `COMGrossRate` | 0.03 | `SRC-02`, MAR40.73 | Equal |
+| `TransitionalMultiplier` | 0.9 | `SRC-06`, Article 495s(2) | Equal, on 2026-11-20 |
+| `TransitionalEndDate` | 2029-12-31 | `SRC-06`, Article 495s(2) | Equal, on 2026-11-20 |
+| `Regime` | `Basel` | None: the regime the user chooses, `Basel` or `CRR` | Not applicable |
 | `DaysPerYear` | 365 | None: an assumption of the workbook | Not applicable |
 | `GoldCode` | `XAU` | None: the code under which gold is entered, a convention of the workbook. MAR40.53 treats gold as a currency | Not applicable |
+
+`TransitionalMultiplier` and `TransitionalEndDate` are not values of MAR40: they
+belong to the CRR regime, and `SRC-06` gives them. `Regime` selects between the
+two regimes ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)). Rule
+`C08` counts `TransitionalMultiplier` among the values that differ from their
+reference, as for the others.
 
 No parameter is listed as not yet verified.
 
@@ -541,8 +550,8 @@ table](VALIDATION_PLAN.md#traceability).
 ### `CALC-08` Requirement and risk-weighted assets
 
 **Purpose:** the own funds requirement for market risk under the simplified
-standardised approach and its risk-weighted assets: the total row and the
-headline of `Results`.
+standardised approach and its risk-weighted assets: the total row, the row of
+the transitional multiplier and the headline of `Results`.
 
 **Inputs:**
 
@@ -551,6 +560,8 @@ headline of `Results`.
 | Requirement of each risk class | The outputs of `CALC-02` to `CALC-06` | Reporting currency |
 | Option charges | The outputs of `CALC-07` | Reporting currency |
 | Scaling factors and multiplier | `DS-02.scaling_ir`, `DS-02.scaling_eq`, `DS-02.scaling_co`, `DS-02.scaling_fx` and `DS-02.rwa_multiplier` | Number |
+| Regime | `DS-02.regime` | Text: `Basel` or `CRR` |
+| Transitional multiplier | `DS-02.transitional_multiplier`, `DS-02.transitional_end_date` and `DS-02.as_of_date` | Factor; date |
 
 **Rules:**
 
@@ -560,6 +571,7 @@ headline of `Results`.
 | 2 | The requirement after scaling is that sum multiplied by the scaling factor of the class: 1.30 for interest rate risk, 3.50 for equity risk, 1.90 for commodities risk and 1.20 for FX risk | `SRC-02`, MAR40.2 |
 | 3 | The requirement is the simple sum of the four scaled requirements | `SRC-02`, MAR40.2 |
 | 4 | The risk-weighted assets are the requirement multiplied by 12.5 | `SRC-02`, MAR40.1 |
+| 5 | The requirement of step 3 is multiplied by a transitional factor, and step 4 applies to the result. The factor is `TransitionalMultiplier`, 0.9, when the regime is `CRR` and the reporting date is on or before `TransitionalEndDate`, 2029-12-31, and 1 under the Basel regime and after that date | `SRC-06`, Article 495s(2) |
 
 **Outputs:**
 
@@ -567,7 +579,8 @@ headline of `Results`.
 | --- | --- | --- | --- | --- |
 | Requirement before scaling | `requirement_before_scaling` | Reporting currency | Risk class | None |
 | Requirement after scaling | `requirement_after_scaling` | Reporting currency | Risk class | None |
-| Own funds requirement | `own_funds_requirement` | Reporting currency | Whole calculation | None |
+| Transitional factor | `transitional_factor` | Factor | Whole calculation | None |
+| Own funds requirement, after the transitional factor | `own_funds_requirement` | Reporting currency | Whole calculation | None |
 | Risk-weighted assets | `risk_weighted_assets` | Reporting currency | Whole calculation | None |
 
 **Limits and non-goals:**
@@ -577,6 +590,12 @@ headline of `Results`.
   or change ([sources](SOURCES.md#decisions)).
 - The requirement is that of the positions entered. The workbook holds no
   trading book boundary and no other part of the capital framework.
+- The CRR regime changes step 5 and nothing else for now: its other rules are
+  those of MAR40 until each difference listed in the
+  [comparison](CRR_COMPARISON.md) is implemented.
+- After `TransitionalEndDate` the factor is 1 and no finding is made: the
+  transitional treatment has ended, and the requirement of step 3 is the
+  result. `TransitionalEndDate` is read under the `CRR` regime only.
 - When rows were rejected, the requirement is that of the rows used, and the
   status line reads `INCOMPLETE`.
 
@@ -584,7 +603,9 @@ headline of `Results`.
 a scaling factor that is not a number, an FX rate that is not greater than
 zero, a currency listed twice or the reporting currency not listed with
 rate 1. The run reads `STOPPED`, no result is calculated, and `Checks` lists
-each value with its reason (rules `C05` to `C07` and `C14`). A position
+each value with its reason (rules `C05` to `C07` and `C14`), among them a
+`Regime` that is neither `Basel` nor `CRR` and, under the `CRR`, a
+`TransitionalEndDate` that is not a date. A position
 sheet with more than 500 rows stops the run in the same way: `Checks` lists
 the sheet and the rows found under `C14`.
 

@@ -152,6 +152,9 @@ The names that refer to one cell:
 | `GoldCode` | `shParams` | The currency code treated as gold | Users |
 | `COMDirectionalRate` | `shParams` | Commodity directional charge (net position per commodity) | Users |
 | `COMGrossRate` | `shParams` | Commodity charge on gross positions at spot | Users |
+| `Regime` | `shParams` | The regime: `Basel` or `CRR` | Users |
+| `TransitionalMultiplier` | `shParams` | The multiplier of the CRR's transitional treatment | Users |
+| `TransitionalEndDate` | `shParams` | The last reporting date on which the multiplier applies | Users |
 | `IRPositions_Header` | `shIRPositions` | The first header cell of the interest rate positions | Users, in the rows below it |
 | `EQPositions_Header` | `shEQPositions` | The first header cell of the equity positions | Users, in the rows below it |
 | `COPositions_Header` | `shCOPositions` | The first header cell of the commodity positions | Users, in the rows below it |
@@ -178,11 +181,12 @@ The names that refer to one cell:
 | `Buckets_FX_Header` | `shBuckets` | The first header cell of the currencies | `RunSSA`, below it |
 | `FX_ONOP` | `shBuckets` | The overall net open position | `RunSSA` |
 | `FX_Charge` | `shBuckets` | The FX and gold requirement | `RunSSA` |
-| `SSA_Requirement` | `shResults` | The requirement after scaling, on the total row | `RunSSA` |
+| `SSA_RequirementBeforeTransition` | `shResults` | The requirement after scaling, on the total row | `RunSSA` |
+| `SSA_Requirement` | `shResults` | The requirement after scaling and the transitional multiplier, on the row below the total | `RunSSA` |
 | `Results_Header` | `shResults` | The first header cell of the requirement per risk class | `RunSSA`, in the rows below it |
 | `Results_Status` | `shResults` | The status line of the last run | `RunSSA`, `ClearOutputs` and `CheckStatus` |
 | `Results_Fingerprint` | `shResults` | The fingerprint of the inputs of the last run | `RunSSA`; cleared by `ClearOutputs` and by a run that fails |
-| `SSA_RWA` | `shResults` | The risk-weighted assets, on the total row | `RunSSA` |
+| `SSA_RWA` | `shResults` | The risk-weighted assets, on the row below the total | `RunSSA` |
 | `Checks_Header` | `shChecks` | The first header cell of the rules | `RunSSA`, in the count and result columns |
 | `Checks_Errors` | `shChecks` | The number of errors of the last run | `RunSSA` |
 | `Checks_Warnings` | `shChecks` | The number of warnings of the last run | `RunSSA` |
@@ -239,7 +243,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 
 | Area | Sheet | Kind | Written by | Holds |
 | --- | --- | --- | --- | --- |
-| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `COMGrossRate`: code, description, value, reference, MAR40 value and a *Changed* flag |
+| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `TransitionalEndDate`: code, description, value, reference, MAR40 value and a *Changed* flag |
 | Specific-risk table | `shParams` | Input | Users | 18 rows: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
 | Maturity ladder | `shParams` | Input | Users | 15 time bands: zone, upper bounds and labels by coupon, and risk weight (the `Ladder_` names) |
 | FX table | `shParams` | Input | Users | Up to 20 currencies with their rate to the reporting currency (`FX_Ccy`, `FX_Rate`) |
@@ -248,7 +252,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 | `COPositions_Header` | `shCOPositions` | Input | Users | One row per commodity position; the rows vary |
 | `FXPositions_Header` | `shFXPositions` | Input | Users | One row per net currency or gold position; the rows vary |
 | Option charges | `shOptionCharges` | Input | Users, in the *Charge* column | Four rows, one per risk class (the `Options` names) |
-| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes and a total row; below them a headline of four formulas |
+| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes, a total row and a row for the transitional multiplier; below them a headline of four formulas |
 | `Results_Fingerprint` | `shResults` | Parameter | `RunSSA` | One cell: the fingerprint of the inputs of the last run, which `CheckStatus` reads |
 | `IR_Zones_Header` | `shIRZones` | Result | `RunSSA` | One row per currency of the FX table, and a total row |
 | `IR_Ladder_Header` | `shIRLadder` | Result | `RunSSA` | One block of 15 time bands per currency of the FX table |

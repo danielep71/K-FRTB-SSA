@@ -66,8 +66,8 @@ Attribute VB_Name = "TEST_Suite"
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
-        Private Const EXPECTED_CASES      As Long = 12
-        Private Const EXPECTED_ASSERTIONS As Long = 99
+        Private Const EXPECTED_CASES      As Long = 13
+        Private Const EXPECTED_ASSERTIONS As Long = 115
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=12; assertions=99; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=13; assertions=115; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -208,6 +208,7 @@ Private Sub RunSuite()
         CaseIssueNetting
         CaseDateBounds
         CaseParameters
+        CaseRegime
         CaseVolume
         CaseFacade
         CaseFingerprint
@@ -815,6 +816,82 @@ Private Sub CaseParameters()
         TEST_Harness.AssertEqualDouble "reporting-currency-not-at-1", 1, ReportingErrors
         TEST_Harness.AssertEqualDouble "duplicate-code", 1, DuplicateErrors
         TEST_Harness.AssertEqualDouble "no-rate-error", 0, RateErrors
+        Exit Sub
+
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+
+Private Sub CaseRegime()
+'
+'==============================================================================
+'                                  CaseRegime
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The regime and the transitional multiplier of the CRR: Basel or CRR
+'   without regard to case, the last date read under the CRR only, the factor
+'   on and after its last date, and the multiplier as a rate.
+'
+' REFERENCE
+'   Article 495s(2) of Regulation (EU) No 575/2013, from Delegated Regulation
+'   (EU) 2026/1221: 0.9 until 2029-12-31.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+    Dim Reference()       As Double    'MAR40 parameters
+    Dim Raw()             As Variant   'Raw numeric parameters
+    Dim Parameters()      As Double    'Validated parameters
+    Dim Findings()        As String    'Findings
+    Dim FindingCount      As Long      'Findings in use
+    Dim Regime            As String    'REGIME_BASEL or REGIME_CRR
+    Dim EndDate           As Double    'Last date of the multiplier
+    Dim AsOfDate          As Double    'Reporting date
+    Dim ReportingCcy      As String    'Reporting currency
+    Dim GoldCode          As String    'Gold code
+    Dim LastDate          As Double    'Last date of the multiplier, 2029-12-31
+    Dim i                 As Long      'Parameter
+
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "regime"
+        LastDate = CDbl(DateSerial(2029, 12, 31))
+        TEST_Harness.AssertEqualDouble "basel-is-valid", 0, _
+            BuildRegime("Basel", Empty, Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualText "basel-is-read-in-upper-case", REGIME_BASEL, Regime
+        TEST_Harness.AssertEqualDouble "basel-does-not-read-the-end-date", 0, EndDate
+        TEST_Harness.AssertEqualDouble "crr-without-regard-to-case", 0, _
+            BuildRegime(" crr ", DateSerial(2029, 12, 31), Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualText "crr-is-read-in-upper-case", REGIME_CRR, Regime
+        TEST_Harness.AssertEqualDouble "crr-reads-the-end-date", LastDate, EndDate
+        TEST_Harness.AssertEqualDouble "basel-ignores-an-end-date-that-is-no-date", 0, _
+            BuildRegime("Basel", "never", Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "an-unknown-regime", 1, _
+            BuildRegime("EU", Empty, Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "a-blank-regime", 1, _
+            BuildRegime("", DateSerial(2029, 12, 31), Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "crr-with-an-end-date-typed-as-text", 1, _
+            BuildRegime("CRR", "31.12.2029", Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "crr-with-no-end-date", 1, _
+            BuildRegime("CRR", Empty, Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "factor-on-the-last-date", 0.9, _
+            TransitionalFactor(REGIME_CRR, LastDate, LastDate, 0.9)
+        TEST_Harness.AssertEqualDouble "factor-the-day-after", 1, _
+            TransitionalFactor(REGIME_CRR, LastDate + 1, LastDate, 0.9)
+        TEST_Harness.AssertEqualDouble "factor-under-basel", 1, _
+            TransitionalFactor(REGIME_BASEL, CDbl(DateSerial(2026, 9, 30)), LastDate, 0.9)
+        ReferenceParameters Reference
+        ReDim Raw(1 To PI_COUNT)
+        For i = 1 To PI_COUNT
+            Raw(i) = Reference(i)
+        Next i
+        TEST_Harness.AssertEqualDouble "multiplier-of-reference", 0.9, Reference(PI_TRANSITIONAL)
+        Raw(PI_TRANSITIONAL) = 1.5
+        TEST_Harness.AssertEqualDouble "multiplier-above-one", 1, _
+            BuildParameters(Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _
+                            ReportingCcy, GoldCode, Findings, FindingCount)
         Exit Sub
 
 CaseFailed:

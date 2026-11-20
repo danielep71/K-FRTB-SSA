@@ -65,10 +65,15 @@ sheets without unprotecting them for you.
 The [data contract](methodology/DATA_CONTRACT.md) defines every field, its
 unit, its allowed values and how a cell is read.
 
-- **`Params`:** the reporting date and currency, the MAR40 constants, the
-  specific-risk table, the time bands and the FX rates, one per currency and
-  one for gold. The constants hold the reference values of MAR40; a value you
-  change is a what-if, and `Checks` reports it.
+- **`Params`:** the reporting date and currency, the regime, the MAR40
+  constants, the specific-risk table, the time bands and the FX rates, one per
+  currency and one for gold. The constants hold the reference values of MAR40;
+  a value you change is a what-if, and `Checks` reports it. `Regime` is `Basel`
+  by default. Set it to `CRR` and the requirement is multiplied by 0.9, the
+  transitional multiplier of Article 495s(2) of Regulation (EU) No 575/2013, on
+  a reporting date up to `TransitionalEndDate`, 2029-12-31; that multiplier is
+  the only rule that the `CRR` setting changes today, and the
+  [comparison](methodology/CRR_COMPARISON.md) lists the others.
 - **`IRPositions`, `EQPositions`, `COPositions`, `FXPositions`:** one row per
   position, up to 500 rows on each sheet. The workbook converts nothing: a
   derivative is a row for each leg, the category and rating of an issuer are
@@ -114,8 +119,9 @@ a total.
 
 `Results` gives, for each risk class, the specific risk, the general market
 risk, the other charge, the options, the requirement before scaling, the
-scaling factor and the requirement after scaling, then the total and the
-risk-weighted assets. `IRCalc`, `EQCalc`, `COCalc` and `FXCalc` hold every
+scaling factor and the requirement after scaling, then the total, a row for
+the transitional multiplier (1 under the Basel regime) and the risk-weighted
+assets. `IRCalc`, `EQCalc`, `COCalc` and `FXCalc` hold every
 intermediate value of each row; `IR_Ladder`, `IR_Zones` and `Buckets` hold the
 ladders, the offsets and the totals per market, commodity and currency.
 

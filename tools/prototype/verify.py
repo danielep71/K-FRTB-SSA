@@ -273,6 +273,20 @@ def unusable(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
+def regime(source: Path, target: Path, name: str, end: object) -> None:
+    """Save ``source`` with the regime and the last date of the transitional multiplier set."""
+    workbook = load(source)
+    named_cell(workbook, "Regime").value = name
+    named_cell(workbook, "TransitionalEndDate").value = end
+    workbook.save(target)
+
+
+def read_names(path: Path, *names: str) -> list[Any]:
+    """The values of one-cell defined names in a workbook of values."""
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    return [named_cell(workbook, name).value for name in names]
+
+
 def findings(path: Path) -> Findings:
     """The findings of Checks: sheet, PositionID or code, row and reason."""
     sheet = openpyxl.load_workbook(path, data_only=True)["Checks"]
@@ -394,6 +408,46 @@ def stopped_run(run: Run) -> str:
     return result
 
 
+def crr_regime(run: Run) -> str:
+    """The CRR regime on the sample data: the transitional factor in both workbooks, and the stops."""
+    day = datetime.date
+    reporting = ssa_reference.AS_OF
+    lines: list[str] = []
+    # A date, as typed: lower case regime, the last date, the reporting date itself, the day before it.
+    for label, name, end, factor in (
+            ("the default last date", "crr", day(2029, 12, 31), 0.9),
+            ("the reporting date as last date", "CRR", reporting, 0.9),
+            ("the day before the reporting date as last date", "CRR", reporting - datetime.timedelta(days=1), 1.0)):
+        formula, workbook = run.folder / "crr-formula.xlsx", run.folder / "crr.xlsm"
+        values, output = run.folder / "crr-formula-values.xlsx", run.folder / "vba-crr.xlsx"
+        regime(run.formula, formula, name, end)
+        regime(run.workbook, workbook, name, end)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        if not result.startswith("RESULT=OK;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        for path in (output, values):
+            before, after, rwa = read_names(path, "SSA_RequirementBeforeTransition",
+                                            "SSA_Requirement", "SSA_RWA")
+            if not (compare_outputs.same(after, before * factor)
+                    and compare_outputs.same(rwa, after * 12.5)):
+                raise Failure(f"{label}, {path.name}: before {before}, after {after}, "
+                              f"RWA {rwa}, factor expected {factor}")
+        lines.append(f"{label}: factor {factor}, {compared}")
+    # A regime and a last date that stop the run.
+    for label, name, end in (("an unknown regime", "EU", day(2029, 12, 31)),
+                             ("the CRR with a last date that is no date", "CRR", "never")):
+        workbook, output = run.folder / "crr-stop.xlsm", run.folder / "vba-crr-stop.xlsx"
+        regime(run.workbook, workbook, name, end)
+        result = run.macro(workbook, RUN, output)
+        listed = findings(output)
+        if not result.startswith("RESULT=STOPPED; errors=1;") or len(listed) != 1:
+            raise Failure(f"{label}: {result}; findings: {sorted(map(str, listed))}")
+        lines.append(f"{label}: stopped, one finding")
+    return "\n".join(lines)
+
+
 def test_suite(run: Run) -> str:
     results = []
     for macro in TESTS:
@@ -422,6 +476,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Negative scenario on both workbooks", negative_scenario),
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
+    ("The CRR regime: the transitional factor and the stops", crr_regime),
     ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
 )
