@@ -443,7 +443,7 @@ def build_params(ctx: Context) -> None:
 
 def params_list(wb: Book, ws: Sheet) -> int:
     """Write the parameter list from row 6 and return its last row."""
-    params: list[tuple[str, str, date | str | float, str, str, str, date | str | float | None]] = [
+    params: list[tuple[str, str, date | str | float | None, str, str, str, date | str | float | None]] = [
         ("AsOfDate", "Reporting (calculation) date", D.AS_OF, "input", NF_DATE, "", None),
         ("ReportingCcy", "Reporting currency (all amounts converted into it)", D.REPORTING_CCY, "input", "@", "", None),
         ("DaysPerYear", "Calendar days per year for residual maturities", 365, "const", "0", "Workbook convention (Act/365)", 365),
@@ -471,6 +471,10 @@ def params_list(wb: Book, ws: Sheet) -> int:
          "CRR Art. 495s(2), Reg. (EU) 2026/1221", 0.9),
         ("TransitionalEndDate", "CRR: last reporting date on which the multiplier applies", date(2029, 12, 31), "const", NF_DATE,
          "CRR Art. 495s(2), Reg. (EU) 2026/1221", date(2029, 12, 31)),
+        ("TotalOwnFunds", "CRR: total own funds in the reporting currency, for the de minimis of Article 351", None, "input", NF_AMT,
+         "CRR Art. 351", None),
+        ("FXDeMinimisRate", "CRR: no FX requirement unless the overall net open position exceeds this share of the total own funds",
+         0.02, "const", NF_PCT, "CRR Art. 351", 0.02),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -1087,7 +1091,9 @@ def buckets_fx(wb: Book, ws: Sheet, FS: int) -> Block:
     for cl in "IJK":
         put(ws, f"{cl}{FX_T}", f"=SUM({cl}{FX_F}:{cl}{FX_L})", NF_AMT, "total")
     summary = [("Overall net open position: max(net long, net short) + |gold|", f"=MAX(I{FX_T},J{FX_T})+K{FX_T}", "FX_ONOP"),
-               ("FX requirement: 8% x overall net open position", f"=FXChargeRate*I{FX_T + 2}", "FX_Charge")]
+               ("FX requirement: 8% x overall net open position; under the CRR none up to 2% of the total own funds",
+                f'=IF(AND(UPPER(TRIM(Regime))="CRR",I{FX_T + 2}<=FXDeMinimisRate*TotalOwnFunds),0,FXChargeRate*I{FX_T + 2})',
+                "FX_Charge")]
     for k, (lab, fm, nm) in enumerate(summary):
         rr = FX_T + 2 + k
         put(ws, f"D{rr}", lab, None, None, b=True)

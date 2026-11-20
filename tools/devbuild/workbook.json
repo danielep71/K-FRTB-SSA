@@ -51,6 +51,8 @@
     {"name": "Regime", "sheet": "shParams", "cell": "E28"},
     {"name": "TransitionalMultiplier", "sheet": "shParams", "cell": "E29"},
     {"name": "TransitionalEndDate", "sheet": "shParams", "cell": "E30"},
+    {"name": "TotalOwnFunds", "sheet": "shParams", "cell": "E31"},
+    {"name": "FXDeMinimisRate", "sheet": "shParams", "cell": "E32"},
     {"name": "IRPositions_Header", "sheet": "shIRPositions", "cell": "C4"},
     {"name": "EQPositions_Header", "sheet": "shEQPositions", "cell": "C4"},
     {"name": "COPositions_Header", "sheet": "shCOPositions", "cell": "C4"},

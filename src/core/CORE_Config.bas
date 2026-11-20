@@ -230,7 +230,8 @@ Attribute VB_Name = "CORE_Config"
         Public Const IN_CO_CAPACITY    As Long = 19    'Commodity rows of the Buckets block
         Public Const IN_REGIME         As Long = 20    'Regime cell
         Public Const IN_TRANSITION_END As Long = 21    'TransitionalEndDate cell
-        Public Const IN_COUNT          As Long = 21    'Size of the input vector
+        Public Const IN_OWN_FUNDS      As Long = 22    'TotalOwnFunds cell
+        Public Const IN_COUNT          As Long = 22    'Size of the input vector
     'Outputs.
         Public Const OUT_IR_CALC       As Long = 1     'IRCalc table
         Public Const OUT_LADDER        As Long = 2     'IR_Ladder table
@@ -274,6 +275,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const PRM_GOLD        As String = "GoldCode"        'Currency code of gold
         Public Const PRM_REGIME      As String = "Regime"          'Regime: Basel or CRR
         Public Const PRM_TRANSITION_END As String = "TransitionalEndDate"    'Last date of the transitional multiplier
+        Public Const PRM_OWN_FUNDS   As String = "TotalOwnFunds"   'Total own funds, for the de minimis of CRR Article 351
     'The regimes, as the engine compares them (upper case).
         Public Const REGIME_BASEL    As String = "BASEL"           'MAR40, the default
         Public Const REGIME_CRR      As String = "CRR"             'Article 325(2) of Regulation (EU) No 575/2013
@@ -300,20 +302,21 @@ Attribute VB_Name = "CORE_Config"
         Public Const PI_CO_DIRECTIONAL   As Long = 18    'Commodity directional charge
         Public Const PI_CO_GROSS         As Long = 19    'Commodity gross charge
         Public Const PI_TRANSITIONAL     As Long = 20    'Transitional multiplier, CRR Article 495s(2)
-        Public Const PI_COUNT            As Long = 20    'Size of the parameter vector
+        Public Const PI_FX_DE_MINIMIS    As Long = 21    'FX de minimis, share of total own funds, CRR Article 351
+        Public Const PI_COUNT            As Long = 21    'Size of the parameter vector
         Public Const PRM_NUMERIC_CODES   As String = _
             "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & _
             "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & _
             "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & _
             "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & _
-            "TransitionalMultiplier"
+            "TransitionalMultiplier|FXDeMinimisRate"
         Public Const PRM_REFERENCE_VALUES As String = _
-            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
+            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02"
         Public Const PRM_REFERENCE_GOLD  As String = "XAU"     'MAR40.60 reference gold code
         Public Const PRM_REFERENCE_END_DATE As Double = 47483  '2029-12-31, the last date of Article 495s(2)
     'Kind of check applied to each numeric parameter, in the same order:
     'P = > 0, R = rate in [0, 1], N = >= 0.
-        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRR"
+        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRRR"
 
 '------------------------------------------------------------------------------
 ' MATURITY LADDER (MAR40.26 Table 4)

@@ -791,6 +791,7 @@ Private Sub ReadInputs( _
         Inputs(IN_GOLD) = NamedRange(PRM_GOLD).Value
         Inputs(IN_REGIME) = NamedRange(PRM_REGIME).Value
         Inputs(IN_TRANSITION_END) = NamedRange(PRM_TRANSITION_END).Value
+        Inputs(IN_OWN_FUNDS) = NamedRange(PRM_OWN_FUNDS).Value
 
         ReDim Ladder(1 To BAND_COUNT, 1 To LD_WIDTH)
         ReDim Labels(1 To BAND_COUNT, 1 To 2)

@@ -81,15 +81,19 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `COMGrossRate` | 0.03 | `SRC-02`, MAR40.73 | Equal |
 | `TransitionalMultiplier` | 0.9 | `SRC-06`, Article 495s(2) | Equal, on 2026-11-20 |
 | `TransitionalEndDate` | 2029-12-31 | `SRC-06`, Article 495s(2) | Equal, on 2026-11-20 |
+| `TotalOwnFunds` | None: the user's value, in the reporting currency | None: an input of the CRR regime | Not applicable |
+| `FXDeMinimisRate` | 0.02 | `SRC-04`, Article 351 | Equal, on 2026-11-20 |
 | `Regime` | `Basel` | None: the regime the user chooses, `Basel` or `CRR` | Not applicable |
 | `DaysPerYear` | 365 | None: an assumption of the workbook | Not applicable |
 | `GoldCode` | `XAU` | None: the code under which gold is entered, a convention of the workbook. MAR40.53 treats gold as a currency | Not applicable |
 
 `TransitionalMultiplier` and `TransitionalEndDate` are not values of MAR40: they
-belong to the CRR regime, and `SRC-06` gives them. `Regime` selects between the
+belong to the CRR regime, and `SRC-06` gives them; `FXDeMinimisRate` belongs to it
+too, and `SRC-04` gives it. `Regime` selects between the
 two regimes ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)). Rule
-`C08` counts `TransitionalMultiplier` and `TransitionalEndDate` among the values
-that differ from their reference, as for the others, whatever the regime.
+`C08` counts `TransitionalMultiplier`, `TransitionalEndDate` and `FXDeMinimisRate`
+among the values that differ from their reference, as for the others, whatever the
+regime.
 
 No parameter is listed as not yet verified.
 
@@ -454,6 +458,7 @@ per currency and the overall net open position on `Buckets`.
 | Net position | `DS-09.net_position` and `DS-09.direction` | Currency of `DS-09.currency`; for gold, the unit its rate is quoted for |
 | Currency and its rate | `DS-09.currency`; `DS-05.currency_id` and `DS-05.fx_rate`; `DS-02.gold_code` and `DS-02.reporting_currency` | Reporting currency per unit |
 | Rate | `DS-02.fx_charge_rate` | Fraction |
+| Regime, total own funds and de minimis | `DS-02.regime`, `DS-02.total_own_funds` and `DS-02.fx_de_minimis_rate` | Text; reporting currency; fraction |
 
 **Rules:**
 
@@ -462,6 +467,7 @@ per currency and the overall net open position on `Buckets`.
 | 1 | The net position in each foreign currency and in gold is the sum of its rows, converted at the spot rate into the reporting currency | `SRC-02`, MAR40.60 |
 | 2 | The overall net open position is the greater of the sum of the net long positions and the sum of the net short positions in the currencies, plus the net position in gold, whatever its sign | `SRC-02`, MAR40.60 |
 | 3 | The requirement is 8% of the overall net open position | `SRC-02`, MAR40.61 |
+| 4 | Under the `CRR` regime, the requirement is zero where the overall net open position of step 2 does not exceed `FXDeMinimisRate`, 2%, of `TotalOwnFunds`, and that of step 3 where it exceeds it. Under the Basel regime there is no such threshold | `SRC-04`, Article 351 |
 
 **Outputs:**
 
@@ -483,6 +489,22 @@ per currency and the overall net open position on `Buckets`.
   `Checks` reports it (rule `C12`).
 - Not supported: the exemption of MAR40.62, and the use of internal limits
   as a proxy (footnote 22 of MAR40.60).
+- Gold under the `CRR` regime is treated as MAR40.60 says, added to the greater
+  of the two sums whatever its sign: an assumption. Article 352(4) of the CRR
+  puts the net position in gold in the totals of long and short positions, and
+  Article 351 adds the net gold position to the overall net foreign exchange
+  position; the text read does not say which of the two readings is meant
+  ([comparison](CRR_COMPARISON.md#foreign-exchange-risk-calc-06)).
+- Not supported under the `CRR` regime: the lower requirements for closely
+  correlated currencies (Article 354), whose list of currencies is left to
+  technical standards and whose use needs a statistical test and a permission;
+  and the exclusion of a position that hedges a capital ratio (Article 104c)
+  or is deducted from own funds (Article 325(1)), which needs a permission.
+  Leave such a position out of `FXPositions`: the workbook takes the net
+  positions as entered.
+- The de minimis needs `TotalOwnFunds` under the `CRR` regime, and the
+  requirement of step 3 is the whole requirement above the threshold, not the
+  excess over it.
 
 **Failure behaviour:** `fx_position_status`, on `FXCalc`, is `OK` or:
 
@@ -492,6 +514,10 @@ per currency and the overall net open position on `Buckets`.
 - `INVALID: Amount must be a number`
 - `INVALID: Amount must be >= 0 (Direction gives the sign)`
 - `EXCLUDED: reporting currency carries no FX risk`
+
+Under the `CRR` regime, a `TotalOwnFunds` that is not a number greater than 0
+is an unusable parameter: the run reads `STOPPED`, and `Checks` lists it with
+`INVALID: must be a number greater than 0`.
 
 **Validation:** the test case `mar40-61-table-9`, two of whose expected
 values are published in table 9 of MAR40.61, and the test cases

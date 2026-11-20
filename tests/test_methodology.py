@@ -100,7 +100,7 @@ class Parameters(unittest.TestCase):
         self.reference = dict(zip(codes, map(float, values), strict=True))
 
     def test_every_numeric_parameter_is_traced(self) -> None:
-        self.assertEqual(len(self.reference), 20)
+        self.assertEqual(len(self.reference), 21)
         for code in self.reference:
             with self.subTest(code=code):
                 self.assertIn(f"`{code}`", self.section)
@@ -197,7 +197,7 @@ class DataContract(unittest.TestCase):
         self.assertEqual([workbook_name(field) for field in fields], codes)
         numeric = constant("PRM_NUMERIC_CODES").split("|")
         self.assertEqual(set(codes), {"AsOfDate", "ReportingCcy", "GoldCode", "Regime",
-                                      "TransitionalEndDate", *numeric})
+                                      "TransitionalEndDate", "TotalOwnFunds", *numeric})
         # A rate, by the engine's own test, lies from 0 to 1.
         domains = dict(zip(numeric, constant("PRM_DOMAINS"), strict=True))
         by_code = {workbook_name(field): field for field in fields}

@@ -72,8 +72,11 @@ unit, its allowed values and how a cell is read.
   by default. Set it to `CRR` and the requirement is multiplied by 0.9, the
   transitional multiplier of Article 495s(2) of Regulation (EU) No 575/2013, on
   a reporting date up to `TransitionalEndDate`, 2029-12-31; that multiplier is
-  the only rule that the `CRR` setting changes today, and the
-  [comparison](methodology/CRR_COMPARISON.md) lists the others.
+  the first of the two rules that the `CRR` setting changes today. The second
+  is the de minimis of Article 351: the FX requirement is zero while the overall
+  net open position does not exceed 2% of `TotalOwnFunds`, which you enter and
+  which the `CRR` requires. The [comparison](methodology/CRR_COMPARISON.md)
+  lists the other differences.
 - **`IRPositions`, `EQPositions`, `COPositions`, `FXPositions`:** one row per
   position, up to 500 rows on each sheet. The workbook converts nothing: a
   derivative is a row for each leg, the category and rating of an issuer are

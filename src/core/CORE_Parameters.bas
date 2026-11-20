@@ -168,8 +168,10 @@ End Function
 Public Function BuildRegime( _
     ByVal RawRegime As Variant, _
     ByVal RawEndDate As Variant, _
+    ByVal RawOwnFunds As Variant, _
     ByRef Regime As String, _
     ByRef EndDate As Double, _
+    ByRef OwnFunds As Double, _
     ByRef Findings() As String, _
     ByRef FindingCount As Long) _
     As Long
@@ -178,25 +180,29 @@ Public Function BuildRegime( _
 '                                  BuildRegime
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Validate the regime and the last date of the transitional multiplier.
+'   Validate the regime, the last date of the transitional multiplier and the
+'   total own funds.
 '
 ' INPUTS
 '   RawRegime    Cell value of Regime; Basel or CRR, without regard to case.
 '   RawEndDate   Cell value of TransitionalEndDate; read when it is a date,
 '                whatever the regime, so that a change of it is counted by
 '                ChangedParameterCount; it must be a date under the CRR.
+'   RawOwnFunds  Cell value of TotalOwnFunds; read when it is a number, whatever
+'                the regime; it must be a number greater than 0 under the CRR.
 '   Findings     Findings list, appended to (CORE_Util.AddFinding).
 '   FindingCount Findings in use; incremented.
 '
 ' RETURNS
 '   Number of unusable values. Output parameters: Regime as REGIME_BASEL or
 '   REGIME_CRR (REGIME_BASEL when it is unusable); EndDate as a date serial,
-'   0 when RawEndDate is not a date.
+'   0 when RawEndDate is not a date; OwnFunds as a number, 0 when RawOwnFunds
+'   is not a number.
 '
 ' REFERENCE
-'   Article 325(2) and Article 495s(2) of Regulation (EU) No 575/2013, as
-'   amended by Regulation (EU) 2024/1623 and Delegated Regulation (EU)
-'   2026/1221.
+'   Article 325(2), Article 351 and Article 495s(2) of Regulation (EU)
+'   No 575/2013, as amended by Regulation (EU) 2024/1623 and Delegated
+'   Regulation (EU) 2026/1221.
 '
 ' UPDATED
 '   2026-11-20
@@ -206,6 +212,7 @@ Public Function BuildRegime( _
 
         Regime = REGIME_BASEL
         EndDate = 0#
+        OwnFunds = 0#
         Select Case CodeText(RawRegime)
             Case REGIME_BASEL
                 Regime = REGIME_BASEL
@@ -218,6 +225,10 @@ Public Function BuildRegime( _
             EndDate = NumberValue(RawEndDate)
         ElseIf Regime = REGIME_CRR Then
             AddError Findings, FindingCount, ErrorCount, PRM_TRANSITION_END, "must be a date"
+        End If
+        If IsNumberValue(RawOwnFunds) Then OwnFunds = NumberValue(RawOwnFunds)
+        If Regime = REGIME_CRR And OwnFunds <= 0 Then
+            AddError Findings, FindingCount, ErrorCount, PRM_OWN_FUNDS, "must be a number greater than 0"
         End If
         BuildRegime = ErrorCount
 

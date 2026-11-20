@@ -65,6 +65,14 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The de minimis of Article 351 of Regulation (EU) No 575/2013 under the `CRR`
+  regime: the FX requirement is zero while the overall net open position, gold
+  included, does not exceed `FXDeMinimisRate`, 2%, of the new parameter
+  `TotalOwnFunds`, which the `CRR` regime requires (a run without it stops).
+  The treatment of gold stays that of MAR40.60, as an assumption: Articles 351
+  and 352(4) do not settle it. The closely correlated currencies of Article 354
+  and the exclusions of Article 104c are not supported
+  ([#78](https://github.com/danielep71/K-FRTB-SSA/issues/78)).
 - The regime of the workbook: a `Regime` parameter on `Params`, `Basel` by
   default, and `CRR`, which multiplies the requirement by the transitional
   multiplier of Article 495s(2) of Regulation (EU) No 575/2013 on a reporting

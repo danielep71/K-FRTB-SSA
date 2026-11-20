@@ -284,8 +284,10 @@ CORE_Config	Const	IN_REGIME
 # SIG	CORE_Config	Const	IN_REGIME	Public Const IN_REGIME As Long = 20
 CORE_Config	Const	IN_TRANSITION_END
 # SIG	CORE_Config	Const	IN_TRANSITION_END	Public Const IN_TRANSITION_END As Long = 21
+CORE_Config	Const	IN_OWN_FUNDS
+# SIG	CORE_Config	Const	IN_OWN_FUNDS	Public Const IN_OWN_FUNDS As Long = 22
 CORE_Config	Const	IN_COUNT
-# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 21
+# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 22
 CORE_Config	Const	OUT_IR_CALC
 # SIG	CORE_Config	Const	OUT_IR_CALC	Public Const OUT_IR_CALC As Long = 1
 CORE_Config	Const	OUT_LADDER
@@ -352,6 +354,8 @@ CORE_Config	Const	PRM_REGIME
 # SIG	CORE_Config	Const	PRM_REGIME	Public Const PRM_REGIME As String = "Regime"
 CORE_Config	Const	PRM_TRANSITION_END
 # SIG	CORE_Config	Const	PRM_TRANSITION_END	Public Const PRM_TRANSITION_END As String = "TransitionalEndDate"
+CORE_Config	Const	PRM_OWN_FUNDS
+# SIG	CORE_Config	Const	PRM_OWN_FUNDS	Public Const PRM_OWN_FUNDS As String = "TotalOwnFunds"
 CORE_Config	Const	REGIME_BASEL
 # SIG	CORE_Config	Const	REGIME_BASEL	Public Const REGIME_BASEL As String = "BASEL"
 CORE_Config	Const	REGIME_CRR
@@ -396,18 +400,20 @@ CORE_Config	Const	PI_CO_GROSS
 # SIG	CORE_Config	Const	PI_CO_GROSS	Public Const PI_CO_GROSS As Long = 19
 CORE_Config	Const	PI_TRANSITIONAL
 # SIG	CORE_Config	Const	PI_TRANSITIONAL	Public Const PI_TRANSITIONAL As Long = 20
+CORE_Config	Const	PI_FX_DE_MINIMIS
+# SIG	CORE_Config	Const	PI_FX_DE_MINIMIS	Public Const PI_FX_DE_MINIMIS As Long = 21
 CORE_Config	Const	PI_COUNT
-# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 20
+# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 21
 CORE_Config	Const	PRM_NUMERIC_CODES
-# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & "TransitionalMultiplier"
+# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & "TransitionalMultiplier|FXDeMinimisRate"
 CORE_Config	Const	PRM_REFERENCE_VALUES
-# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
+# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02"
 CORE_Config	Const	PRM_REFERENCE_GOLD
 # SIG	CORE_Config	Const	PRM_REFERENCE_GOLD	Public Const PRM_REFERENCE_GOLD As String = "XAU"
 CORE_Config	Const	PRM_REFERENCE_END_DATE
 # SIG	CORE_Config	Const	PRM_REFERENCE_END_DATE	Public Const PRM_REFERENCE_END_DATE As Double = 47483
 CORE_Config	Const	PRM_DOMAINS
-# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRR"
+# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRRR"
 CORE_Config	Const	BAND_COUNT
 # SIG	CORE_Config	Const	BAND_COUNT	Public Const BAND_COUNT As Long = 15
 CORE_Config	Const	ZONE_COUNT
@@ -544,6 +550,8 @@ CORE_Equity	Sub	CalculateEquity
 # SIG	CORE_Equity	Sub	CalculateEquity	Public Sub CalculateEquity(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef MarketOutput() As Variant, ByRef Totals() As Double)
 CORE_ForeignExchange	Sub	CalculateForeignExchange
 # SIG	CORE_ForeignExchange	Sub	CalculateForeignExchange	Public Sub CalculateForeignExchange(ByRef InputRows() As Variant, ByRef Parameters() As Double, ByRef FxCodes() As String, ByRef FxRates() As Double, ByVal ReportingCcy As String, ByVal GoldCode As String, ByRef RowOutput() As Variant, ByRef CurrencyOutput() As Variant, ByRef Totals() As Double)
+CORE_ForeignExchange	Function	DeMinimisWaived
+# SIG	CORE_ForeignExchange	Function	DeMinimisWaived	Public Function DeMinimisWaived(ByVal Regime As String, ByVal OverallNetOpen As Double, ByVal OwnFunds As Double, ByVal Rate As Double) As Boolean
 CORE_ForeignExchange	Function	NetOpenPositionCharge
 # SIG	CORE_ForeignExchange	Function	NetOpenPositionCharge	Public Function NetOpenPositionCharge(ByVal SumNetLong As Double, ByVal SumNetShort As Double, ByVal GoldPosition As Double, ByVal ChargeRate As Double, ByRef OverallNetOpen As Double) As Double
 CORE_InterestRate	Sub	CalculateInterestRate
@@ -555,7 +563,7 @@ CORE_InterestRate	Sub	LadderCharges
 CORE_Parameters	Function	BuildParameters
 # SIG	CORE_Parameters	Function	BuildParameters	Public Function BuildParameters(ByRef RawNumeric() As Variant, ByVal RawAsOfDate As Variant, ByVal RawReportingCcy As Variant, ByVal RawGoldCode As Variant, ByRef Parameters() As Double, ByRef AsOfDate As Double, ByRef ReportingCcy As String, ByRef GoldCode As String, ByRef Findings() As String, ByRef FindingCount As Long) As Long
 CORE_Parameters	Function	BuildRegime
-# SIG	CORE_Parameters	Function	BuildRegime	Public Function BuildRegime(ByVal RawRegime As Variant, ByVal RawEndDate As Variant, ByRef Regime As String, ByRef EndDate As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+# SIG	CORE_Parameters	Function	BuildRegime	Public Function BuildRegime(ByVal RawRegime As Variant, ByVal RawEndDate As Variant, ByVal RawOwnFunds As Variant, ByRef Regime As String, ByRef EndDate As Double, ByRef OwnFunds As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
 CORE_Parameters	Function	TransitionalFactor
 # SIG	CORE_Parameters	Function	TransitionalFactor	Public Function TransitionalFactor(ByVal Regime As String, ByVal AsOfDate As Double, ByVal EndDate As Double, ByVal Multiplier As Double) As Double
 CORE_Parameters	Function	ChangedParameterCount
