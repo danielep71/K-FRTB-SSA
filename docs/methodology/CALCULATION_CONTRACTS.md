@@ -406,11 +406,16 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
   risk and 40% with foreign exchange risk, whose Articles 348 to 350 were not
   read in full and which would need a type of position, an input for the
   foreign exchange risk and an output of their own.
-- A market is the national market that the user enters. Article 341(3) of the
-  CRR leaves the definition of *market* to a technical standard of the EBA,
-  `SRC-07`, whose Official Journal text was not read, so the definition is an
-  assumption under the `CRR` regime as under the Basel regime
-  ([#91](https://github.com/danielep71/K-FRTB-SSA/issues/91)).
+- A market is the national market that you enter. Under the `CRR` regime,
+  Article 1 of `SRC-07` (Delegated Regulation (EU) No 525/2014), made under
+  Article 341(3) of the CRR, defines it otherwise: for the euro area, all
+  equities listed in stock markets located in Member States that have adopted
+  the euro; for non-euro Member States and third countries, all equities
+  listed in stock markets located within a national jurisdiction. Enter one
+  market for all the equities listed in the euro area, and one for each
+  national jurisdiction elsewhere. The workbook nets by the market you enter:
+  it does not know where an equity is listed, nor which Member States have
+  adopted the euro.
 - The interest rate or FX exposure of the other leg of a contract (footnote
   14 of MAR40.44) is entered on `IRPositions` or `FXPositions`.
 - `Buckets` lists up to 30 markets. The totals include every market, and
@@ -628,6 +633,7 @@ options* column of `Results`.
 | --- | --- | --- |
 | 1 | The charge of each risk class is the value entered. The user calculates it outside the workbook, by one of the methods the source allows: the simplified approach, the gamma and vega charges of the delta-plus method, or the scenario approach | `SRC-02`, MAR40.74 to MAR40.85 |
 | 2 | The charge is added to the requirement of its risk class before scaling | `SRC-02`, MAR40.2 and MAR40.75 |
+| 3 | Under the `CRR` regime the user calculates the charge by one of the approaches of Delegated Regulation (EU) No 528/2014: the simplified approach, the delta-plus approach or the scenario approach. Whatever the approach, the delta-equivalent position of every option is entered on the position sheets, because the simplified approach deducts the risk-weighted delta equivalent amount from the gross amount, and the scenario approach deducts the delta effect, so the charge entered is net of the delta | `SRC-08`, Articles 1 to 9 and Annexes I and II |
 
 **Outputs:**
 
@@ -642,7 +648,28 @@ options* column of `Results`.
   is entered on the position sheets like any other position (MAR40.77 to
   MAR40.79). Under the simplified approach or the scenario approach, the
   option and its underlying are carved out: leave both out of the position
-  sheets, and enter their requirement here.
+  sheets, and enter their requirement here. Under the `CRR` regime, do not
+  carve out: enter the delta-equivalent position of every option on the
+  position sheets, and enter here the charge of Delegated Regulation (EU) No
+  528/2014, which has the delta deducted (step 3). Entering a carved-out
+  charge under the `CRR` regime counts the delta effect twice.
+- Under the `CRR` regime the approaches have the conditions of Articles 1, 2
+  and 7 of `SRC-08`: only an institution that purchases options and warrants
+  alone may use the simplified approach; on an individual basis only the
+  scenario approach and the delta-plus approach may be combined; the scenario
+  approach needs a risk control unit, a notified scope and internal reporting.
+  They are the institution's, and the workbook checks none. The delta that
+  Article 329(1) of the CRR takes is the exchange's, or the institution's own
+  model with the permission of the competent authority: enter it as given.
+- Under the `CRR` regime the equity underlying of an option is each market as
+  `SRC-07` defines it, so the euro area is one market, and the commodity
+  underlying is each commodity that Article 357(4) treats as the same.
+- The charge is added before scaling, under the `CRR` regime as under
+  Basel, by a reading of Article 325(2) of the CRR: it multiplies the
+  requirements of Chapters 2 to 4 by 1.3, 3.5, 1.2 and 1.9, and Articles
+  329(2), 352(5) and 358(3), which require the other risks of options to be
+  reflected, are in those chapters. The text says no more: this is an
+  assumption.
 - `Checks` reports the risk classes with a charge entered (rule `C13`).
 
 **Failure behaviour:** a charge that is not a number, or is negative, is an
@@ -652,6 +679,7 @@ An empty cell is zero.
 
 **Validation:** the test case `illustrative-option-charges`. Its expected
 values are `illustrative`: derived within the project, they validate nothing.
+Step 3 is an instruction to the user and has no test.
 See the [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the
 rows of `CALC-07` in the [traceability
 table](VALIDATION_PLAN.md#traceability).

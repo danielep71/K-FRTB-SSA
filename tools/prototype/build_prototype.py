@@ -672,8 +672,9 @@ def build_fx_positions(ctx: Context) -> None:
 def build_option_charges(ctx: Context) -> None:
     ws = new_sheet(ctx.wb, "OptionCharges", "Option charges",
                    "Non-delta option charges per risk class, calculated outside the workbook and entered in reporting "
-                   "currency (MAR40.74-40.84). They are added to the class before scaling (MAR40.2). Delta equivalents go on "
-                   "the position sheets.", "G", "input", {"C": 14.6, "D": 30.6, "E": 18.6, "F": 18.6, "G": 60})
+                   "currency (MAR40.74-40.84; under the CRR regime, Delegated Regulation (EU) No 528/2014). They are added to the "
+                   "class before scaling (MAR40.2). Delta equivalents go on the position sheets; under the CRR regime that holds "
+                   "for every approach, and the charge has the delta deducted.", "G", "input", {"C": 14.6, "D": 30.6, "E": 18.6, "F": 18.6, "G": 60})
     header(ws, 4, "C", ["Risk class", "Description", "Method", "Charge (rep ccy)", "Comment"], "input", 11, 42, 2)
     oc_rows = [("IR", "Interest rate options"), ("EQ", "Equity options"), ("CO", "Commodity options"),
                ("FX", "FX and gold options")]

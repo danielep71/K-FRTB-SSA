@@ -65,6 +65,19 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The options and the market of the equity risk under the `CRR` regime,
+  compared with Delegated Regulations (EU) No 528/2014 and No 525/2014, whose
+  Official Journal texts are now read and `verified` in the source register
+  (`SRC-07`, `SRC-08`). Under the `CRR` regime you enter the delta-equivalent
+  position of every option on the position sheets, whatever the approach, and
+  the non-delta charge of Delegated Regulation (EU) No 528/2014 with the delta
+  already deducted: the carve-out that the Basel regime asks for under the
+  simplified and the scenario approaches would count the delta effect twice.
+  You also enter one market for all the equities listed in the euro area, and
+  one for each national jurisdiction elsewhere. The workbook checks neither,
+  and nothing changes in the calculation. No test case has an expected value
+  under the `CRR`, and nothing was run in Excel
+  ([#83](https://github.com/danielep71/K-FRTB-SSA/issues/83)).
 - The commodities risk under the `CRR` regime, compared with Articles 355 to
   361 of Regulation (EU) No 575/2013: the workbook calculates the simplified
   approach of Article 360, whose rates are those of the workbook, and nothing
@@ -83,9 +96,8 @@ Use only the categories an entry needs.
   risk is ignored where the future is exchange traded and represents a
   relevant, appropriately diversified index. A future that does not meet that
   condition is entered as a `Single name`. The collective investment
-  undertakings of Article 348 are not supported, and the definition of a market
-  stays the national market that you enter, as no text of the technical
-  standard was read. The results under Basel do not change, no registered test
+  undertakings of Article 348 are not supported. The results under Basel do not
+  change, no registered test
   case has an expected value under the `CRR`, and nothing was run in Excel
   ([#81](https://github.com/danielep71/K-FRTB-SSA/issues/81)).
 - The general market risk of debt instruments under the `CRR` regime: the
