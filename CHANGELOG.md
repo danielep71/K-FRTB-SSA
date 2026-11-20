@@ -324,8 +324,9 @@ Use only the categories an entry needs.
   each statement group, and one blank line between procedures. A component is in the new layout when its header has a
   `WHY THIS EXISTS` field, and `tools/format_vba.py` checks it with one blank
   line between procedures, where it keeps two for the components of the earlier
-  layout. `src/modules/FRTBSSA_Formulas.bas` is the first component converted;
-  the others follow until the formatter checks the new layout only. No behaviour
+  layout. `src/modules/FRTBSSA_Formulas.bas` and the eight components of
+  `src/core/` are converted; the others follow until the formatter checks the
+  new layout only. No behaviour
   changes ([#101](https://github.com/danielep71/K-FRTB-SSA/issues/101)).
 
 - The security policy links to the repository's private vulnerability
