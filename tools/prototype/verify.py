@@ -436,10 +436,12 @@ def crr_regime(run: Run) -> str:
                               f"RWA {rwa}, factor expected {factor}")
         lines.append(f"{label}: factor {factor}, {compared}")
     # A regime and a last date that stop the run.
-    for label, name, end in (("an unknown regime", "EU", day(2029, 12, 31)),
-                             ("the CRR with a last date that is no date", "CRR", "never")):
+    stops: tuple[tuple[str, str, object], ...] = (
+        ("an unknown regime", "EU", day(2029, 12, 31)),
+        ("the CRR with a last date that is no date", "CRR", "never"))
+    for label, name, last in stops:
         workbook, output = run.folder / "crr-stop.xlsm", run.folder / "vba-crr-stop.xlsx"
-        regime(run.workbook, workbook, name, end)
+        regime(run.workbook, workbook, name, last)
         result = run.macro(workbook, RUN, output)
         listed = findings(output)
         if not result.startswith("RESULT=STOPPED; errors=1;") or len(listed) != 1:

@@ -284,7 +284,7 @@ class Runner(unittest.TestCase):
         assert openpyxl is not None
         workbook = openpyxl.load_workbook(TEMPLATE)
         case = fixture("illustrative-sample-requirement")
-        workbook["Results"]["K11"].value = 48267441.0
+        workbook["Results"]["K12"].value = 48267441.0
         workbook["Results"]["I8"].value = 2792000.0
         workbook["IRCalc"]["D6"].value = "OK"
         workbook["IR_Zones"]["C6"].value = "EUR"
