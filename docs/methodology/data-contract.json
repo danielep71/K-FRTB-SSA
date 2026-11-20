@@ -206,7 +206,7 @@
             "min": 0,
             "max": 1
           },
-          "notes": "Name HorizontalZone13. Between zones 1 and 3"
+          "notes": "Name HorizontalZone13. Between zones 1 and 3 under the Basel regime"
         },
         {
           "name": "eq_specific_rate",
@@ -334,6 +334,16 @@
             "max": 1
           },
           "notes": "Name FXDeMinimisRate. Reference value 0.02"
+        },
+        {
+          "name": "horizontal_zone_1_3_crr",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5"
         }
       ]
     },

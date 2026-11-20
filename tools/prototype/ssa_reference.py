@@ -251,8 +251,11 @@ def issue_key(position_id: str, issue: str) -> str:
     return KEY_ISSUE + issue.upper() if issue else KEY_POSITION + position_id
 
 
-def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int]) -> dict[str, float]:
-    """Vertical and horizontal disallowances and the net position of one currency's ladder."""
+def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int],
+                   zone13: float = 1.00) -> dict[str, float]:
+    """Vertical and horizontal disallowances and the net position of one currency's ladder.
+
+    ``zone13`` is the disallowance between zones 1 and 3: 1.00 under MAR40.28, 1.50 under the CRR."""
     vertical = 0.0
     longs = {1: 0.0, 2: 0.0, 3: 0.0}
     shorts = {1: 0.0, 2: 0.0, 3: 0.0}
@@ -270,13 +273,13 @@ def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int]) -> di
     matched12, left1, left2 = offset(zone1, zone2)
     matched23, _, left3 = offset(left2, zone3)
     matched13, _, _ = offset(left1, left3)
-    between = 0.40 * (matched12 + matched23) + 1.00 * matched13
+    between = 0.40 * (matched12 + matched23) + zone13 * matched13
     net_position = abs(zone1 + zone2 + zone3)
     return {"vd": vertical, "within": within, "between": between, "net": net_position,
             "gmr": vertical + within + between + net_position}
 
 
-def calc_ir() -> dict[str, IrCurrency]:
+def calc_ir(zone13: float = 1.00) -> dict[str, IrCurrency]:
     weight = {band: w for band, _, _, _, w in LADDER}
     zone = {band: z for band, z, _, _, _ in LADDER}
     ladder: dict[str, dict[int, list[float]]] = {}   # currency -> band -> [long, short]
@@ -303,7 +306,7 @@ def calc_ir() -> dict[str, IrCurrency]:
             issues[key] = (net + signed, first_rate, first_ccy)
     out: dict[str, IrCurrency] = {}
     for ccy in sorted(ladder):
-        charges = ladder_charges(ladder[ccy], zone)
+        charges = ladder_charges(ladder[ccy], zone, zone13)
         specific = sum(abs(net) * rate for net, rate, issue_ccy in issues.values()
                        if issue_ccy == ccy)
         out[ccy] = {"vd": charges["vd"], "within": charges["within"],
@@ -351,8 +354,8 @@ def calc_fx() -> ForeignExchange:
     return {"longs": longs, "shorts": shorts, "gold": gold, "onop": onop, "charge": 0.08 * onop}
 
 
-def calc_all() -> Requirement:
-    ir = calc_ir()
+def calc_all(zone13: float = 1.00) -> Requirement:
+    ir = calc_ir(zone13)
     eq = calc_eq()
     co = calc_co()
     fx = calc_fx()

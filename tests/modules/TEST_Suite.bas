@@ -67,7 +67,7 @@ Attribute VB_Name = "TEST_Suite"
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
         Private Const EXPECTED_CASES      As Long = 14
-        Private Const EXPECTED_ASSERTIONS As Long = 143
+        Private Const EXPECTED_ASSERTIONS As Long = 146
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=14; assertions=143; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=14; assertions=146; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -285,10 +285,12 @@ Private Sub CaseLadderCharges()
 '   Ladder B: band 1 long 10, band 2 short 4: within zone 1, 40% x 4 = 1.6;
 '   net 6; total 7.6.
 '   Ladder C: band 3 long 30, band 12 short 50: offset 1-3 = 30 at 100%;
-'   net 20; total 50.
+'   net 20; total 50. Under the CRR the offset is charged at 150%: 45; net
+'   20; total 65. Ladder A has no offset between zones 1 and 3, and its total
+'   is 96 under both regimes.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-20
 '==============================================================================
 '
     Dim Ladder()       As Double   'MAR40 ladder
@@ -326,6 +328,19 @@ Private Sub CaseLadderCharges()
         TEST_Harness.AssertNear "c-matched-zones-1-and-3", 30, _
             Components(ZC_MATCHED13), TOL_ABSOLUTE, TOL_RELATIVE
         TEST_Harness.AssertNear "c-total", 50, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+
+        'Under the CRR the offset between zones 1 and 3 is charged at 150%
+        '(Article 339(9)(f)); ladder A has no such offset, so its total is the same.
+        Parameters(PI_REGIME_FLAG) = 1#
+        LadderCharges Longs, Shorts, Ladder, Parameters, Components
+        TEST_Harness.AssertNear "c-between-zones-crr", 45, _
+            Components(ZC_BETWEEN), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "c-total-crr", 65, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+        ReDim Longs(1 To BAND_COUNT)
+        ReDim Shorts(1 To BAND_COUNT)
+        Longs(4) = 100: Shorts(4) = 60: Shorts(6) = 50: Longs(10) = 80
+        LadderCharges Longs, Shorts, Ladder, Parameters, Components
+        TEST_Harness.AssertNear "a-total-crr", 96, Components(ZC_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
         Exit Sub
 
 CaseFailed:

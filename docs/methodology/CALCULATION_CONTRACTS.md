@@ -74,6 +74,7 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `VerticalDisallowance` | 0.10 | `SRC-02`, MAR40.27 | Equal |
 | `HorizontalZone1`, `HorizontalZone2`, `HorizontalZone3` | 0.40, 0.30, 0.30 | `SRC-02`, MAR40.28, table 5 | Equal |
 | `HorizontalAdjacent`, `HorizontalZone13` | 0.40, 1.00 | `SRC-02`, MAR40.28, table 5 | Equal |
+| `HorizontalZone13CRR` | 1.50 | `SRC-04`, Article 339(9), point (f) | Equal, on 2026-11-20 |
 | `EQSpecificRate`, `EQGeneralRate` | 0.08, 0.08 | `SRC-02`, MAR40.43 | Equal |
 | `EQIndexRate` | 0.02 | `SRC-02`, MAR40.47 | Equal |
 | `FXChargeRate` | 0.08 | `SRC-02`, MAR40.61 | Equal |
@@ -88,11 +89,11 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `GoldCode` | `XAU` | None: the code under which gold is entered, a convention of the workbook. MAR40.53 treats gold as a currency | Not applicable |
 
 `TransitionalMultiplier` and `TransitionalEndDate` are not values of MAR40: they
-belong to the CRR regime, and `SRC-06` gives them; `FXDeMinimisRate` belongs to it
-too, and `SRC-04` gives it. `Regime` selects between the
+belong to the CRR regime, and `SRC-06` gives them; `FXDeMinimisRate` and
+`HorizontalZone13CRR` belong to it too, and `SRC-04` gives them. `Regime` selects between the
 two regimes ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)). Rule
-`C08` counts `TransitionalMultiplier`, `TransitionalEndDate` and `FXDeMinimisRate`
-among the values that differ from their reference, as for the others, whatever the
+`C08` counts `TransitionalMultiplier`, `TransitionalEndDate`, `FXDeMinimisRate` and
+`HorizontalZone13CRR` among the values that differ from their reference, as for the others, whatever the
 regime.
 
 No parameter is listed as not yet verified.
@@ -248,7 +249,7 @@ interest rate row of `Results`, with its components per currency on
 | Rate type and coupon | `DS-06.rate_type` and `DS-06.coupon` | Text; fraction |
 | Dates | `DS-06.final_maturity_date` and `DS-06.next_repricing_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
 | Time bands | `DS-04.zone`, `DS-04.upper_bound_high_coupon`, `DS-04.upper_bound_low_coupon` and `DS-04.risk_weight`; `DS-02.coupon_threshold` | Years; fraction |
-| Disallowances | `DS-02.vertical_disallowance` and the five `DS-02.horizontal_` fields | Fraction |
+| Disallowances | `DS-02.vertical_disallowance` and the six `DS-02.horizontal_` fields; `DS-02.regime` | Fraction; text |
 
 **Rules:**
 
@@ -263,6 +264,7 @@ interest rate row of `Results`, with its components per currency on
 | 7 | The net positions of the zones are offset: zones 1 and 2, then zones 2 and 3, at 40% of the matched amount, and then what is left of zones 1 and 3, at 100% | `SRC-02`, MAR40.28, table 5 |
 | 8 | The net position charge is the absolute value of the weighted position that remains | `SRC-02`, MAR40.23 |
 | 9 | The requirement of a currency is the sum of steps 5 to 8 | `SRC-02`, MAR40.23 |
+| 10 | Under the `CRR` regime, the disallowance on the offset between zones 1 and 3 of step 7 is 150%, `HorizontalZone13CRR`, in place of 100%. The rest of steps 1 to 9 is as under the Basel regime | `SRC-04`, Article 339(9), point (f) |
 
 **Outputs:**
 
@@ -281,14 +283,19 @@ interest rate row of `Results`, with its components per currency on
 - Assumptions: the day count and the band limits of the
   [common rules](#common-rules); that a floating-rate position uses the
   column for a coupon of 3% or more, whatever its coupon; and the order of
-  step 7, which MAR40.28 does not state.
+  step 7, which MAR40.28 does not state. Under the `CRR` regime the order of
+  step 7 is that of Article 339(5) to (7); paragraph 6 lets the institution
+  reverse the first two offsets, and the workbook does not offer that choice.
 - A derivative is entered as its legs: the user converts it into positions
   in the underlying, as MAR40.31 to MAR40.34 and table 7 of MAR40.40
   describe, and enters each leg as a row. The workbook converts nothing.
 - The workbook does not find the matched positions that MAR40.35 and
   MAR40.36 allow a bank to leave out: leave them out of the input, or they
   are slotted like any other.
-- Not supported: the duration method (MAR40.29); a single ladder for
+- Not supported: the duration method (MAR40.29), and under the `CRR` regime
+  the duration-based calculation of Article 340, which needs the yield and
+  the modified duration of each position as inputs and which the institution
+  may choose instead of Article 339; a single ladder for
   currencies in which business is insignificant (MAR40.24 and MAR40.30);
   the alternative formulae for swaps (MAR40.37); and the national
   discretion of MAR40.13 to disallow offsetting.
@@ -335,7 +342,12 @@ position charge and the charge of the worked example C.2 of `SRC-03`
 (`bcbs119-c2-maturity-method`), and the weighted positions and the vertical
 disallowance of the example of MAR40.27 (`mar40-27-vertical-disallowance`).
 The expected values of the others are `illustrative`: derived within the
-project, they validate nothing. See the
+project, they validate nothing. No test case has an expected value under the
+`CRR` regime, so step 10 is exercised by the VBA suite and by `verify.py`
+only. Run under the `CRR` regime, the worked example C.2 gives 1,950,000 between
+the zones and a charge of 5,080,000, which is 500,000 more than its published
+values: 50% of the 1,000,000 that it offsets between zones 1 and 3, as step 10
+says; the other components are unchanged (`tests/test_prototype.py`). See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-03` in the [traceability table](VALIDATION_PLAN.md#traceability).
 

@@ -303,22 +303,23 @@ Attribute VB_Name = "CORE_Config"
         Public Const PI_CO_GROSS         As Long = 19    'Commodity gross charge
         Public Const PI_TRANSITIONAL     As Long = 20    'Transitional multiplier, CRR Article 495s(2)
         Public Const PI_FX_DE_MINIMIS    As Long = 21    'FX de minimis, share of total own funds, CRR Article 351
-        Public Const PI_COUNT            As Long = 21    'Parameters read from the sheet
-        Public Const PI_REGIME_FLAG      As Long = 22    'Set by the engine: 1 under the CRR regime, 0 under Basel
-        Public Const PI_VECTOR           As Long = 22    'Size of the parameter vector
+        Public Const PI_ZONE13_CRR       As Long = 22    'Horizontal, zones 1 and 3, CRR Article 339(9)(f)
+        Public Const PI_COUNT            As Long = 22    'Parameters read from the sheet
+        Public Const PI_REGIME_FLAG      As Long = 23    'Set by the engine: 1 under the CRR regime, 0 under Basel
+        Public Const PI_VECTOR           As Long = 23    'Size of the parameter vector
         Public Const PRM_NUMERIC_CODES   As String = _
             "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & _
             "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & _
             "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & _
             "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & _
-            "TransitionalMultiplier|FXDeMinimisRate"
+            "TransitionalMultiplier|FXDeMinimisRate|HorizontalZone13CRR"
         Public Const PRM_REFERENCE_VALUES As String = _
-            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02"
+            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02|1.5"
         Public Const PRM_REFERENCE_GOLD  As String = "XAU"     'MAR40.60 reference gold code
         Public Const PRM_REFERENCE_END_DATE As Double = 47483  '2029-12-31, the last date of Article 495s(2)
     'Kind of check applied to each numeric parameter, in the same order:
     'P = > 0, R = rate in [0, 1], N = >= 0.
-        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRRR"
+        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRRRN"
 
 '------------------------------------------------------------------------------
 ' MATURITY LADDER (MAR40.26 Table 4)

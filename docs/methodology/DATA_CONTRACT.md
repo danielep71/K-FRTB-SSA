@@ -98,7 +98,7 @@ Read from the sheet `Params`.
 | `horizontal_zone_2` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalZone2 |
 | `horizontal_zone_3` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalZone3 |
 | `horizontal_adjacent` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalAdjacent. Between zones 1 and 2, and 2 and 3 |
-| `horizontal_zone_1_3` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalZone13. Between zones 1 and 3 |
+| `horizontal_zone_1_3` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalZone13. Between zones 1 and 3 under the Basel regime |
 | `eq_specific_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQSpecificRate |
 | `eq_index_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQIndexRate |
 | `eq_general_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQGeneralRate |
@@ -111,6 +111,7 @@ Read from the sheet `Params`.
 | `transitional_end_date` | Date, `YYYY-MM-DD` | — | No | Any | Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31 |
 | `total_own_funds` | Decimal | Reporting currency | No | ≥ 0 | Name TotalOwnFunds. Must be a number greater than 0 under the CRR, where the FX requirement is waived while the overall net open position does not exceed FXDeMinimisRate of it |
 | `fx_de_minimis_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name FXDeMinimisRate. Reference value 0.02 |
+| `horizontal_zone_1_3_crr` | Decimal | Decimal fraction | Yes | ≥ 0 | Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5 |
 
 ### `DS-03` Specific-risk charges
 

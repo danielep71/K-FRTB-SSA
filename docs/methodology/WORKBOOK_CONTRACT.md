@@ -157,6 +157,7 @@ The names that refer to one cell:
 | `TransitionalEndDate` | `shParams` | The last reporting date on which the multiplier applies | Users |
 | `TotalOwnFunds` | `shParams` | The total own funds, for the de minimis of the CRR | Users |
 | `FXDeMinimisRate` | `shParams` | The share of the total own funds under which the FX requirement is waived under the CRR | Users |
+| `HorizontalZone13CRR` | `shParams` | The horizontal disallowance between zones 1 and 3 under the CRR | Users |
 | `IRPositions_Header` | `shIRPositions` | The first header cell of the interest rate positions | Users, in the rows below it |
 | `EQPositions_Header` | `shEQPositions` | The first header cell of the equity positions | Users, in the rows below it |
 | `COPositions_Header` | `shCOPositions` | The first header cell of the commodity positions | Users, in the rows below it |
@@ -245,7 +246,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 
 | Area | Sheet | Kind | Written by | Holds |
 | --- | --- | --- | --- | --- |
-| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `FXDeMinimisRate`: code, description, value, reference, MAR40 value and a *Changed* flag |
+| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `HorizontalZone13CRR`: code, description, value, reference, MAR40 value and a *Changed* flag |
 | Specific-risk table | `shParams` | Input | Users | 31 rows, 18 of MAR40 and 13 of the CRR: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
 | Maturity ladder | `shParams` | Input | Users | 15 time bands: zone, upper bounds and labels by coupon, and risk weight (the `Ladder_` names) |
 | FX table | `shParams` | Input | Users | Up to 20 currencies with their rate to the reporting currency (`FX_Ccy`, `FX_Rate`) |
