@@ -91,14 +91,158 @@ DllError = Err.LastDllError
 `SetLastError` is a `Declare` of its own, from `kernel32`, registered like
 any other export.
 
+## Layout of a component
+
+This is the layout of every VBA component. A component is in this layout when
+its component header has a `WHY THIS EXISTS` field. The components that are
+not yet converted keep the earlier layout, whose differences are stated under
+[Source representation](#source-representation), until the last one is
+converted ([#101](https://github.com/danielep71/K-FRTB-SSA/issues/101)); the
+formatter tells the two apart by that field. A change to a component in the
+earlier layout does not mix the two: convert the component, or keep its
+layout.
+
+Formatting is behaviour-neutral. Do not change a public name, a signature, an
+`Attribute` line, a string literal or the logic of a procedure to fit the
+layout. If a rule would need a behavioural change, record it as an issue. When
+you only reformat, keep the `UPDATED` date; when you change behaviour, set it
+to the day of the change.
+
+### File
+
+- CRLF line endings, a final line ending, no tabs, no trailing white space and
+  four spaces for each indentation level.
+- Each component starts with its `Attribute` lines, one blank line,
+  `Option Explicit` (with `Option Private Module` where
+  [Naming and visibility](#naming-and-visibility) asks for it), one blank line
+  and the component header. A form's designer block and its `.frx` file are
+  never edited.
+
+### Banners
+
+Every banner is an apostrophe followed by 78 hyphens, 79 characters in all. A
+test module may use `=` in its component header; each file keeps the character
+it uses.
+
+- A **section banner** has its title in upper case, one space after the
+  apostrophe, between two banner lines. It opens each section of the
+  declarations and of a procedure body.
+- A **procedure title banner** has a short verb phrase in upper case, centred
+  in the 78 columns, as the title of the procedure's header.
+- A **group banner** separates families of procedures in a long module: a lone
+  apostrophe, a banner line, an empty comment line, the centred title, an empty
+  comment line, a banner line and a lone apostrophe.
+
+### Component header
+
+The component header follows `Option Explicit` after one blank line. It is a
+lone apostrophe, a banner line, `' MODULE: <Name>` or `' CLASS: <Name>` (a form
+or a document module such as `ThisWorkbook` uses `MODULE:`), the nine fields,
+and a closing banner line.
+
+### The nine fields
+
+A component header and a procedure header have the same nine fields, in this
+order. Each label is upper case, one space after the apostrophe, and its text
+is indented three spaces; a lone apostrophe separates two fields. No field is
+omitted: write `None` where there is nothing to say.
+
+| Field | Content |
+| --- | --- |
+| `PURPOSE` | What it does, in one or two sentences. |
+| `WHY THIS EXISTS` | The problem it solves, or why it has its shape. |
+| `INPUTS` | `None`, or each argument on its own line with its description below it, indented five spaces: meaning, type, unit, currency or date basis, valid range and ownership. At component level, `None at module level` or `None at class level`. |
+| `RETURNS` | `Nothing` for a `Sub`; otherwise the value and its edge cases. |
+| `BEHAVIOR` | What happens, in order; a list is written `'     - item`. |
+| `ERROR POLICY` | What raises, what is suppressed and what is best effort. `None` for a trivial getter. |
+| `DEPENDENCIES` | The object model, the components and the members it calls, and the calculation contract and the source it implements. |
+| `NOTES` | Design decisions, caveats, the state a procedure owns, and call examples, indented seven spaces. `None` if there is nothing. |
+| `UPDATED` | The date of the last substantive change, `YYYY-MM-DD`. |
+
+Write the text in English and state what the code shows; where the reason for
+something cannot be told from the code, say so rather than guess.
+
+### Declarations
+
+The declarations of a component are sections under section banners, in this
+order, omitting the empty ones: `PRIVATE TYPES`, `WINDOWS API DECLARATIONS`,
+`PRIVATE CONSTANTS`, `PUBLIC CONSTANTS`, `PUBLIC ENUMS`, `PUBLIC TYPES`,
+`PUBLIC STATE`, `PRIVATE STATE` (a class has `PRIVATE CONSTANTS` and
+`PRIVATE VARIABLES`). A file may add a section of its own with a clear name.
+
+- Everything under a section banner is indented four spaces.
+- Align `As` in one column and the trailing comment in another within a block,
+  both on a multiple of four. Every declaration has a trailing comment, with no
+  space after the apostrophe.
+- A blank line separates logical groups. The error constants of a procedure
+  family form one block under a comment that names it.
+
+### Procedures
+
+A procedure is its signature, one blank line, a lone apostrophe, the title
+banner block, the nine fields, a closing banner line, one blank line, the body
+sections, one blank line and the `End` statement. When the signature takes more
+than one line, the lone apostrophe follows it directly.
+
+- Visibility is explicit, and so are `ByVal` or `ByRef` on every argument and
+  `As` on every argument and every function.
+- Separate two procedures with one blank line, and a group banner block with one
+  blank line below it. Between the declarations and the first group banner
+  block leave two blank lines.
+- The body is a sequence of section banners: `DECLARE`, with
+  `Const PROC_NAME As String = "<Component>.<Procedure>"`, a blank line and every
+  `Dim`, aligned as in the declarations; `INITIALIZE`, with
+  `On Error GoTo ErrorHandler` and the initial state; one section for each
+  logical step, with a short verb phrase for its title, such as
+  `VALIDATE INPUTS`; `EXIT PROCEDURE`; and `ERROR HANDLER`. A trivial procedure
+  keeps only the sections it needs.
+- Inside a section, an intent comment of one line precedes each statement or
+  small group of statements. The comment stands at four spaces, with no space
+  after the apostrophe, in sentence case and with no final period; the code
+  stands at eight spaces, and a nested block adds four spaces for each level. A
+  label (`ErrorHandler:`) stands at column zero.
+
+### Error handler
+
+The handler captures `Err.Number`, `Err.Source` and `Err.Description` into
+variables before any other call, restores normal error handling with
+`On Error GoTo 0`, and raises the saved error again with `PROC_NAME` as its
+source and a message that says what failed. The rest of
+[Operation and cleanup outcomes](#operation-and-cleanup-outcomes) applies to a
+procedure that changes host state. An error of the project is raised with its
+`ERR_` constant, which already holds the `vbObjectError` offset as a literal.
+
+### Statements
+
+- Write the VBA library unqualified here: `Len`, `Trim$`, `UCase$`, `InStr`,
+  `CStr`. LibreOffice's VBA mode, which runs `tools/prototype/verify.py`, does
+  not resolve a `VBA.` qualifier and stops with *Variable not defined*. Prefer
+  the `$` string functions, test for an empty string with `Len(x) = 0` or `LenB(x) = 0`, and
+  write `vbNullString` for it.
+- Name the compare mode in `InStr` and `StrComp`, and the counter in `Next`.
+- Write one statement on a line, with no `:` separator. A single-line `If` is
+  allowed for a guard or an `Exit`.
+- Break a line after an operator or a comma, and indent the continuation four
+  spaces more than its statement. In an `Err.Raise` keep the number and the
+  source on the first line and the message on the next.
+- A local variable has a descriptive PascalCase name with no type prefix.
+  Release an object variable with `Set x = Nothing` on the exit and error paths.
+- A `Select Case` has a `Case Else` wherever an unexpected value matters.
+- Aim at 100 characters a line, with 120 as the limit, except for a long string
+  literal or a table of constants.
+
 ## Contracts, units and errors
 
-Each procedure's header states, where they apply: `PURPOSE`, `INPUTS`,
-`RETURNS`, `ERROR POLICY`, `DEPENDENCIES`, `STATE OWNERSHIP` and `REFERENCE`,
-with an `UPDATED` date. `INPUTS` gives each argument's meaning, type, unit,
-currency or date basis, valid range and ownership. `REFERENCE` cites the
+Each procedure's header has the nine fields of
+[Layout of a component](#layout-of-a-component). `INPUTS` gives each argument's
+meaning, type, unit, currency or date basis, valid range and ownership.
+`DEPENDENCIES` cites the
 [calculation contract](methodology/CALCULATION_CONTRACTS.md) and the source it
-implements. Comments explain invariants and reasons, not obvious assignments.
+implements, and `NOTES` says what state the procedure owns. In a component of
+the earlier layout, the header states, where they apply: `PURPOSE`, `INPUTS`,
+`RETURNS`, `ERROR POLICY`, `DEPENDENCIES`, `STATE OWNERSHIP` and `REFERENCE`,
+with an `UPDATED` date. Comments explain invariants and reasons, not obvious
+assignments.
 
 - Use `Double` for amounts and proportions, `Long` for counts, `Boolean` for
   flags, `String` for identifiers and currency codes, and `Date` for dates on
@@ -191,12 +335,16 @@ each failed restoration, and a primary and cleanup failure together.
   that the VBE writes.
 - Indent with four spaces; no tabs and no trailing white space. Keep
   procedure declarations, `End` statements and labels at their outer level.
-  Separate procedures with two blank lines.
+  Separate procedures with one blank line in a component in the
+  [layout](#layout-of-a-component) above, and with two in a component of the
+  earlier layout.
 - A form's header, which the VBE writes, is exempt: it keeps its bytes, such
   as the blank at the end of its `Begin` line, because the next export writes
   them again. **Repository integrity** checks the code after it.
-- Use `MODULE SETTINGS`, `DECLARE`, `INITIALIZE` and `FAIL` sections where they
-  make a routine easier to follow, not as empty ceremony.
+- Structure a procedure body in the sections of
+  [Layout of a component](#layout-of-a-component). A component of the earlier
+  layout uses `MODULE SETTINGS`, `DECLARE`, `INITIALIZE` and `FAIL` sections
+  where they make a routine easier to follow, not as empty ceremony.
 - A generated component names its generator and is regenerated, never edited
   by hand.
 
@@ -208,7 +356,9 @@ rules to the `.bas`, `.cls` and `.frm` files under `src/`, `tests/modules/` and
 - no trailing white space, and four spaces for each indentation tab;
 - procedure declarations, their `End` statements and labels at the outer
   level;
-- two blank lines after each procedure's `End` statement.
+- one blank line after each procedure's `End` statement in a component in the
+  [layout](#layout-of-a-component) above, and two in a component of the earlier
+  layout.
 
 It never changes a string literal, and it keeps the `VERSION`, `BEGIN`, `END`,
 `Object` and `Attribute` lines that the VBE writes. **Repository integrity**
