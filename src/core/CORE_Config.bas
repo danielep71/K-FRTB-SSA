@@ -178,6 +178,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const BK_CO_WIDTH     As Long = 10    'Buckets commodity block C:L
         Public Const BK_FX_WIDTH     As Long = 9     'Buckets FX block C:K
         Public Const RESULTS_WIDTH   As Long = 11    'Results E:O
+        Public Const RESULTS_ROWS    As Long = 6     'Results rows: 4 classes, the total and the transitional row
         Public Const RESULTS_COLUMN  As Long = 3     'Results data column (E) from the header (C)
         Public Const FINDINGS_WIDTH  As Long = 7     'Checks findings C:I
 
@@ -227,7 +228,9 @@ Attribute VB_Name = "CORE_Config"
         Public Const IN_FX_FIRST_ROW   As Long = 17    'Sheet row of the first FX row
         Public Const IN_EQ_CAPACITY    As Long = 18    'Market rows of the Buckets block
         Public Const IN_CO_CAPACITY    As Long = 19    'Commodity rows of the Buckets block
-        Public Const IN_COUNT          As Long = 19    'Size of the input vector
+        Public Const IN_REGIME         As Long = 20    'Regime cell
+        Public Const IN_TRANSITION_END As Long = 21    'TransitionalEndDate cell
+        Public Const IN_COUNT          As Long = 21    'Size of the input vector
     'Outputs.
         Public Const OUT_IR_CALC       As Long = 1     'IRCalc table
         Public Const OUT_LADDER        As Long = 2     'IR_Ladder table
@@ -239,7 +242,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const OUT_FX_CALC       As Long = 8     'FXCalc table
         Public Const OUT_CURRENCIES    As Long = 9     'Buckets FX rows and total row
         Public Const OUT_FX_SUMMARY    As Long = 10    '(1 To 2, 1 To 1): ONOP, FX charge
-        Public Const OUT_RESULTS       As Long = 11    'Results E:O, 4 classes and total
+        Public Const OUT_RESULTS       As Long = 11    'Results E:O, 4 classes, the total and the transitional row
         Public Const OUT_RULES         As Long = 12    '(1 To RULE_COUNT, 1 To 2): rule, count
         Public Const OUT_FINDINGS      As Long = 13    'Checks findings C:I, or Empty
         Public Const OUT_STATUS        As Long = 14    'Status line for Results
@@ -249,7 +252,8 @@ Attribute VB_Name = "CORE_Config"
         Public Const OUT_ERRORS        As Long = 18    'Errors on Checks
         Public Const OUT_WARNINGS      As Long = 19    'Warnings on Checks
         Public Const OUT_USED          As Long = 20    'Positions used
-        Public Const OUT_COUNT         As Long = 20    'Size of the output vector
+        Public Const OUT_REQUIREMENT_BEFORE As Long = 21    'Own funds requirement before the transitional multiplier
+        Public Const OUT_COUNT         As Long = 21    'Size of the output vector
 
 '------------------------------------------------------------------------------
 ' RISK CLASSES
@@ -268,6 +272,11 @@ Attribute VB_Name = "CORE_Config"
         Public Const PRM_ASOF        As String = "AsOfDate"        'Reporting date
         Public Const PRM_REPCCY      As String = "ReportingCcy"    'Reporting currency
         Public Const PRM_GOLD        As String = "GoldCode"        'Currency code of gold
+        Public Const PRM_REGIME      As String = "Regime"          'Regime: Basel or CRR
+        Public Const PRM_TRANSITION_END As String = "TransitionalEndDate"    'Last date of the transitional multiplier
+    'The regimes, as the engine compares them (upper case).
+        Public Const REGIME_BASEL    As String = "BASEL"           'MAR40, the default
+        Public Const REGIME_CRR      As String = "CRR"             'Article 325(2) of Regulation (EU) No 575/2013
     'Numeric parameters: index in the parameter vector, in the order of
     'PRM_NUMERIC_CODES; PRM_REFERENCE_VALUES gives the MAR40 value of each
     '(decimal point, read with Val so that the Windows locale is irrelevant).
@@ -290,18 +299,21 @@ Attribute VB_Name = "CORE_Config"
         Public Const PI_FX_CHARGE        As Long = 17    'FX and gold charge
         Public Const PI_CO_DIRECTIONAL   As Long = 18    'Commodity directional charge
         Public Const PI_CO_GROSS         As Long = 19    'Commodity gross charge
-        Public Const PI_COUNT            As Long = 19    'Size of the parameter vector
+        Public Const PI_TRANSITIONAL     As Long = 20    'Transitional multiplier, CRR Article 495s(2)
+        Public Const PI_COUNT            As Long = 20    'Size of the parameter vector
         Public Const PRM_NUMERIC_CODES   As String = _
             "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & _
             "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & _
             "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & _
-            "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate"
+            "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & _
+            "TransitionalMultiplier"
         Public Const PRM_REFERENCE_VALUES As String = _
-            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03"
+            "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
         Public Const PRM_REFERENCE_GOLD  As String = "XAU"     'MAR40.60 reference gold code
+        Public Const PRM_REFERENCE_END_DATE As Double = 47483  '2029-12-31, the last date of Article 495s(2)
     'Kind of check applied to each numeric parameter, in the same order:
     'P = > 0, R = rate in [0, 1], N = >= 0.
-        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRR"
+        Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRR"
 
 '------------------------------------------------------------------------------
 ' MATURITY LADDER (MAR40.26 Table 4)

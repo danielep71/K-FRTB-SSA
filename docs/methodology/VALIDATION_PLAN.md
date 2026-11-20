@@ -113,6 +113,7 @@ and to the test cases that test it, with its validation status:
 | `SRC-02` | MAR40.2 | `CALC-08.2` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
 | `SRC-02` | MAR40.2 | `CALC-08.3` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
 | `SRC-02` | MAR40.1 | `CALC-08.4` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
+| `SRC-06` | Article 495s(2) | `CALC-08.5` | `CORE_Engine.ResultsTable`, `CORE_Parameters.BuildRegime`, `CORE_Parameters.TransitionalFactor` | — | Not validated |
 
 - **Source and paragraph:** a `SRC-` ID of the [source register](SOURCES.md)
   and the exact paragraph, as in the step's *Source* column.

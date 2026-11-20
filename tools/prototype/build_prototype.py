@@ -443,7 +443,7 @@ def build_params(ctx: Context) -> None:
 
 def params_list(wb: Book, ws: Sheet) -> int:
     """Write the parameter list from row 6 and return its last row."""
-    params: list[tuple[str, str, date | str | float, str, str, str, str | float | None]] = [
+    params: list[tuple[str, str, date | str | float, str, str, str, date | str | float | None]] = [
         ("AsOfDate", "Reporting (calculation) date", D.AS_OF, "input", NF_DATE, "", None),
         ("ReportingCcy", "Reporting currency (all amounts converted into it)", D.REPORTING_CCY, "input", "@", "", None),
         ("DaysPerYear", "Calendar days per year for residual maturities", 365, "const", "0", "Workbook convention (Act/365)", 365),
@@ -466,6 +466,11 @@ def params_list(wb: Book, ws: Sheet) -> int:
         ("GoldCode", "Currency code treated as gold", "XAU", "const", "@", "MAR40.60", "XAU"),
         ("COMDirectionalRate", "Commodity directional charge (net position per commodity)", 0.15, "const", NF_PCT, "MAR40.72", 0.15),
         ("COMGrossRate", "Commodity charge on gross positions at spot", 0.03, "const", NF_PCT, "MAR40.73", 0.03),
+        ("Regime", "Regime: Basel (MAR40) or CRR (Article 325(2) of Regulation (EU) No 575/2013)", "Basel", "input", "@", "", None),
+        ("TransitionalMultiplier", "CRR: multiplier on the requirement until the last date below", 0.9, "const", "0.00",
+         "CRR Art. 495s(2), Reg. (EU) 2026/1221", 0.9),
+        ("TransitionalEndDate", "CRR: last reporting date on which the multiplier applies", date(2029, 12, 31), "const", NF_DATE,
+         "CRR Art. 495s(2), Reg. (EU) 2026/1221", date(2029, 12, 31)),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -478,6 +483,8 @@ def params_list(wb: Book, ws: Sheet) -> int:
             put(ws, f"H{r}", f'=IF(E{r}=G{r},"","CHANGED")', kind="calc", align="center")
         name(wb, code, f"Params!$E${r}")
         ws.row_dimensions[r].height = 20.1
+        if code == "Regime":
+            dv_list(ws, f"E{r}", '"Basel,CRR"')
         r += 1
     return r - 1
 
@@ -1110,17 +1117,19 @@ def build_results(ctx: Context) -> None:
     put(ws, "M11", "=SUM(M7:M10)", "0.0%", "total", align="center")
     put(ws, "P11", "MAR40.1-40.2", None, "total", color=GREY_TXT)
     ws.row_dimensions[11].height = 24
-    name(wb, "SSA_Requirement", "Results!$K$11")
+    results_transition(ws)
+    name(wb, "SSA_RequirementBeforeTransition", "Results!$K$11")
+    name(wb, "SSA_Requirement", "Results!$K$12")
     name(wb, "Results_Header", "Results!$C$6")
     name(wb, "Results_Status", "Results!$C$4")
-    name(wb, "SSA_RWA", "Results!$L$11")
+    name(wb, "SSA_RWA", "Results!$L$12")
     ws["C4"].value = ('=IF(Checks!$D$4>0,"INCOMPLETE: "&Checks!$D$4&" error(s) on Checks; rejected rows are excluded '
                       'from the totals.","OK: "&$N$11&" positions used, no errors. Every figure is a live formula.")')
     ws["C4"].font = font(10, i=True, color=NOTE_TXT)
     ws.row_dimensions[4].height = 20
     ws.conditional_formatting.add("C4", FormulaRule(formula=[not_to_rely_on("$C$4")], **RED))
     section(ws, 13, "Headline", "C", "P")
-    heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges"),
+    heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges; x the transitional multiplier under the CRR"),
              ("Risk-weighted assets", "=SSA_RWA", "Requirement x 12.5"),
              ("Reporting currency", "=ReportingCcy", "All amounts in this currency, unscaled units"),
              ("Reporting date", "=AsOfDate", "")]
@@ -1145,6 +1154,25 @@ def build_results(ctx: Context) -> None:
         link(ws, f"C{20 + k}", sh)
         put(ws, f"D{20 + k}", txt, None, None)
     ws.freeze_panes = "D7"
+
+
+def results_transition(ws: Sheet) -> None:
+    """Row 12 of Results: the transitional multiplier of the CRR and the requirement after it.
+
+    Under the Basel regime, and after the last date of the multiplier, the factor is 1."""
+    put(ws, "C12", "After the transitional multiplier", None, "calc", b=True, sz=10)
+    put(ws, "D12", "CRR Art. 495s(2): factor 1 under the Basel regime and after the last date", None, "calc")
+    ws["D12"].alignment = Alignment(vertical="center", wrap_text=True)
+    for cl in "EFGHI":
+        put(ws, f"{cl}12", None, NF_AMT, "calc")
+    put(ws, "J12", '=IF(AND(UPPER(TRIM(Regime))="CRR",AsOfDate<=TransitionalEndDate),TransitionalMultiplier,1)',
+        "0.00", "calc", align="center")
+    put(ws, "K12", "=K11*J12", NF_AMT, "calc", b=True)
+    put(ws, "L12", "=K12*RWAMultiplier", NF_AMT, "calc")
+    for cl in "MNO":
+        put(ws, f"{cl}12", None, "0", "calc", align="center")
+    put(ws, "P12", "CRR Art. 325(2), 495s(2)", None, "calc", color=GREY_TXT)
+    ws.row_dimensions[12].height = 24
 
 
 def results_classes(ws: Sheet) -> None:
@@ -1321,7 +1349,7 @@ def build_test_catalogue(ctx: Context) -> None:
         ("Invariant", "Ladder weighted positions equal IRCalc weighted positions (difference = 0)", "Workbook", "Invariant",
          "IR_Ladder", f'=SUM(IR_Ladder!K{LAD_F}:K{LAD_L})-SUM(IR_Ladder!L{LAD_F}:L{LAD_L})-SUM({IC("N")})', 0),
         ("Invariant", "Results total equals the MAR40.2 formula (difference = 0)", "MAR40.2", "Invariant", "Results",
-         "=SSA_Requirement-(ScalingIR*Results!I7+ScalingEQ*Results!I8+ScalingCO*Results!I9+ScalingFX*Results!I10)", 0),
+         "=SSA_RequirementBeforeTransition-(ScalingIR*Results!I7+ScalingEQ*Results!I8+ScalingCO*Results!I9+ScalingFX*Results!I10)", 0),
     ]
     for k, (area, desc, src, sst, sh, fm, exp) in enumerate(tests):
         rr = 7 + k
@@ -1607,7 +1635,7 @@ def blank_outputs(ctx: Context) -> None:
     blank(buckets, range(ctx.fx.first, ctx.fx.total + 1), range(3, 12), keep=(f"D{ctx.fx.total}",))
     blank(buckets, range(ctx.fx.total + 2, ctx.fx.total + 4), [9])
     results = wb["Results"]
-    blank(results, range(7, 12), range(5, 16))
+    blank(results, range(7, 13), range(5, 16))
     results["C4"].value = "Not calculated: run RunSSA."
     checks = wb["Checks"]
     blank(checks, range(7, ctx.rule_last + 1), [6, 7])

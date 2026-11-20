@@ -65,6 +65,17 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The regime of the workbook: a `Regime` parameter on `Params`, `Basel` by
+  default, and `CRR`, which multiplies the requirement by the transitional
+  multiplier of Article 495s(2) of Regulation (EU) No 575/2013 on a reporting
+  date up to `TransitionalEndDate` (0.9 until 2029-12-31, parameters
+  `TransitionalMultiplier` and `TransitionalEndDate`). `Results` has a row for
+  the multiplier below the total, `SSA_Requirement` and `SSA_RWA` now refer to
+  it, and `SSA_RequirementBeforeTransition` holds the total before it. Under
+  `Basel` the factor is 1 and the results are those of before. An unknown regime,
+  or a `CRR` without a last date, stops the run. Nothing else of the CRR is
+  implemented: the other rules are those of MAR40, and nothing was run in
+  Excel ([#77](https://github.com/danielep71/K-FRTB-SSA/issues/77)).
 - A comparison of each rule of the calculation contracts with the CRR's
   simplified standardised approach, `docs/methodology/CRR_COMPARISON.md`: for
   each step of `CALC-02` to `CALC-08`, whether Article 325(2) and the articles

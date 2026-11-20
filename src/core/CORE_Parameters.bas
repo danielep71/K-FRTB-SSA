@@ -11,7 +11,8 @@ Attribute VB_Name = "CORE_Parameters"
 '
 ' PUBLIC SURFACE
 '   None outside this VBA project (Option Private Module).
-'     BuildParameters, BuildLadder, BuildSpecificRiskTable, BuildFxTable,
+'     BuildParameters, BuildRegime, TransitionalFactor, BuildLadder,
+'     BuildSpecificRiskTable, BuildFxTable,
 '     BuildOptionCharges, ChangedParameterCount, ReferenceParameters,
 '     ReferenceLadder.
 '
@@ -164,27 +165,132 @@ Public Function BuildParameters( _
 End Function
 
 
+Public Function BuildRegime( _
+    ByVal RawRegime As Variant, _
+    ByVal RawEndDate As Variant, _
+    ByRef Regime As String, _
+    ByRef EndDate As Double, _
+    ByRef Findings() As String, _
+    ByRef FindingCount As Long) _
+    As Long
+'
+'==============================================================================
+'                                  BuildRegime
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Validate the regime and the last date of the transitional multiplier.
+'
+' INPUTS
+'   RawRegime    Cell value of Regime; Basel or CRR, without regard to case.
+'   RawEndDate   Cell value of TransitionalEndDate; read when it is a date,
+'                whatever the regime, so that a change of it is counted by
+'                ChangedParameterCount; it must be a date under the CRR.
+'   Findings     Findings list, appended to (CORE_Util.AddFinding).
+'   FindingCount Findings in use; incremented.
+'
+' RETURNS
+'   Number of unusable values. Output parameters: Regime as REGIME_BASEL or
+'   REGIME_CRR (REGIME_BASEL when it is unusable); EndDate as a date serial,
+'   0 when RawEndDate is not a date.
+'
+' REFERENCE
+'   Article 325(2) and Article 495s(2) of Regulation (EU) No 575/2013, as
+'   amended by Regulation (EU) 2024/1623 and Delegated Regulation (EU)
+'   2026/1221.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+    Dim ErrorCount  As Long      'Unusable values found
+
+        Regime = REGIME_BASEL
+        EndDate = 0#
+        Select Case CodeText(RawRegime)
+            Case REGIME_BASEL
+                Regime = REGIME_BASEL
+            Case REGIME_CRR
+                Regime = REGIME_CRR
+            Case Else
+                AddError Findings, FindingCount, ErrorCount, PRM_REGIME, "must be Basel or CRR"
+        End Select
+        If IsDateSerial(RawEndDate) Then
+            EndDate = NumberValue(RawEndDate)
+        ElseIf Regime = REGIME_CRR Then
+            AddError Findings, FindingCount, ErrorCount, PRM_TRANSITION_END, "must be a date"
+        End If
+        BuildRegime = ErrorCount
+
+End Function
+
+
+Public Function TransitionalFactor( _
+    ByVal Regime As String, _
+    ByVal AsOfDate As Double, _
+    ByVal EndDate As Double, _
+    ByVal Multiplier As Double) _
+    As Double
+'
+'==============================================================================
+'                              TransitionalFactor
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The factor that the requirement of the simplified standardised approach
+'   is multiplied by on a date: the transitional multiplier under the CRR
+'   until its last date, and 1 under the Basel regime and after that date.
+'
+' INPUTS
+'   Regime       REGIME_BASEL or REGIME_CRR, from BuildRegime.
+'   AsOfDate     Reporting date, a date serial.
+'   EndDate      Last date of the multiplier, a date serial.
+'   Multiplier   The multiplier, a decimal; PI_TRANSITIONAL.
+'
+' RETURNS
+'   Multiplier when Regime is REGIME_CRR and AsOfDate is on or before
+'   EndDate; 1 otherwise.
+'
+' REFERENCE
+'   Article 495s(2) of Regulation (EU) No 575/2013, from Delegated
+'   Regulation (EU) 2026/1221.
+'
+' UPDATED
+'   2026-11-20
+'==============================================================================
+'
+        If Regime = REGIME_CRR And AsOfDate <= EndDate Then
+            TransitionalFactor = Multiplier
+        Else
+            TransitionalFactor = 1#
+        End If
+
+End Function
+
+
 Public Function ChangedParameterCount( _
     ByRef Parameters() As Double, _
-    ByVal GoldCode As String) _
+    ByVal GoldCode As String, _
+    ByVal TransitionEnd As Double) _
     As Long
 '
 '==============================================================================
 '                             ChangedParameterCount
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Count the constants that differ from their MAR40 value (a what-if run).
+'   Count the constants that differ from their reference value (a what-if run).
 '
 ' INPUTS
 '   Parameters   Vector (1 To PI_COUNT) from BuildParameters.
 '   GoldCode     Gold code in use, upper case.
+'   TransitionEnd  Last date of the transitional multiplier from BuildRegime,
+'                0 when it is not a date.
 '
 ' RETURNS
 '   Number of numeric parameters differing from PRM_REFERENCE_VALUES by more
-'   than 1E-9, plus 1 when GoldCode is not XAU.
+'   than 1E-9, plus 1 when GoldCode is not XAU, plus 1 when TransitionEnd is
+'   not PRM_REFERENCE_END_DATE.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-20
 '==============================================================================
 '
     Dim Reference() As Double    'MAR40 values
@@ -196,6 +302,7 @@ Public Function ChangedParameterCount( _
             If Abs(Parameters(i) - Reference(i)) > VALUE_TOLERANCE Then Changed = Changed + 1
         Next i
         If GoldCode <> PRM_REFERENCE_GOLD Then Changed = Changed + 1
+        If Abs(TransitionEnd - PRM_REFERENCE_END_DATE) > VALUE_TOLERANCE Then Changed = Changed + 1
         ChangedParameterCount = Changed
 
 End Function

@@ -106,6 +106,9 @@ Read from the sheet `Params`.
 | `gold_code` | Text | — | Yes | Any | Name GoldCode. The code gold is entered under in DS-05 and DS-09. Reference value XAU |
 | `com_directional_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name COMDirectionalRate |
 | `com_gross_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name COMGrossRate |
+| `regime` | Text | — | Yes | `Basel`, `CRR` | Name Regime. Basel is MAR40, CRR is Article 325(2) of Regulation (EU) No 575/2013; read without regard to case. Reference value Basel |
+| `transitional_multiplier` | Decimal | Factor | Yes | 0 to 1 | Name TransitionalMultiplier. Multiplies the requirement under the CRR, on a reporting date up to TransitionalEndDate. Reference value 0.9 |
+| `transitional_end_date` | Date, `YYYY-MM-DD` | — | No | Any | Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31 |
 
 ### `DS-03` Specific-risk charges
 
@@ -380,7 +383,7 @@ reason. The texts are listed in the *Failure behaviour* of each
 | `C05` | `DS-05` without the reporting currency at rate 1 | The run stops: no result is calculated, `Checks` lists the value, and the status line reads `STOPPED` |
 | `C06` | A currency listed twice in `DS-05` | As `C05` |
 | `C07` | A rate of `DS-05` that is not a number greater than 0 | As `C05` |
-| `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code; or a position table of `DS-06` to `DS-09` with more than 500 rows ([volume](#volume)) | As `C05` |
+| `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code, a regime that is neither `Basel` nor `CRR`, a last date of the transitional multiplier that is not a date under the `CRR`; or a position table of `DS-06` to `DS-09` with more than 500 rows ([volume](#volume)) | As `C05` |
 
 Four rules report without rejecting:
 

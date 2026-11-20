@@ -789,6 +789,8 @@ Private Sub ReadInputs( _
         Inputs(IN_ASOF) = NamedRange(PRM_ASOF).Value
         Inputs(IN_REPCCY) = NamedRange(PRM_REPCCY).Value
         Inputs(IN_GOLD) = NamedRange(PRM_GOLD).Value
+        Inputs(IN_REGIME) = NamedRange(PRM_REGIME).Value
+        Inputs(IN_TRANSITION_END) = NamedRange(PRM_TRANSITION_END).Value
 
         ReDim Ladder(1 To BAND_COUNT, 1 To LD_WIDTH)
         ReDim Labels(1 To BAND_COUNT, 1 To 2)
@@ -1320,7 +1322,7 @@ Private Function ClearPart( _
                 NamedRange(NM_FX_CHARGE).ClearContents
             Case 15
                 Set Header = NamedRange(NM_RESULTS_HEADER)
-                Header.Offset(1, RESULTS_COLUMN - 1).Resize(RC_COUNT + 1, RESULTS_WIDTH).ClearContents
+                Header.Offset(1, RESULTS_COLUMN - 1).Resize(RESULTS_ROWS, RESULTS_WIDTH).ClearContents
             Case 16
                 Set Header = NamedRange(NM_CHECKS_HEADER)
                 For r = 1 To RULE_COUNT

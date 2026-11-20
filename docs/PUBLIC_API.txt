@@ -210,6 +210,8 @@ CORE_Config	Const	BK_FX_WIDTH
 # SIG	CORE_Config	Const	BK_FX_WIDTH	Public Const BK_FX_WIDTH As Long = 9
 CORE_Config	Const	RESULTS_WIDTH
 # SIG	CORE_Config	Const	RESULTS_WIDTH	Public Const RESULTS_WIDTH As Long = 11
+CORE_Config	Const	RESULTS_ROWS
+# SIG	CORE_Config	Const	RESULTS_ROWS	Public Const RESULTS_ROWS As Long = 6
 CORE_Config	Const	RESULTS_COLUMN
 # SIG	CORE_Config	Const	RESULTS_COLUMN	Public Const RESULTS_COLUMN As Long = 3
 CORE_Config	Const	FINDINGS_WIDTH
@@ -278,8 +280,12 @@ CORE_Config	Const	IN_EQ_CAPACITY
 # SIG	CORE_Config	Const	IN_EQ_CAPACITY	Public Const IN_EQ_CAPACITY As Long = 18
 CORE_Config	Const	IN_CO_CAPACITY
 # SIG	CORE_Config	Const	IN_CO_CAPACITY	Public Const IN_CO_CAPACITY As Long = 19
+CORE_Config	Const	IN_REGIME
+# SIG	CORE_Config	Const	IN_REGIME	Public Const IN_REGIME As Long = 20
+CORE_Config	Const	IN_TRANSITION_END
+# SIG	CORE_Config	Const	IN_TRANSITION_END	Public Const IN_TRANSITION_END As Long = 21
 CORE_Config	Const	IN_COUNT
-# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 19
+# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 21
 CORE_Config	Const	OUT_IR_CALC
 # SIG	CORE_Config	Const	OUT_IR_CALC	Public Const OUT_IR_CALC As Long = 1
 CORE_Config	Const	OUT_LADDER
@@ -320,8 +326,10 @@ CORE_Config	Const	OUT_WARNINGS
 # SIG	CORE_Config	Const	OUT_WARNINGS	Public Const OUT_WARNINGS As Long = 19
 CORE_Config	Const	OUT_USED
 # SIG	CORE_Config	Const	OUT_USED	Public Const OUT_USED As Long = 20
+CORE_Config	Const	OUT_REQUIREMENT_BEFORE
+# SIG	CORE_Config	Const	OUT_REQUIREMENT_BEFORE	Public Const OUT_REQUIREMENT_BEFORE As Long = 21
 CORE_Config	Const	OUT_COUNT
-# SIG	CORE_Config	Const	OUT_COUNT	Public Const OUT_COUNT As Long = 20
+# SIG	CORE_Config	Const	OUT_COUNT	Public Const OUT_COUNT As Long = 21
 CORE_Config	Const	RC_IR
 # SIG	CORE_Config	Const	RC_IR	Public Const RC_IR As Long = 1
 CORE_Config	Const	RC_EQ
@@ -340,6 +348,14 @@ CORE_Config	Const	PRM_REPCCY
 # SIG	CORE_Config	Const	PRM_REPCCY	Public Const PRM_REPCCY As String = "ReportingCcy"
 CORE_Config	Const	PRM_GOLD
 # SIG	CORE_Config	Const	PRM_GOLD	Public Const PRM_GOLD As String = "GoldCode"
+CORE_Config	Const	PRM_REGIME
+# SIG	CORE_Config	Const	PRM_REGIME	Public Const PRM_REGIME As String = "Regime"
+CORE_Config	Const	PRM_TRANSITION_END
+# SIG	CORE_Config	Const	PRM_TRANSITION_END	Public Const PRM_TRANSITION_END As String = "TransitionalEndDate"
+CORE_Config	Const	REGIME_BASEL
+# SIG	CORE_Config	Const	REGIME_BASEL	Public Const REGIME_BASEL As String = "BASEL"
+CORE_Config	Const	REGIME_CRR
+# SIG	CORE_Config	Const	REGIME_CRR	Public Const REGIME_CRR As String = "CRR"
 CORE_Config	Const	PI_DAYS_PER_YEAR
 # SIG	CORE_Config	Const	PI_DAYS_PER_YEAR	Public Const PI_DAYS_PER_YEAR As Long = 1
 CORE_Config	Const	PI_COUPON_THRESHOLD
@@ -378,16 +394,20 @@ CORE_Config	Const	PI_CO_DIRECTIONAL
 # SIG	CORE_Config	Const	PI_CO_DIRECTIONAL	Public Const PI_CO_DIRECTIONAL As Long = 18
 CORE_Config	Const	PI_CO_GROSS
 # SIG	CORE_Config	Const	PI_CO_GROSS	Public Const PI_CO_GROSS As Long = 19
+CORE_Config	Const	PI_TRANSITIONAL
+# SIG	CORE_Config	Const	PI_TRANSITIONAL	Public Const PI_TRANSITIONAL As Long = 20
 CORE_Config	Const	PI_COUNT
-# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 19
+# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 20
 CORE_Config	Const	PRM_NUMERIC_CODES
-# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate"
+# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & "TransitionalMultiplier"
 CORE_Config	Const	PRM_REFERENCE_VALUES
-# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03"
+# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
 CORE_Config	Const	PRM_REFERENCE_GOLD
 # SIG	CORE_Config	Const	PRM_REFERENCE_GOLD	Public Const PRM_REFERENCE_GOLD As String = "XAU"
+CORE_Config	Const	PRM_REFERENCE_END_DATE
+# SIG	CORE_Config	Const	PRM_REFERENCE_END_DATE	Public Const PRM_REFERENCE_END_DATE As Double = 47483
 CORE_Config	Const	PRM_DOMAINS
-# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRR"
+# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRR"
 CORE_Config	Const	BAND_COUNT
 # SIG	CORE_Config	Const	BAND_COUNT	Public Const BAND_COUNT As Long = 15
 CORE_Config	Const	ZONE_COUNT
@@ -534,8 +554,12 @@ CORE_InterestRate	Sub	LadderCharges
 # SIG	CORE_InterestRate	Sub	LadderCharges	Public Sub LadderCharges(ByRef WeightedLong() As Double, ByRef WeightedShort() As Double, ByRef Ladder() As Double, ByRef Parameters() As Double, ByRef Components() As Double)
 CORE_Parameters	Function	BuildParameters
 # SIG	CORE_Parameters	Function	BuildParameters	Public Function BuildParameters(ByRef RawNumeric() As Variant, ByVal RawAsOfDate As Variant, ByVal RawReportingCcy As Variant, ByVal RawGoldCode As Variant, ByRef Parameters() As Double, ByRef AsOfDate As Double, ByRef ReportingCcy As String, ByRef GoldCode As String, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Function	BuildRegime
+# SIG	CORE_Parameters	Function	BuildRegime	Public Function BuildRegime(ByVal RawRegime As Variant, ByVal RawEndDate As Variant, ByRef Regime As String, ByRef EndDate As Double, ByRef Findings() As String, ByRef FindingCount As Long) As Long
+CORE_Parameters	Function	TransitionalFactor
+# SIG	CORE_Parameters	Function	TransitionalFactor	Public Function TransitionalFactor(ByVal Regime As String, ByVal AsOfDate As Double, ByVal EndDate As Double, ByVal Multiplier As Double) As Double
 CORE_Parameters	Function	ChangedParameterCount
-# SIG	CORE_Parameters	Function	ChangedParameterCount	Public Function ChangedParameterCount(ByRef Parameters() As Double, ByVal GoldCode As String) As Long
+# SIG	CORE_Parameters	Function	ChangedParameterCount	Public Function ChangedParameterCount(ByRef Parameters() As Double, ByVal GoldCode As String, ByVal TransitionEnd As Double) As Long
 CORE_Parameters	Sub	ReferenceParameters
 # SIG	CORE_Parameters	Sub	ReferenceParameters	Public Sub ReferenceParameters(ByRef Parameters() As Double)
 CORE_Parameters	Function	BuildLadder
