@@ -477,6 +477,8 @@ def params_list(wb: Book, ws: Sheet) -> int:
          0.02, "const", NF_PCT, "CRR Art. 351", 0.02),
         ("HorizontalZone13CRR", "CRR: horizontal disallowance between zones 1 and 3", 1.50, "const", NF_PCT,
          "CRR Art. 339(9)(f)", 1.50),
+        ("EQIndexRateCRR", "CRR: charge on the net position per index future, whose specific risk Article 344 ignores", 0.0,
+         "const", NF_PCT, "CRR Art. 344", 0.0),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -819,7 +821,7 @@ def build_eq_calc(ctx: Context) -> None:
          '=IF($D{r}="OK",$E{r}&"|"&$F{r}&"|"&$G{r},"")',
          '=IF($J{r}="","",' + sum_where(R("I"), same(R("J"), "$J{r}")) + ')',
          '=IF($J{r}="",0,IF(' + count_where(same(f"$J${FIRST}:$J{{r}}", "$J{r}"))
-         + '=1,IF($F{r}="Index",EQIndexRate,EQSpecificRate)*ABS($K{r}),0))',
+         + '=1,IF($F{r}="Index",IF(UPPER(TRIM(Regime))="CRR",EQIndexRateCRR,EQIndexRate),EQSpecificRate)*ABS($K{r}),0))',
          '=IF($D{r}<>"OK","",IF(' + FIRST_OK_ROW_OF_KEY + '=1,MAX($M$4:$M{p})+1,""))',
          '=IF(LEFT($D{r},7)="INVALID",COUNTIF($D$5:$D{r},"INVALID*"),"")'])
 
@@ -999,7 +1001,7 @@ def build_buckets(ctx: Context) -> None:
 def buckets_equity(wb: Book, ws: Sheet) -> Block:
     section(ws, 5, "Equity by market", "C", "L")
     header(ws, 6, "C", ["#", "Market", "Positions", "Long (rep ccy)", "Short (rep ccy)", "Net position",
-                        "General market risk (8% of |net|)", "Specific risk, single names (8%)", "Index charge (2%)", "Total"],
+                        "General market risk (8% of |net|)", "Specific risk, single names (8%)", "Index charge (2%; 0 under the CRR)", "Total"],
            "output", 11, 42, 2)
     EQ_F, EQ_L = 7, 7 + NBKT - 1
     name(wb, "Buckets_EQ_Header", "Buckets!$C$6")

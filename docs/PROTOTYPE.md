@@ -82,7 +82,8 @@ unit, its allowed values and how a cell is read.
   approach for credit risk, such as `RW 20%`; a position of category `GOV`,
   `QUAL` or `OTHER` is rejected there, and the category `CRR` under Basel. The
   `CRR` setting also charges the offset between zones 1 and 3 of the general
-  market risk at 150%, `HorizontalZone13CRR`, in place of 100%.
+  market risk at 150%, `HorizontalZone13CRR`, in place of 100%, and charges a
+  position entered as `Index` nothing, `EQIndexRateCRR`, in place of 2%.
 - **`IRPositions`, `EQPositions`, `COPositions`, `FXPositions`:** one row per
   position, up to 500 rows on each sheet. The workbook converts nothing: a
   derivative is a row for each leg, the category and rating of an issuer are

@@ -228,7 +228,7 @@
             "min": 0,
             "max": 1
           },
-          "notes": "Name EQIndexRate"
+          "notes": "Name EQIndexRate. Further charge on an index under the Basel regime"
         },
         {
           "name": "eq_general_rate",
@@ -344,6 +344,17 @@
             "min": 0
           },
           "notes": "Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5"
+        },
+        {
+          "name": "eq_index_rate_crr",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EQIndexRateCRR. Charge on the net position per index under the CRR, Article 344, in place of EQIndexRate. Reference value 0"
         }
       ]
     },

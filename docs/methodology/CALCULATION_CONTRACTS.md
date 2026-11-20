@@ -77,6 +77,7 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `HorizontalZone13CRR` | 1.50 | `SRC-04`, Article 339(9), point (f) | Equal, on 2026-11-20 |
 | `EQSpecificRate`, `EQGeneralRate` | 0.08, 0.08 | `SRC-02`, MAR40.43 | Equal |
 | `EQIndexRate` | 0.02 | `SRC-02`, MAR40.47 | Equal |
+| `EQIndexRateCRR` | 0 | `SRC-04`, Article 344 | Equal, on 2026-11-20 |
 | `FXChargeRate` | 0.08 | `SRC-02`, MAR40.61 | Equal |
 | `COMDirectionalRate` | 0.15 | `SRC-02`, MAR40.72 | Equal |
 | `COMGrossRate` | 0.03 | `SRC-02`, MAR40.73 | Equal |
@@ -90,10 +91,10 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 
 `TransitionalMultiplier` and `TransitionalEndDate` are not values of MAR40: they
 belong to the CRR regime, and `SRC-06` gives them; `FXDeMinimisRate` and
-`HorizontalZone13CRR` belong to it too, and `SRC-04` gives them. `Regime` selects between the
+`HorizontalZone13CRR` and `EQIndexRateCRR` belong to it too, and `SRC-04` gives them. `Regime` selects between the
 two regimes ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)). Rule
-`C08` counts `TransitionalMultiplier`, `TransitionalEndDate`, `FXDeMinimisRate` and
-`HorizontalZone13CRR` among the values that differ from their reference, as for the others, whatever the
+`C08` counts `TransitionalMultiplier`, `TransitionalEndDate`, `FXDeMinimisRate`,
+`HorizontalZone13CRR` and `EQIndexRateCRR` among the values that differ from their reference, as for the others, whatever the
 regime.
 
 No parameter is listed as not yet verified.
@@ -364,7 +365,7 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 | Currency and its rate | `DS-07.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Market | `DS-07.market` | Text: the national market |
 | Type and identifier | `DS-07.type` and `DS-07.identifier` | Text |
-| Rates | `DS-02.eq_specific_rate`, `DS-02.eq_index_rate` and `DS-02.eq_general_rate` | Fraction |
+| Rates | `DS-02.eq_specific_rate`, `DS-02.eq_index_rate`, `DS-02.eq_index_rate_crr` and `DS-02.eq_general_rate`; `DS-02.regime` | Fraction; text |
 
 **Rules:**
 
@@ -375,6 +376,7 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 | 3 | The charge for an index is 2% of the absolute net position of each index, in place of specific risk | `SRC-02`, MAR40.47, and table 8 of MAR40.52 |
 | 4 | General market risk is 8% of the absolute net position of each market: the sum of its longs less the sum of its shorts, single names and indices together | `SRC-02`, MAR40.42 and MAR40.43 |
 | 5 | The requirement is the sum of steps 2 to 4 over the stocks, the indices and the markets | `SRC-02`, MAR40.42 |
+| 6 | Under the `CRR` regime the charge of step 3 is `EQIndexRateCRR`, 0, in place of 2%: a stock-index future is treated as one equity, whose general risk is in the net position of its market (step 4) and whose specific risk is ignored where the future is exchange traded and represents a relevant, appropriately diversified index. A position that does not meet that condition is entered as a `Single name`, and step 2 charges its specific risk. The rest of steps 1 to 5 is as under the Basel regime | `SRC-04`, Article 344 |
 
 **Outputs:**
 
@@ -391,9 +393,24 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
   MAR40.45 gives. The workbook converts nothing.
 - Every position entered as `Index` is charged 2%. The source applies that
   rate only to a well-diversified index (MAR40.47): the user decides which
-  index is one.
+  index is one. Under the `CRR` regime every position entered as `Index` is
+  charged 0: the user enters as `Index` only a stock-index future that is
+  exchange traded and represents a relevant, appropriately diversified index,
+  and any other as a `Single name`. The breakdown of a future into its
+  constituent equities, which Article 344 allows with a notification to the
+  competent authority, is the user's: enter the constituents as `Single name`
+  rows. The notification is the institution's, and is not calculated.
 - Not supported: the arbitrage strategies of MAR40.48 to MAR40.50, and the
-  offset of depository receipts (MAR40.51).
+  offset of depository receipts (MAR40.51); under the `CRR` regime the
+  collective investment undertakings of Article 348, with 32% for position
+  risk and 40% with foreign exchange risk, whose Articles 348 to 350 were not
+  read in full and which would need a type of position, an input for the
+  foreign exchange risk and an output of their own.
+- A market is the national market that the user enters. Article 341(3) of the
+  CRR leaves the definition of *market* to a technical standard of the EBA,
+  `SRC-07`, whose Official Journal text was not read, so the definition is an
+  assumption under the `CRR` regime as under the Basel regime
+  ([#91](https://github.com/danielep71/K-FRTB-SSA/issues/91)).
 - The interest rate or FX exposure of the other leg of a contract (footnote
   14 of MAR40.44) is entered on `IRPositions` or `FXPositions`.
 - `Buckets` lists up to 30 markets. The totals include every market, and
@@ -413,7 +430,8 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 **Validation:** the test cases `illustrative-eq-matched-positions`,
 `illustrative-invalid-eq-positions` and `illustrative-sample-equity`. Their
 expected values are `illustrative`: derived within the project, they validate
-nothing. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
+nothing. No test case has an expected value under the `CRR` regime, so step 6
+is exercised by the VBA suite and by `verify.py` only. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
 and the rows of `CALC-04` in the [traceability
 table](VALIDATION_PLAN.md#traceability).
 

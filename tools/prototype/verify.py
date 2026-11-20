@@ -458,8 +458,9 @@ def crr_regime(run: Run) -> str:
         ("own funds whose 2% is below the position", "CRR", last, 1.6e10, 0.9, False))
     lines: list[str] = []
     # The sample's rows are given the CRR categories that have their specific-risk charges, so that the
-    # requirement before the multiplier is the one of the Basel run, unless the FX requirement is waived.
-    baseline = read_names(run.formula_values, "SSA_Requirement")[0]
+    # requirement before the multiplier is the reference model's under the CRR (150% between zones 1 and 3,
+    # no charge on an index), unless the FX requirement is waived.
+    baseline = ssa_reference.calc_all(1.50, 0.0)["total"]
     for label, name, end, own_funds, factor, waived in cases:
         formula, workbook = run.folder / "crr-formula.xlsx", run.folder / "crr.xlsm"
         values, output = run.folder / "crr-formula-values.xlsx", run.folder / "vba-crr.xlsx"
@@ -475,7 +476,7 @@ def crr_regime(run: Run) -> str:
                 path, "SSA_RequirementBeforeTransition", "SSA_Requirement", "SSA_RWA", "FX_ONOP", "FX_Charge")
             expected_charge = 0.0 if waived else 0.08 * onop
             if not (waived or compare_outputs.same(before, baseline)):
-                raise Failure(f"{label}, {path.name}: before {before}, the Basel run {baseline}")
+                raise Failure(f"{label}, {path.name}: before {before}, the reference model {baseline}")
             if not (compare_outputs.same(after, before * factor)
                     and compare_outputs.same(rwa, after * 12.5)
                     and compare_outputs.same(charge, expected_charge)):
@@ -535,7 +536,7 @@ def crr_zones(run: Run) -> str:
             raise Failure(f"{name}: {result}")
         compared = run.compare(output, values)
         with unittest.mock.patch.object(ssa_reference, "IR", [*ssa_reference.IR, *extra]):
-            expected = ssa_reference.calc_all(rate)["total"]
+            expected = ssa_reference.calc_all(rate, 0.0 if name == "CRR" else 0.02)["total"]
         for path in (output, values):
             (given,) = read_names(path, field)
             if not compare_outputs.same(given, expected):

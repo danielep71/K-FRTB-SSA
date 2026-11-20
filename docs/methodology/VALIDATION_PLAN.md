@@ -101,6 +101,7 @@ and to the test cases that test it, with its validation status:
 | `SRC-02` | MAR40.47, and table 8 of MAR40.52 | `CALC-04.3` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
 | `SRC-02` | MAR40.42 and MAR40.43 | `CALC-04.4` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
 | `SRC-02` | MAR40.42 | `CALC-04.5` | `CORE_Equity.CalculateEquity` | `illustrative-eq-matched-positions`, `illustrative-sample-equity` | Exercised |
+| `SRC-04` | Article 344 | `CALC-04.6` | `CORE_Equity.CalculateEquity` | — | Not validated |
 | `SRC-02` | MAR40.68 and MAR40.73 | `CALC-05.1` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
 | `SRC-02` | MAR40.67 | `CALC-05.2` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |
 | `SRC-02` | MAR40.72 | `CALC-05.3` | `CORE_Commodity.CalculateCommodity` | `illustrative-co-matched-positions`, `illustrative-sample-commodities` | Exercised |

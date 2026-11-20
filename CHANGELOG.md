@@ -65,6 +65,19 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The equity risk of stock-index futures under the `CRR` regime: a position
+  entered as `Index` has no charge of its own, where the Basel regime charges
+  a further 2%, from the new parameter `EQIndexRateCRR` (0), because Article 344
+  of Regulation (EU) No 575/2013 treats a stock-index future as one equity,
+  whose general risk is in the net position of its market and whose specific
+  risk is ignored where the future is exchange traded and represents a
+  relevant, appropriately diversified index. A future that does not meet that
+  condition is entered as a `Single name`. The collective investment
+  undertakings of Article 348 are not supported, and the definition of a market
+  stays the national market that you enter, as no text of the technical
+  standard was read. The results under Basel do not change, no registered test
+  case has an expected value under the `CRR`, and nothing was run in Excel
+  ([#81](https://github.com/danielep71/K-FRTB-SSA/issues/81)).
 - The general market risk of debt instruments under the `CRR` regime: the
   offset between zones 1 and 3 of the maturity method is charged at 150%,
   Article 339(9), point (f), of Regulation (EU) No 575/2013, in place of the

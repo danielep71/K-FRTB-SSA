@@ -119,6 +119,17 @@ class Reference(unittest.TestCase):
         self.assertEqual((crr["vd"], crr["within"], crr["net"]),
                          (basel["vd"], basel["within"], basel["net"]))
 
+    def test_the_index_charge_of_the_crr_is_nil(self) -> None:
+        # Article 344: the specific risk of an index future that is exchange traded and diversified is
+        # ignored, and its general risk stays in the net position of its market.
+        basel, crr = ssa_reference.calc_eq(), ssa_reference.calc_eq(0.0)
+        self.assertGreater(basel["index"], 0.0)
+        self.assertEqual(crr["index"], 0.0)
+        self.assertEqual((crr["specific"], crr["general"]), (basel["specific"], basel["general"]))
+        self.assertAlmostEqual(
+            ssa_reference.calc_all()["total"] - ssa_reference.calc_all(1.0, 0.0)["total"],
+            ssa_reference.SCALING["EQ"] * basel["index"], places=6)
+
     def test_offsets_between_zones(self) -> None:
         self.assertEqual(ssa_reference.offset(100.0, -30.0), (30.0, 70.0, 0.0))
         self.assertEqual(ssa_reference.offset(-100.0, 30.0), (30.0, -70.0, 0.0))
@@ -220,7 +231,7 @@ class Generator(NeedsOpenpyxl):
         # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
         book = openpyxl.load_workbook(self.template)
         self.assertTrue(book["Params"]["E6"].protection.locked is False)
-        self.assertTrue(book["Params"]["G37"].protection.locked is False)
+        self.assertTrue(book["Params"]["G38"].protection.locked is False)
         self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
         self.assertTrue(book["Results"]["C6"].protection.locked)
         self.assertTrue(book["IRPositions"]["C4"].protection.locked)
