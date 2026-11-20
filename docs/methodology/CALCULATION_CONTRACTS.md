@@ -475,6 +475,31 @@ commodity on `Buckets`.
 - Not supported: the maturity ladder approach (MAR40.68 to MAR40.70), so
   *Maturity date* on `COPositions` is not used; and netting between
   subcategories of a commodity, a national discretion of MAR40.67.
+- Under the `CRR` regime the workbook calculates the simplified approach of
+  Article 360 only, with the rates of steps 3 and 4, which are the CRR's. It
+  does not offer the choice that Article 355 gives the institution among
+  Articles 359, 360 and 361. Not supported: the maturity ladder of Article 359
+  (a spread rate of 1.50% in each of seven bands, a carry rate of 0.6% applied
+  for each band into which an unmatched position is carried forward, and an
+  outright rate of 15%), because paragraph 4 of that article does not say in
+  which order an unmatched position is matched against the bands further out
+  when several are open, and the order changes the matched positions to which
+  the rates apply; the extended maturity ladder of Article 361 (the rates of
+  its Table 2 by category of commodity, for an institution with significant
+  commodities business and an appropriately diversified portfolio, which
+  notifies the use), which has the same gap and needs the category of the
+  commodity as an input; and the ancillary agricultural commodities business of
+  Article 356, which the institution determines for its physical stock once a
+  year, on conditions that it monitors, and notifies. A ladder also needs
+  outputs of its own on `Buckets` and `Results`.
+- Under the `CRR` regime Article 357(4) treats as positions in the same
+  commodity the positions in different sub-categories that are deliverable
+  against each other, and those in similar commodities that are close
+  substitutes, where a correlation of at least 0.9 between price movements is
+  clearly established over at least one year. Enter them under one commodity
+  name: the workbook tests none of those conditions. Under Article 357(5) the
+  commodities that the institution transferred in a repurchase agreement or
+  lent are included: enter them as positions.
 - Two rows are one commodity only when their names are equal. The workbook
   does not check that their units are.
 - A derivative is entered as a notional position in the commodity, as
