@@ -65,6 +65,13 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The texts of the CRR regime in the source register, `SRC-04` to `SRC-08`:
+  the consolidated CRR of 2026-01-01, Regulation (EU) 2024/1623, Delegated
+  Regulation (EU) 2026/1221 and the two delegated regulations of 2014 on the
+  definition of *market* and the non-delta risk of options, with what was read
+  and what was not, and a table of the technical standards that the CRR leaves
+  to the EBA. No rule cites them yet, and nothing is validated by registering
+  them ([#75](https://github.com/danielep71/K-FRTB-SSA/issues/75)).
 - The scope of the CRR regime, recorded in the *Decisions* table of
   `docs/methodology/VALIDATION_PLAN.md`: the simplified standardised approach
   of Article 325(2) of Regulation (EU) No 575/2013 as amended by Regulation
