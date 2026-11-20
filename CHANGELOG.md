@@ -65,6 +65,14 @@ Use only the categories an entry needs.
 
 ### Added
 
+- A comparison of each rule of the calculation contracts with the CRR's
+  simplified standardised approach, `docs/methodology/CRR_COMPARISON.md`: for
+  each step of `CALC-02` to `CALC-08`, whether Article 325(2) and the articles
+  it points to say the same, differ or add a rule, and the task that takes each
+  difference. Among them, the CRR's rate of 150% between the zones 1 and 3 of
+  the maturity method where the workbook has 100%, and the absence of a 2%
+  index charge. It is a reading of the text: no rule of the CRR regime is
+  implemented or validated ([#76](https://github.com/danielep71/K-FRTB-SSA/issues/76)).
 - The texts of the CRR regime in the source register, `SRC-04` to `SRC-08`:
   the consolidated CRR of 2026-01-01, Regulation (EU) 2024/1623, Delegated
   Regulation (EU) 2026/1221 and the two delegated regulations of 2014 on the
