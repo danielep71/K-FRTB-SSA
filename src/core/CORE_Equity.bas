@@ -88,8 +88,9 @@ Public Sub CalculateEquity( _
 ' INPUTS
 '   InputRows        EQPositions cells (1 To n, 1 To EQ_INPUT_WIDTH); a row whose
 '               PositionID is blank is ignored. Values are delta-equivalent.
-'   Parameters  Vector (1 To PI_COUNT); PI_EQ_SPECIFIC, PI_EQ_INDEX and
-'               PI_EQ_GENERAL are used.
+'   Parameters  Vector (1 To PI_VECTOR); PI_EQ_SPECIFIC, PI_EQ_INDEX and
+'               PI_EQ_GENERAL are used, and PI_EQ_INDEX_CRR in place of
+'               PI_EQ_INDEX where PI_REGIME_FLAG is 1.
 '   FxCodes     FX table codes, upper case; FxRates their rates (> 0).
 '   GoldCode    Gold code, upper case; not a valid equity currency.
 '
@@ -107,13 +108,18 @@ Public Sub CalculateEquity( _
 '
 ' REFERENCE
 '   MAR40.43 (8% specific and 8% general), MAR40.46 (identical equity or
-'   index nets), MAR40.47 (further 2% on the net position per index).
+'   index nets), MAR40.47 (further 2% on the net position per index). Under
+'   the CRR regime, Article 344: an index future is one equity, its general
+'   risk is in the market's net position, and its specific risk is ignored
+'   where it is exchange traded and represents a relevant, appropriately
+'   diversified index, so the charge on an index is PI_EQ_INDEX_CRR, 0.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-20
 '==============================================================================
 '
     Dim RowCount    As Long        'Input rows
+    Dim IndexRate   As Double      'Charge on an index of the regime
     Dim Ids()       As String      'Distinct PositionIDs
     Dim IdCount     As Long        'Distinct PositionIDs in use
     Dim IdUses()    As Long        'InputRows per PositionID
@@ -215,7 +221,9 @@ Public Sub CalculateEquity( _
                 RowOutput(r, OC_NET_VALUE) = NetValue(Position)
                 If NetFirst(Position) = r Then
                     If CodeText(RowOutput(r, OC_TYPE)) = TYPE_INDEX Then
-                        RowOutput(r, OC_CHARGE) = Parameters(PI_EQ_INDEX) * Abs(NetValue(Position))
+                        IndexRate = Parameters(PI_EQ_INDEX)
+                        If Parameters(PI_REGIME_FLAG) = 1# Then IndexRate = Parameters(PI_EQ_INDEX_CRR)
+                        RowOutput(r, OC_CHARGE) = IndexRate * Abs(NetValue(Position))
                         Totals(TOT_OTHER) = Totals(TOT_OTHER) + RowOutput(r, OC_CHARGE)
                     Else
                         RowOutput(r, OC_CHARGE) = Parameters(PI_EQ_SPECIFIC) * Abs(NetValue(Position))

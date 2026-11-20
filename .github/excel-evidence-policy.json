@@ -15,7 +15,7 @@
       "source": "tests/modules/TEST_Suite.bas",
       "certification_entry_point": "CertifyCore",
       "expected_cases": 14,
-      "expected_assertions": 146,
+      "expected_assertions": 149,
       "log": "core.log",
       "certification_log": "core-certification.log"
     },

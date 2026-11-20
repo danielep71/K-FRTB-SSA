@@ -67,7 +67,7 @@ Attribute VB_Name = "TEST_Suite"
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
         Private Const EXPECTED_CASES      As Long = 14
-        Private Const EXPECTED_ASSERTIONS As Long = 146
+        Private Const EXPECTED_ASSERTIONS As Long = 149
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=14; assertions=146; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=14; assertions=149; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -422,10 +422,12 @@ Private Sub CaseEquity()
 '
 ' REFERENCE
 '   Stock X: +100 - 40 = 60, specific 8% x 60 = 4.8; index +50, 2% = 1;
-'   general 8% x |60 + 50| = 8.8 (MAR40.43, 40.46, 40.47).
+'   general 8% x |60 + 50| = 8.8 (MAR40.43, 40.46, 40.47). Under the CRR the
+'   index has no charge, 0; the specific risk 4.8 and the general risk 8.8 are
+'   the same (Article 344).
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-20
 '==============================================================================
 '
     Dim InputRows()    As Variant   'EQPositions cells
@@ -456,6 +458,14 @@ Private Sub CaseEquity()
             ST_INVALID & "Type must be Single name or Index", CStr(RowOutput(4, 2))
         TEST_Harness.AssertEqualText "gold-currency-status", _
             ST_INVALID & "currency not in FX_Table", CStr(RowOutput(5, 2))
+
+        'Under the CRR the index carries no charge of its own (Article 344): its
+        'general risk stays in the net position of the market.
+        Parameters(PI_REGIME_FLAG) = 1#
+        CalculateEquity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, Markets, Totals
+        TEST_Harness.AssertNear "index-crr", 0, Totals(TOT_OTHER), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "specific-crr", 4.8, Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertNear "general-crr", 8.8, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
         Exit Sub
 
 CaseFailed:

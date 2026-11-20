@@ -100,7 +100,7 @@ Read from the sheet `Params`.
 | `horizontal_adjacent` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalAdjacent. Between zones 1 and 2, and 2 and 3 |
 | `horizontal_zone_1_3` | Decimal | Decimal fraction | Yes | 0 to 1 | Name HorizontalZone13. Between zones 1 and 3 under the Basel regime |
 | `eq_specific_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQSpecificRate |
-| `eq_index_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQIndexRate |
+| `eq_index_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQIndexRate. Further charge on an index under the Basel regime |
 | `eq_general_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQGeneralRate |
 | `fx_charge_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name FXChargeRate |
 | `gold_code` | Text | — | Yes | Any | Name GoldCode. The code gold is entered under in DS-05 and DS-09. Reference value XAU |
@@ -112,6 +112,7 @@ Read from the sheet `Params`.
 | `total_own_funds` | Decimal | Reporting currency | No | ≥ 0 | Name TotalOwnFunds. Must be a number greater than 0 under the CRR, where the FX requirement is waived while the overall net open position does not exceed FXDeMinimisRate of it |
 | `fx_de_minimis_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name FXDeMinimisRate. Reference value 0.02 |
 | `horizontal_zone_1_3_crr` | Decimal | Decimal fraction | Yes | ≥ 0 | Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5 |
+| `eq_index_rate_crr` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQIndexRateCRR. Charge on the net position per index under the CRR, Article 344, in place of EQIndexRate. Reference value 0 |
 
 ### `DS-03` Specific-risk charges
 

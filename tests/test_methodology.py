@@ -100,7 +100,7 @@ class Parameters(unittest.TestCase):
         self.reference = dict(zip(codes, map(float, values), strict=True))
 
     def test_every_numeric_parameter_is_traced(self) -> None:
-        self.assertEqual(len(self.reference), 22)
+        self.assertEqual(len(self.reference), 23)
         for code in self.reference:
             with self.subTest(code=code):
                 self.assertIn(f"`{code}`", self.section)

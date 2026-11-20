@@ -315,7 +315,7 @@ def calc_ir(zone13: float = 1.00) -> dict[str, IrCurrency]:
     return out
 
 
-def calc_eq() -> Equity:
+def calc_eq(index_rate: float = 0.02) -> Equity:
     nets: dict[tuple[str, str, str], float] = {}
     markets: dict[str, float] = {}
     for (_, _, market, kind, identifier, ccy, direction, value, _) in EQ:
@@ -324,7 +324,7 @@ def calc_eq() -> Equity:
         nets[key] = nets.get(key, 0.0) + signed
         markets[market] = markets.get(market, 0.0) + signed
     specific = sum(abs(net) * 0.08 for (_, kind, _), net in nets.items() if kind == "Single name")
-    index = sum(abs(net) * 0.02 for (_, kind, _), net in nets.items() if kind == "Index")
+    index = sum(abs(net) * index_rate for (_, kind, _), net in nets.items() if kind == "Index")
     general = sum(0.08 * abs(net) for net in markets.values())
     return {"specific": specific, "general": general, "index": index}
 
@@ -354,9 +354,9 @@ def calc_fx() -> ForeignExchange:
     return {"longs": longs, "shorts": shorts, "gold": gold, "onop": onop, "charge": 0.08 * onop}
 
 
-def calc_all(zone13: float = 1.00) -> Requirement:
+def calc_all(zone13: float = 1.00, index_rate: float = 0.02) -> Requirement:
     ir = calc_ir(zone13)
-    eq = calc_eq()
+    eq = calc_eq(index_rate)
     co = calc_co()
     fx = calc_fx()
     k_ir = sum(currency["gmr"] + currency["sr"] for currency in ir.values())
