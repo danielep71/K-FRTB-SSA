@@ -65,6 +65,16 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The commodities risk under the `CRR` regime, compared with Articles 355 to
+  361 of Regulation (EU) No 575/2013: the workbook calculates the simplified
+  approach of Article 360, whose rates are those of the workbook, and nothing
+  changes in the calculation. The maturity ladder of Article 359, the extended
+  maturity ladder of Article 361 and the ancillary agricultural commodities
+  business of Article 356 are not supported, and the positions that Article
+  357(4) and (5) put in the same commodity or in the calculation are entered by
+  you under one commodity name and as positions. No test case has an expected
+  value under the `CRR`, and nothing was run in Excel
+  ([#82](https://github.com/danielep71/K-FRTB-SSA/issues/82)).
 - The equity risk of stock-index futures under the `CRR` regime: a position
   entered as `Index` has no charge of its own, where the Basel regime charges
   a further 2%, from the new parameter `EQIndexRateCRR` (0), because Article 344
