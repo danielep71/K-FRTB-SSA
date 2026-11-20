@@ -182,15 +182,16 @@ Public Function BuildRegime( _
 '
 ' INPUTS
 '   RawRegime    Cell value of Regime; Basel or CRR, without regard to case.
-'   RawEndDate   Cell value of TransitionalEndDate; must be a date when the
-'                regime is the CRR, and is not read otherwise.
+'   RawEndDate   Cell value of TransitionalEndDate; read when it is a date,
+'                whatever the regime, so that a change of it is counted by
+'                ChangedParameterCount; it must be a date under the CRR.
 '   Findings     Findings list, appended to (CORE_Util.AddFinding).
 '   FindingCount Findings in use; incremented.
 '
 ' RETURNS
 '   Number of unusable values. Output parameters: Regime as REGIME_BASEL or
 '   REGIME_CRR (REGIME_BASEL when it is unusable); EndDate as a date serial,
-'   0 when it is not read or unusable.
+'   0 when RawEndDate is not a date.
 '
 ' REFERENCE
 '   Article 325(2) and Article 495s(2) of Regulation (EU) No 575/2013, as
@@ -213,12 +214,10 @@ Public Function BuildRegime( _
             Case Else
                 AddError Findings, FindingCount, ErrorCount, PRM_REGIME, "must be Basel or CRR"
         End Select
-        If Regime = REGIME_CRR Then
-            If IsDateSerial(RawEndDate) Then
-                EndDate = NumberValue(RawEndDate)
-            Else
-                AddError Findings, FindingCount, ErrorCount, PRM_TRANSITION_END, "must be a date"
-            End If
+        If IsDateSerial(RawEndDate) Then
+            EndDate = NumberValue(RawEndDate)
+        ElseIf Regime = REGIME_CRR Then
+            AddError Findings, FindingCount, ErrorCount, PRM_TRANSITION_END, "must be a date"
         End If
         BuildRegime = ErrorCount
 
@@ -269,25 +268,29 @@ End Function
 
 Public Function ChangedParameterCount( _
     ByRef Parameters() As Double, _
-    ByVal GoldCode As String) _
+    ByVal GoldCode As String, _
+    ByVal TransitionEnd As Double) _
     As Long
 '
 '==============================================================================
 '                             ChangedParameterCount
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Count the constants that differ from their MAR40 value (a what-if run).
+'   Count the constants that differ from their reference value (a what-if run).
 '
 ' INPUTS
 '   Parameters   Vector (1 To PI_COUNT) from BuildParameters.
 '   GoldCode     Gold code in use, upper case.
+'   TransitionEnd  Last date of the transitional multiplier from BuildRegime,
+'                0 when it is not a date.
 '
 ' RETURNS
 '   Number of numeric parameters differing from PRM_REFERENCE_VALUES by more
-'   than 1E-9, plus 1 when GoldCode is not XAU.
+'   than 1E-9, plus 1 when GoldCode is not XAU, plus 1 when TransitionEnd is
+'   not PRM_REFERENCE_END_DATE.
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-20
 '==============================================================================
 '
     Dim Reference() As Double    'MAR40 values
@@ -299,6 +302,7 @@ Public Function ChangedParameterCount( _
             If Abs(Parameters(i) - Reference(i)) > VALUE_TOLERANCE Then Changed = Changed + 1
         Next i
         If GoldCode <> PRM_REFERENCE_GOLD Then Changed = Changed + 1
+        If Abs(TransitionEnd - PRM_REFERENCE_END_DATE) > VALUE_TOLERANCE Then Changed = Changed + 1
         ChangedParameterCount = Changed
 
 End Function

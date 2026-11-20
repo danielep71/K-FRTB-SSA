@@ -404,6 +404,8 @@ CORE_Config	Const	PRM_REFERENCE_VALUES
 # SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
 CORE_Config	Const	PRM_REFERENCE_GOLD
 # SIG	CORE_Config	Const	PRM_REFERENCE_GOLD	Public Const PRM_REFERENCE_GOLD As String = "XAU"
+CORE_Config	Const	PRM_REFERENCE_END_DATE
+# SIG	CORE_Config	Const	PRM_REFERENCE_END_DATE	Public Const PRM_REFERENCE_END_DATE As Double = 47483
 CORE_Config	Const	PRM_DOMAINS
 # SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRR"
 CORE_Config	Const	BAND_COUNT
@@ -557,7 +559,7 @@ CORE_Parameters	Function	BuildRegime
 CORE_Parameters	Function	TransitionalFactor
 # SIG	CORE_Parameters	Function	TransitionalFactor	Public Function TransitionalFactor(ByVal Regime As String, ByVal AsOfDate As Double, ByVal EndDate As Double, ByVal Multiplier As Double) As Double
 CORE_Parameters	Function	ChangedParameterCount
-# SIG	CORE_Parameters	Function	ChangedParameterCount	Public Function ChangedParameterCount(ByRef Parameters() As Double, ByVal GoldCode As String) As Long
+# SIG	CORE_Parameters	Function	ChangedParameterCount	Public Function ChangedParameterCount(ByRef Parameters() As Double, ByVal GoldCode As String, ByVal TransitionEnd As Double) As Long
 CORE_Parameters	Sub	ReferenceParameters
 # SIG	CORE_Parameters	Sub	ReferenceParameters	Public Sub ReferenceParameters(ByRef Parameters() As Double)
 CORE_Parameters	Function	BuildLadder

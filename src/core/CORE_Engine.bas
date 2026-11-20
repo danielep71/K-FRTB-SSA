@@ -158,7 +158,7 @@ Public Sub Calculate( _
         RuleCounts(7) = RateErrors
         VolumeErrors = PositionVolumeErrors(Inputs, Findings, FindingCount)
         RuleCounts(14) = ParameterErrors + TableErrors + VolumeErrors
-        If ParameterErrors = 0 Then RuleCounts(8) = ChangedParameterCount(Parameters, GoldCode)
+        If ParameterErrors = 0 Then RuleCounts(8) = ChangedParameterCount(Parameters, GoldCode, TransitionEnd)
 
         If ParameterErrors + TableErrors + ReportingErrors + DuplicateErrors + RateErrors _
            + VolumeErrors > 0 Then

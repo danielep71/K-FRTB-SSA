@@ -88,8 +88,8 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 `TransitionalMultiplier` and `TransitionalEndDate` are not values of MAR40: they
 belong to the CRR regime, and `SRC-06` gives them. `Regime` selects between the
 two regimes ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)). Rule
-`C08` counts `TransitionalMultiplier` among the values that differ from their
-reference, as for the others.
+`C08` counts `TransitionalMultiplier` and `TransitionalEndDate` among the values
+that differ from their reference, as for the others, whatever the regime.
 
 No parameter is listed as not yet verified.
 

@@ -310,6 +310,7 @@ Attribute VB_Name = "CORE_Config"
         Public Const PRM_REFERENCE_VALUES As String = _
             "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9"
         Public Const PRM_REFERENCE_GOLD  As String = "XAU"     'MAR40.60 reference gold code
+        Public Const PRM_REFERENCE_END_DATE As Double = 47483  '2029-12-31, the last date of Article 495s(2)
     'Kind of check applied to each numeric parameter, in the same order:
     'P = > 0, R = rate in [0, 1], N = >= 0.
         Public Const PRM_DOMAINS         As String = "PNPPPPPRRRRRRRRRRRRR"

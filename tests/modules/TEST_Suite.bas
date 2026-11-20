@@ -67,7 +67,7 @@ Attribute VB_Name = "TEST_Suite"
     'A complete run starts every case and evaluates every assertion once.
         Private Const SUITE_NAME          As String = "core"
         Private Const EXPECTED_CASES      As Long = 13
-        Private Const EXPECTED_ASSERTIONS As Long = 115
+        Private Const EXPECTED_ASSERTIONS As Long = 120
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md,
     'Decisions).
         Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -87,7 +87,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=13; assertions=115; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=13; assertions=120; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' ERROR POLICY
 '   As TEST_Harness.EndRun: raises when the run does not pass.
@@ -800,7 +800,7 @@ Private Sub CaseParameters()
             BuildParameters(Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _
                             ReportingCcy, GoldCode, Findings, FindingCount)
         TEST_Harness.AssertEqualDouble "reference-set-unchanged", 0, _
-            ChangedParameterCount(Parameters, GoldCode)
+            ChangedParameterCount(Parameters, GoldCode, PRM_REFERENCE_END_DATE)
         Raw(PI_DAYS_PER_YEAR) = 360
         Raw(PI_VERTICAL) = "ten"
         Raw(PI_ZONE1) = 1.5
@@ -861,7 +861,11 @@ Private Sub CaseRegime()
         TEST_Harness.AssertEqualDouble "basel-is-valid", 0, _
             BuildRegime("Basel", Empty, Regime, EndDate, Findings, FindingCount)
         TEST_Harness.AssertEqualText "basel-is-read-in-upper-case", REGIME_BASEL, Regime
-        TEST_Harness.AssertEqualDouble "basel-does-not-read-the-end-date", 0, EndDate
+        TEST_Harness.AssertEqualDouble "no-end-date-is-zero", 0, EndDate
+        TEST_Harness.AssertEqualDouble "basel-reads-an-end-date-that-is-a-date", 0, _
+            BuildRegime("Basel", DateSerial(2030, 12, 31), Regime, EndDate, Findings, FindingCount)
+        TEST_Harness.AssertEqualDouble "the-end-date-is-read-under-basel", _
+            CDbl(DateSerial(2030, 12, 31)), EndDate
         TEST_Harness.AssertEqualDouble "crr-without-regard-to-case", 0, _
             BuildRegime(" crr ", DateSerial(2029, 12, 31), Regime, EndDate, Findings, FindingCount)
         TEST_Harness.AssertEqualText "crr-is-read-in-upper-case", REGIME_CRR, Regime
@@ -888,6 +892,14 @@ Private Sub CaseRegime()
             Raw(i) = Reference(i)
         Next i
         TEST_Harness.AssertEqualDouble "multiplier-of-reference", 0.9, Reference(PI_TRANSITIONAL)
+        BuildParameters Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _
+                        ReportingCcy, GoldCode, Findings, FindingCount
+        TEST_Harness.AssertEqualDouble "reference-end-date-is-unchanged", 0, _
+            ChangedParameterCount(Parameters, GoldCode, LastDate)
+        TEST_Harness.AssertEqualDouble "a-later-end-date-is-counted", 1, _
+            ChangedParameterCount(Parameters, GoldCode, LastDate + 366)
+        TEST_Harness.AssertEqualDouble "an-end-date-that-is-no-date-is-counted", 1, _
+            ChangedParameterCount(Parameters, GoldCode, 0#)
         Raw(PI_TRANSITIONAL) = 1.5
         TEST_Harness.AssertEqualDouble "multiplier-above-one", 1, _
             BuildParameters(Raw, DateSerial(2026, 9, 30), "EUR", "XAU", Parameters, AsOfDate, _

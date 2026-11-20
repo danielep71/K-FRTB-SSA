@@ -108,7 +108,7 @@ Read from the sheet `Params`.
 | `com_gross_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name COMGrossRate |
 | `regime` | Text | — | Yes | `Basel`, `CRR` | Name Regime. Basel is MAR40, CRR is Article 325(2) of Regulation (EU) No 575/2013; read without regard to case. Reference value Basel |
 | `transitional_multiplier` | Decimal | Factor | Yes | 0 to 1 | Name TransitionalMultiplier. Multiplies the requirement under the CRR, on a reporting date up to TransitionalEndDate. Reference value 0.9 |
-| `transitional_end_date` | Date, `YYYY-MM-DD` | — | No | Any | Name TransitionalEndDate. Read under the CRR only, where it must be a date. Reference value 2029-12-31 |
+| `transitional_end_date` | Date, `YYYY-MM-DD` | — | No | Any | Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31 |
 
 ### `DS-03` Specific-risk charges
 

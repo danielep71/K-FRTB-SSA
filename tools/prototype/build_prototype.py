@@ -470,7 +470,7 @@ def params_list(wb: Book, ws: Sheet) -> int:
         ("TransitionalMultiplier", "CRR: multiplier on the requirement until the last date below", 0.9, "const", "0.00",
          "CRR Art. 495s(2), Reg. (EU) 2026/1221", 0.9),
         ("TransitionalEndDate", "CRR: last reporting date on which the multiplier applies", date(2029, 12, 31), "const", NF_DATE,
-         "CRR Art. 495s(2), Reg. (EU) 2026/1221", None),
+         "CRR Art. 495s(2), Reg. (EU) 2026/1221", date(2029, 12, 31)),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:

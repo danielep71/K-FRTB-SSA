@@ -312,7 +312,7 @@
           "unit": null,
           "required": false,
           "allowed": null,
-          "notes": "Name TransitionalEndDate. Read under the CRR only, where it must be a date. Reference value 2029-12-31"
+          "notes": "Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31"
         }
       ]
     },
