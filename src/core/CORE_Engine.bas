@@ -176,6 +176,8 @@ Public Sub Calculate( _
             Exit Sub
         End If
 
+        If Regime = REGIME_CRR Then Parameters(PI_REGIME_FLAG) = 1#
+
         '--- Risk classes --------------------------------------------------------
         'Each table has its own variable: an array stored in Outputs must not be
         'reused, as LibreOffice (the test host) keeps arrays in a Variant by

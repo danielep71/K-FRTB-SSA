@@ -76,7 +76,11 @@ unit, its allowed values and how a cell is read.
   is the de minimis of Article 351: the FX requirement is zero while the overall
   net open position does not exceed 2% of `TotalOwnFunds`, which you enter and
   which the `CRR` requires. The [comparison](methodology/CRR_COMPARISON.md)
-  lists the other differences.
+  lists the other differences. The `CRR` setting also changes the specific risk
+  of debt instruments: a position in `IRPositions` has the category `CRR`, and
+  as its rating grade the risk weight it would receive under the standardised
+  approach for credit risk, such as `RW 20%`; a position of category `GOV`,
+  `QUAL` or `OTHER` is rejected there, and the category `CRR` under Basel.
 - **`IRPositions`, `EQPositions`, `COPositions`, `FXPositions`:** one row per
   position, up to 500 rows on each sheet. The workbook converts nothing: a
   derivative is a row for each leg, the category and rating of an issuer are

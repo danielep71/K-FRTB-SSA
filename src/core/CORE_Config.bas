@@ -303,7 +303,9 @@ Attribute VB_Name = "CORE_Config"
         Public Const PI_CO_GROSS         As Long = 19    'Commodity gross charge
         Public Const PI_TRANSITIONAL     As Long = 20    'Transitional multiplier, CRR Article 495s(2)
         Public Const PI_FX_DE_MINIMIS    As Long = 21    'FX de minimis, share of total own funds, CRR Article 351
-        Public Const PI_COUNT            As Long = 21    'Size of the parameter vector
+        Public Const PI_COUNT            As Long = 21    'Parameters read from the sheet
+        Public Const PI_REGIME_FLAG      As Long = 22    'Set by the engine: 1 under the CRR regime, 0 under Basel
+        Public Const PI_VECTOR           As Long = 22    'Size of the parameter vector
         Public Const PRM_NUMERIC_CODES   As String = _
             "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & _
             "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & _
@@ -376,7 +378,8 @@ Attribute VB_Name = "CORE_Config"
         Public Const SEV_INFO        As String = "INFO"          'Checks severity
         Public Const SR_NONE         As String = "NONE"          'No specific risk
         Public Const SR_NO_MATCH     As String = "NO MATCH"      'No Table 1 charge
-        Public Const SR_CATEGORIES   As String = "|GOV|QUAL|OTHER|NONE|"    'Valid categories
+        Public Const SR_CATEGORIES   As String = "|GOV|QUAL|OTHER|CRR|NONE|"    'Valid categories
+        Public Const SR_CRR          As String = "CRR"           'Category of the CRR regime: the grade is a risk weight
         Public Const LBL_MIXED       As String = "MIXED"         'Issue with mixed keys
         Public Const LBL_NOT_APPLY   As String = "n/a"           'Band absent for this coupon
         Public Const FX_REPORTING    As String = "Reporting ccy" 'FX block treatment

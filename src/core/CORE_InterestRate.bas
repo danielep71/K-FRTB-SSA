@@ -219,7 +219,8 @@ Public Sub CalculateInterestRate( _
                 IsFloating = (CodeText(InputRows(r, IR_RATE_TYPE)) = "FLOATING")
                 SrBand = SpecificRiskBand(InputRows(r, IR_MATURITY), AsOfDate, Parameters(PI_DAYS_PER_YEAR))
                 SrKey = SpecificRiskKey(Category, Grade, SrBand, SrKeys)
-                Status = RowStatus(InputRows, r, CurrencyCode, Category, SrKey, IsFloating, AsOfDate, _
+                Status = RowStatus(InputRows, r, CurrencyCode, Category, _
+                                   (Parameters(PI_REGIME_FLAG) = 1#), SrKey, IsFloating, AsOfDate, _
                                    FxCodes, GoldCode, _
                                    IdUses(KeyPosition(Ids, IdCount, CodeText(InputRows(r, IR_ID)), False)))
 
@@ -575,6 +576,7 @@ Private Function RowStatus( _
     ByVal r As Long, _
     ByVal CurrencyCode As String, _
     ByVal Category As String, _
+    ByVal CrrRegime As Boolean, _
     ByVal SrKey As String, _
     ByVal IsFloating As Boolean, _
     ByVal AsOfDate As Double, _
@@ -594,6 +596,8 @@ Private Function RowStatus( _
 '   InputRows, r      Input cells and the row index.
 '   CurrencyCode     Normalised currency code.
 '   Category     Normalised SR category.
+'   CrrRegime    True under the CRR regime: the category is CRR or NONE; under
+'                the Basel regime it is GOV, QUAL, OTHER or NONE.
 '   SrKey        SR key from SpecificRiskKey.
 '   IsFloating   True when Rate type is Floating.
 '   AsOfDate     Reporting date serial.
@@ -649,9 +653,13 @@ Private Function RowStatus( _
         ElseIf IsFloating And (NumberValue(Repricing) < AsOfDate _
                                Or NumberValue(Repricing) > NumberValue(Maturity)) Then
             RowStatus = ST_INVALID & "repricing date outside AsOfDate to final maturity"
-        ElseIf InStr(1, SR_CATEGORIES, "|" & Category & "|", vbBinaryCompare) = 0 _
-               Or Len(Category) = 0 Then
+        ElseIf CrrRegime And Category <> SR_CRR And Category <> SR_NONE Then
+            RowStatus = ST_INVALID & "SR category must be CRR or NONE under the CRR"
+        ElseIf Not CrrRegime And (InStr(1, SR_CATEGORIES, "|" & Category & "|", vbBinaryCompare) = 0 _
+               Or Len(Category) = 0 Or Category = SR_CRR) Then
             RowStatus = ST_INVALID & "SR category must be GOV, QUAL, OTHER or NONE"
+        ElseIf SrKey = SR_NO_MATCH And CrrRegime Then
+            RowStatus = ST_INVALID & "no Article 336 charge for this risk weight"
         ElseIf SrKey = SR_NO_MATCH Then
             RowStatus = ST_INVALID & "no MAR40.6 charge for this category and rating grade"
         Else

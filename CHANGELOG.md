@@ -65,6 +65,17 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The specific risk of debt instruments under the `CRR` regime, by Article 336
+  of Regulation (EU) No 575/2013: the category `CRR` of the specific-risk table,
+  whose grade is the risk weight that the issuer or the security would receive
+  under the standardised approach for credit risk (`RW 0%`, `RW 10%`, `RW 20%`,
+  `RW 50%`, `RW 75%`, `RW 100%`, `RW 150%`), with 13 rows of rates: 0%, half of
+  the second category for covered bonds at 10%, the second category by residual
+  term at 20% and 50%, 8% and 12%. A weight of 75%, which the article does not
+  name, is charged as 100%, by my decision. Under the `CRR` a position is `CRR`
+  or `NONE`, and under Basel the category `CRR` is rejected. The cap of
+  Article 335 and the other points of the article that need an input are not
+  supported ([#79](https://github.com/danielep71/K-FRTB-SSA/issues/79)).
 - The de minimis of Article 351 of Regulation (EU) No 575/2013 under the `CRR`
   regime: the FX requirement is zero while the overall net open position, gold
   included, does not exceed `FXDeMinimisRate`, 2%, of the new parameter

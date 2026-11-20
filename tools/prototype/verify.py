@@ -273,12 +273,44 @@ def unusable(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
-def regime(source: Path, target: Path, name: str, end: object, own_funds: object = None) -> None:
-    """Save ``source`` with the regime, the last date of the transitional multiplier and the total own funds set."""
+def crr_positions(workbook: Any) -> None:
+    """Give each interest rate row of the sample the category CRR and the risk weight that has its charges.
+
+    Under the CRR the category of a row is CRR or NONE; the grade is the risk weight whose rates of
+    Article 336 are the rates that the row's Basel category and grade have, so that the specific risk
+    of the sample does not change."""
+    weights = {(0.0,): "RW 0%", (0.0025, 0.01, 0.016): "RW 20%", (0.08,): "RW 100%", (0.12,): "RW 150%"}
+    sheet = workbook["IRPositions"]
+    for row in range(FIRST_ROW, FIRST_ROW + len(ssa_reference.IR)):
+        category, grade = sheet.cell(row, 13).value, sheet.cell(row, 14).value
+        if category in (None, "NONE"):
+            continue
+        charges = tuple(sorted({rate for (cat, grd, _), rate in ssa_reference.SR.items()
+                                if (cat, grd) == (category, grade)}))
+        sheet.cell(row, 13).value = "CRR"
+        sheet.cell(row, 14).value = weights[charges]
+
+
+def regime(source: Path, target: Path, name: str, end: object, own_funds: object = None,
+           rows: str = "convert") -> None:
+    """Save ``source`` with the regime, the last date of the transitional multiplier and the total own funds set.
+
+    ``rows`` says what becomes of the interest rate rows: under the CRR they get the category CRR first
+    ("convert"); "keep" leaves them as the Basel regime has them; "mixed" gives the first two rows the
+    category CRR with a weight of the table and one that is not in it."""
     workbook = load(source)
     named_cell(workbook, "Regime").value = name
     named_cell(workbook, "TransitionalEndDate").value = end
     named_cell(workbook, "TotalOwnFunds").value = own_funds
+    sheet = workbook["IRPositions"]
+    if rows == "convert" and str(name).strip().upper() == "CRR":
+        crr_positions(workbook)
+    elif rows == "mixed":
+        if str(name).strip().upper() == "CRR":
+            crr_positions(workbook)
+        for row, grade in ((FIRST_ROW, "RW 20%"), (FIRST_ROW + 1, "RW 33%")):
+            sheet.cell(row, 13).value = "CRR"
+            sheet.cell(row, 14).value = grade
     workbook.save(target)
 
 
@@ -424,6 +456,9 @@ def crr_regime(run: Run) -> str:
         ("own funds whose 2% is above the position", "CRR", last, 1.7e10, 0.9, True),
         ("own funds whose 2% is below the position", "CRR", last, 1.6e10, 0.9, False))
     lines: list[str] = []
+    # The sample's rows are given the CRR categories that have their specific-risk charges, so that the
+    # requirement before the multiplier is the one of the Basel run, unless the FX requirement is waived.
+    baseline = read_names(run.formula_values, "SSA_Requirement")[0]
     for label, name, end, own_funds, factor, waived in cases:
         formula, workbook = run.folder / "crr-formula.xlsx", run.folder / "crr.xlsm"
         values, output = run.folder / "crr-formula-values.xlsx", run.folder / "vba-crr.xlsx"
@@ -438,6 +473,8 @@ def crr_regime(run: Run) -> str:
             before, after, rwa, onop, charge = read_names(
                 path, "SSA_RequirementBeforeTransition", "SSA_Requirement", "SSA_RWA", "FX_ONOP", "FX_Charge")
             expected_charge = 0.0 if waived else 0.08 * onop
+            if not (waived or compare_outputs.same(before, baseline)):
+                raise Failure(f"{label}, {path.name}: before {before}, the Basel run {baseline}")
             if not (compare_outputs.same(after, before * factor)
                     and compare_outputs.same(rwa, after * 12.5)
                     and compare_outputs.same(charge, expected_charge)):
@@ -458,6 +495,29 @@ def crr_regime(run: Run) -> str:
         if not result.startswith("RESULT=STOPPED; errors=1;") or len(listed) != 1:
             raise Failure(f"{stop}: {result}; findings: {sorted(map(str, listed))}")
         lines.append(f"{stop}: stopped, one finding")
+    return "\n".join(lines)
+
+
+def crr_categories(run: Run) -> str:
+    """The categories of the other regime, and a weight that the table lacks, in both workbooks."""
+    lines: list[str] = []
+    cases = (("the CRR with the Basel categories", "CRR", "keep"),
+             ("Basel with the categories CRR", "Basel", "mixed"),
+             ("the CRR with a weight that is not in the table", "CRR", "mixed"))
+    for label, name, rows in cases:
+        formula, workbook = run.folder / "cat-formula.xlsx", run.folder / "cat.xlsm"
+        values, output = run.folder / "cat-formula-values.xlsx", run.folder / "vba-cat.xlsx"
+        regime(run.formula, formula, name, datetime.date(2029, 12, 31), 1e10, rows)
+        regime(run.workbook, workbook, name, datetime.date(2029, 12, 31), 1e10, rows)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        if not result.startswith("RESULT=INCOMPLETE;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        engine, reference = findings(output), findings(values)
+        if engine != reference:
+            raise Failure(f"{label}: findings differ: {sorted(map(str, engine ^ reference))}")
+        lines.append(f"{label}: {len(engine)} findings, the same in both; {compared}")
     return "\n".join(lines)
 
 
@@ -490,6 +550,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
     ("The CRR regime: the transitional factor and the stops", crr_regime),
+    ("The categories of each regime", crr_categories),
     ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
 )

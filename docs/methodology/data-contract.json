@@ -342,8 +342,8 @@
       "illustrative": false,
       "description": "Specific-risk charges",
       "provider": "Typed by the user",
-      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them",
-      "granularity": "One row per category, rating grade and range of residual maturity; 18 rows",
+      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them; the rows of the category CRR are those of SRC-04",
+      "granularity": "One row per category, rating grade and range of residual maturity; 31 rows",
       "source": "Params",
       "encoding": null,
       "delimiter": null,
@@ -366,7 +366,8 @@
             "values": [
               "GOV",
               "QUAL",
-              "OTHER"
+              "OTHER",
+              "CRR"
             ]
           },
           "notes": "Column Category. Repeats the first part of the key; not read"
@@ -383,10 +384,17 @@
               "BB+ to BB-",
               "B+ to B-",
               "Below B-",
-              "Unrated"
+              "Unrated",
+              "RW 0%",
+              "RW 10%",
+              "RW 20%",
+              "RW 50%",
+              "RW 75%",
+              "RW 100%",
+              "RW 150%"
             ]
           },
-          "notes": "Column Rating grade. Repeats the second part of the key; not read"
+          "notes": "Column Rating grade. Repeats the second part of the key; not read. Under the category CRR, the risk weight of the credit risk standardised approach"
         },
         {
           "name": "residual_maturity",
@@ -680,10 +688,11 @@
               "GOV",
               "QUAL",
               "OTHER",
+              "CRR",
               "NONE"
             ]
           },
-          "notes": "Column SR category. NONE: no specific risk"
+          "notes": "Column SR category. NONE: no specific risk. CRR: the category of the CRR regime, the only one of the two (with NONE) that regime accepts; GOV, QUAL and OTHER are those of the Basel regime"
         },
         {
           "name": "rating_grade",
@@ -697,10 +706,17 @@
               "BB+ to BB-",
               "B+ to B-",
               "Below B-",
-              "Unrated"
+              "Unrated",
+              "RW 0%",
+              "RW 10%",
+              "RW 20%",
+              "RW 50%",
+              "RW 75%",
+              "RW 100%",
+              "RW 150%"
             ]
           },
-          "notes": "Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03"
+          "notes": "Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03. Under the category CRR, the risk weight of the credit risk standardised approach that the issuer or the security would receive, as RW 20%; a security that would receive 75% is charged as one at 100%, and a covered bond at 10% as half the category of 20% and 50%"
         },
         {
           "name": "issue_id",
