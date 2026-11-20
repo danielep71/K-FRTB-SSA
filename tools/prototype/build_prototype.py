@@ -443,7 +443,7 @@ def build_params(ctx: Context) -> None:
 
 def params_list(wb: Book, ws: Sheet) -> int:
     """Write the parameter list from row 6 and return its last row."""
-    params: list[tuple[str, str, date | str | float, str, str, str, str | float | None]] = [
+    params: list[tuple[str, str, date | str | float, str, str, str, date | str | float | None]] = [
         ("AsOfDate", "Reporting (calculation) date", D.AS_OF, "input", NF_DATE, "", None),
         ("ReportingCcy", "Reporting currency (all amounts converted into it)", D.REPORTING_CCY, "input", "@", "", None),
         ("DaysPerYear", "Calendar days per year for residual maturities", 365, "const", "0", "Workbook convention (Act/365)", 365),
