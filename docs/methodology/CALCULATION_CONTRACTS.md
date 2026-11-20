@@ -479,12 +479,13 @@ commodity on `Buckets`.
   Article 360 only, with the rates of steps 3 and 4, which are the CRR's. It
   does not offer the choice that Article 355 gives the institution among
   Articles 359, 360 and 361. Not supported: the maturity ladder of Article 359
-  (a spread rate of 1.50% in each of seven bands, a carry rate of 0.6% and an
-  outright rate of 15%), because paragraphs 4 and 5 of that article do not say
-  in which order an unmatched position is matched against the bands further
-  out, nor how often the carry rate applies when it is carried over more than
-  one band; the extended maturity ladder of Article 361 (the rates of its
-  Table 2 by category of commodity, for an institution with significant
+  (a spread rate of 1.50% in each of seven bands, a carry rate of 0.6% applied
+  for each band into which an unmatched position is carried forward, and an
+  outright rate of 15%), because paragraph 4 of that article does not say in
+  which order an unmatched position is matched against the bands further out
+  when several are open, and the order changes the matched positions to which
+  the rates apply; the extended maturity ladder of Article 361 (the rates of
+  its Table 2 by category of commodity, for an institution with significant
   commodities business and an appropriately diversified portfolio, which
   notifies the use), which has the same gap and needs the category of the
   commodity as an input; and the ancillary agricultural commodities business of
@@ -495,10 +496,10 @@ commodity on `Buckets`.
   commodity the positions in different sub-categories that are deliverable
   against each other, and those in similar commodities that are close
   substitutes, where a correlation of at least 0.9 between price movements is
-  clearly established over at least one year. The user enters them under one
-  commodity name, and the workbook tests none of those conditions. Under
-  Article 357(5) the commodities that the institution transferred in a
-  repurchase agreement or lent are included, and the user enters them.
+  clearly established over at least one year. Enter them under one commodity
+  name: the workbook tests none of those conditions. Under Article 357(5) the
+  commodities that the institution transferred in a repurchase agreement or
+  lent are included: enter them as positions.
 - Two rows are one commodity only when their names are equal. The workbook
   does not check that their units are.
 - A derivative is entered as a notional position in the commodity, as
