@@ -715,10 +715,11 @@ options* column of `Results`.
   528/2014, which has the delta deducted (step 3). Entering a carved-out
   charge under the `CRR` regime counts the delta effect twice.
 - Under the `CRR` regime the approaches have the conditions of Articles 1, 2
-  and 7 of `SRC-08`: only an institution that purchases options and warrants
-  alone may use the simplified approach; on an individual basis only the
-  scenario approach and the delta-plus approach may be combined; the scenario
-  approach needs a risk control unit, a notified scope and internal reporting.
+  and 7 of `SRC-08`, Article 2 as Delegated Regulation (EU) 2016/861 replaced
+  it: only an institution that purchases options and warrants alone may use
+  the simplified approach; on an individual basis only the scenario approach
+  and the delta-plus approach may be combined; the scenario approach needs a
+  risk control unit, a notified scope and internal reporting.
   They are the institution's, and the workbook checks none. The delta that
   Article 329(1) of the CRR takes is the exchange's, or the institution's own
   model with the permission of the competent authority: enter it as given.
