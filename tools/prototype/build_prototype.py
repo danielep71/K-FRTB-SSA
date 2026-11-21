@@ -79,6 +79,8 @@ LAST = FIRST + CAP - 1
 NFX = 20  # FX_Table capacity
 NBANDS = 15
 NBKT = 30  # Buckets capacity per block
+ELIGIBILITY_ROWS = 24  # Eligibility capacity: month ends
+ELIGIBILITY_LAST = FIRST + ELIGIBILITY_ROWS - 1
 
 # First and last row of IR_Ladder (one block of NBANDS rows per FX_Table row)
 # and first, last and total row of IR_Zones (one row per FX_Table row).
@@ -87,8 +89,8 @@ ZF, ZL = 6, 6 + NFX - 1
 ZT = ZL + 1
 
 # Sheet order: home, inputs, outputs, tests, readme.
-SHEET_ORDER = ["Home", "Params", "IRPositions", "EQPositions", "COPositions", "FXPositions", "OptionCharges", "Results",
-               "IR_Zones", "IR_Ladder", "Buckets", "IRCalc", "EQCalc", "COCalc", "FXCalc", "Checks", "TestCatalogue", "README"]
+SHEET_ORDER = ["Home", "Params", "IRPositions", "EQPositions", "COPositions", "FXPositions", "OptionCharges", "Eligibility",
+               "Results", "IR_Zones", "IR_Ladder", "Buckets", "IRCalc", "EQCalc", "COCalc", "FXCalc", "Checks", "TestCatalogue", "README"]
 
 # ---------------------------------------------------------------- styles
 NAVY, BLUE, BAND2, GOLD = "1F3864", "2E75B6", "265A99", "FFC000"
@@ -479,6 +481,14 @@ def params_list(wb: Book, ws: Sheet) -> int:
          "CRR Art. 339(9)(f)", 1.50),
         ("EQIndexRateCRR", "CRR: charge on the net position per index future, whose specific risk Article 344 ignores", 0.0,
          "const", NF_PCT, "CRR Art. 344", 0.0),
+        ("EligibilityShare325a", "CRR: share of the total assets that the size of the business may not exceed, simplified "
+         "standardised approach", 0.10, "const", NF_PCT, "CRR Art. 325a(1)", 0.10),
+        ("EligibilityCap325a", "CRR: amount that the size of the business may not exceed, simplified standardised approach (EUR)",
+         500_000_000, "const", NF_AMT, "CRR Art. 325a(1)", 500_000_000),
+        ("EligibilityShare94", "CRR: share of the total assets that the size of the business may not exceed, small trading book "
+         "derogation", 0.05, "const", NF_PCT, "CRR Art. 94(1)", 0.05),
+        ("EligibilityCap94", "CRR: amount that the size of the business may not exceed, small trading book derogation (EUR)",
+         50_000_000, "const", NF_AMT, "CRR Art. 94(1)", 50_000_000),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -592,12 +602,12 @@ def params_fx_table(wb: Book, ws: Sheet, r: int) -> None:
 # ============================================================ input sheets
 def input_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[tuple[str, float]],
                 rows: Sequence[Sequence[object]], lastcol: str, dvs: Mapping[str, str],
-                numfmts: Mapping[str, str], freeze: str = "D5") -> Sheet:
+                numfmts: Mapping[str, str], freeze: str = "D5", capacity: int = CAP) -> Sheet:
     widths = {c: w for c, (_, w) in zip([COL(3 + k) for k in range(len(cols))], cols)}
     ws = new_sheet(wb, name_, title, subtitle, lastcol, "input", widths)
     header(ws, 4, "C", [lab for lab, _ in cols], "input", 11, 50.1, 2)
     name(wb, f"{name_}_Header", f"{name_}!$C$4")
-    for i in range(CAP):
+    for i in range(capacity):
         rr = FIRST + i
         vals: Sequence[object] = rows[i] if i < len(rows) else [None] * len(cols)
         for k, v in enumerate(vals):
@@ -609,7 +619,7 @@ def input_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[
                 c.alignment = Alignment(horizontal="center")
         ws.row_dimensions[rr].height = 20.1 if i < 60 else None
     for cl, items in dvs.items():
-        dv_list(ws, f"{cl}{FIRST}:{cl}{LAST}", items)
+        dv_list(ws, f"{cl}{FIRST}:{cl}{FIRST + capacity - 1}", items)
     ws.freeze_panes = freeze
     return ws
 
@@ -688,6 +698,176 @@ def build_option_charges(ctx: Context) -> None:
         name(ctx.wb, f"Options{rc}", f"OptionCharges!$F${rr}")
         ws.row_dimensions[rr].height = 20.1
     dv_list(ws, "E5:E8", '"None,Simplified,Delta-plus,Scenario"')
+
+
+# --- Eligibility
+class Approach(NamedTuple):
+    """An approach of Eligibility: its label, the columns of its size, share, conditions, run,
+    count and event, those of its long and short totals, and the names of its share and amount."""
+    label: str
+    columns: tuple[str, str, str, str, str, str]
+    totals: tuple[str, str]
+    share: str
+    cap: str
+
+
+ELIGIBILITY_APPROACHES = (
+    Approach("325a", ("J", "K", "L", "M", "N", "O"), ("E", "F"), "EligibilityShare325a", "EligibilityCap325a"),
+    Approach("94", ("P", "Q", "R", "S", "T", "U"), ("G", "H"), "EligibilityShare94", "EligibilityCap94"))
+# The columns only the formula workbook has, right of the output columns: the row of
+# the last month entered down to the row, the month entered before the row, and the
+# number of the row among the valid rows.
+ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID = "V", "W", "X"
+# The header row of the result block, which holds one row for each approach below it.
+ELIGIBILITY_RESULT = ELIGIBILITY_LAST + 3
+# The reasons that reject a month, in the order of the tests, and the start of a status that assesses nothing.
+ELIGIBILITY_REASONS = ("INVALID: MonthEnd must be a date",
+                       "INVALID: MonthEnd must be the last day of a month",
+                       "INVALID: MonthEnd must be one month after the previous row",
+                       "INVALID: TotalAssets must be a number greater than 0",
+                       "INVALID: a long or short total must be a number")
+NOT_ASSESSED = "NOT ASSESSED"
+
+
+def eligibility_month_status(r: int) -> str:
+    """The formula of the Month status of row r: OK, or the first test of the contract that fails.
+
+    Nothing is read under the Basel regime, and a row without a month end is skipped."""
+    month, before = f"$C{r}", f"${ELIGIBILITY_BEFORE}{r}"
+    reasons = ELIGIBILITY_REASONS
+    # A month entered before the row, if it is a date: the row must be the month end after it.
+    # Each cell is tested with ISNUMBER before it is compared: OR and AND evaluate every
+    # argument, and an error value in a cell would make the status an error, which rule
+    # C15 would not count. An error value in the month end is entered, as the engine reads it.
+    out_of_sequence = (f"IF(ISNUMBER({before}),IF(AND({before}>=1,{before}<={DATE_SERIAL_MAX}),"
+                       f"IFERROR({month}<>EOMONTH({before},1),TRUE),FALSE),FALSE)")
+    return (f'=IF(UPPER(TRIM(Regime))<>"CRR","",IF({text(month)}="","",'
+            f'IF(NOT(ISNUMBER({month})),"{reasons[0]}",'
+            f'IF(OR({month}<1,{month}>{DATE_SERIAL_MAX}),"{reasons[0]}",'
+            f'IF({month}<>EOMONTH({month},0),"{reasons[1]}",'
+            f'IF({out_of_sequence},"{reasons[2]}",'
+            f'IF(NOT(ISNUMBER($D{r})),"{reasons[3]}",IF($D{r}<=0,"{reasons[3]}",'
+            f'IF(NOT(AND(ISNUMBER($E{r}),ISNUMBER($F{r}),ISNUMBER($G{r}),ISNUMBER($H{r}))),"{reasons[4]}",'
+            '"OK")))))))))')
+
+
+def eligibility_approach(r: int, approach: Approach) -> dict[str, str]:
+    """The formulas of one approach on row r of Eligibility, by column: size, share of the
+    total assets, conditions, run, count of the last 12 months and event."""
+    size, ratio, met, run, count, event = approach.columns
+    totals, share, cap = approach.totals, approach.share, approach.cap
+    valid, p = f"${ELIGIBILITY_VALID}{r}", r - 1
+    ok_ = f'$I{r}<>"OK"'
+    # The run of the valid row before this one, which the numbers of the valid rows find: zero for the first.
+    previous_run = sum_where(f"{run}$4:{run}{p}", f"(${ELIGIBILITY_VALID}$4:${ELIGIBILITY_VALID}{p}={valid}-1)")
+    # The months among the last 12 valid rows up to this one that miss the conditions.
+    missed = count_where(f'(${met}${FIRST}:${met}{r}="NOT MET")', f"(${ELIGIBILITY_VALID}${FIRST}:${ELIGIBILITY_VALID}{r}>={valid}-11)")
+    return {
+        size: f'=IF({ok_},"",ABS(${totals[0]}{r})+ABS(${totals[1]}{r}))',
+        ratio: f'=IF({ok_},"",${size}{r}/$D{r})',
+        met: f'=IF({ok_},"",IF(AND(${size}{r}<={share}*$D{r},${size}{r}<={cap}),"MET","NOT MET"))',
+        run: f'=IF({ok_},"",IF(${met}{r}="NOT MET",1+{previous_run},0))',
+        count: f'=IF({ok_},"",{missed})',
+        event: f'=IF({ok_},"",IF(OR(${run}{r}>=3,${count}{r}>6),"YES","NO"))',
+    }
+
+
+def eligibility_result(row: int, approach: int) -> dict[str, str]:
+    """The formulas of the result row of an approach, by column: its status and the figures of the last month."""
+    size, ratio, met, run, count, event = ELIGIBILITY_APPROACHES[approach].columns
+    last = f"${ELIGIBILITY_ENTERED}${ELIGIBILITY_LAST}"
+
+    def at_last(column: str) -> str:
+        """The cell of a column on the last row entered."""
+        return f"INDEX(${column}$1:${column}${ELIGIBILITY_LAST},{last})"
+
+    skip = f'LEFT($D{row},{len(NOT_ASSESSED)})="{NOT_ASSESSED}"'
+    rows = f"$I${FIRST}:$I${ELIGIBILITY_LAST}"
+    return {
+        "D": (f'=IF(UPPER(TRIM(Regime))<>"CRR","{NOT_ASSESSED}: Basel regime",IF({last}=0,"{NOT_ASSESSED}: no month entered",'
+              f'IF(COUNTIF({rows},"INVALID*")>0,"{NOT_ASSESSED}: a row is invalid",'
+              f'IF({at_last(event)}="YES","CEASE",IF({at_last(met)}="NOT MET","NOT MET","MET")))))'),
+        "E": f'=IF({skip},"",{at_last("C")})',
+        "F": f'=IF({skip},"",{at_last(size)})',
+        "G": f'=IF({skip},"",{at_last(ratio)})',
+        "H": f'=IF({skip},"",{at_last(run)})',
+        "I": f'=IF({skip},"",{at_last(count)})',
+        "J": f'=IF({skip},"",IF(AND(COUNTIF({rows},"OK")>=12,$I{row}=0),"YES","NO"))',
+    }
+
+
+def build_eligibility(ctx: Context) -> None:
+    ws = input_sheet(
+        ctx.wb, "Eligibility", "Eligibility",
+        "Size of the business at each month end, for the simplified standardised approach (Article 325a of the CRR) and "
+        "the small trading book derogation (Article 94). Assessed under the CRR regime only. Enter the total assets and the "
+        "aggregated long and short positions of each approach in EUR, either sign for a short total, one row per month "
+        "end, the months one after another.",
+        [("Month end", 13.6), ("Total assets (EUR)", 18.6), ("Long 325a (EUR)", 16.6), ("Short 325a (EUR)", 16.6),
+         ("Long 94 (EUR)", 16.6), ("Short 94 (EUR)", 16.6)],
+        [list(row) for row in D.ELIGIBILITY], "U", {},
+        {"C": NF_DATE, "D": NF_AMT, "E": NF_AMT, "F": NF_AMT, "G": NF_AMT, "H": NF_AMT},
+        capacity=ELIGIBILITY_ROWS)
+    labels = ["Month status"] + [f"{approach.label}: {text}" for approach in ELIGIBILITY_APPROACHES
+                                 for text in ("size (EUR)", "share of total assets", "conditions", "run",
+                                              "count in last 12", "event")]
+    header(ws, 4, "I", labels, "output", 11, 50.1, 1)
+    for column, width in zip("IJKLMNOPQRSTU", (56.6, 15.6, 12.6, 12.6, 8.6, 10.6, 8.6, 15.6, 12.6, 12.6, 8.6, 10.6, 8.6)):
+        ws.column_dimensions[column].width = width
+    for r in range(FIRST, ELIGIBILITY_LAST + 1):
+        formulas = {"I": eligibility_month_status(r)}
+        for approach in ELIGIBILITY_APPROACHES:
+            formulas.update(eligibility_approach(r, approach))
+        for column, formula in formulas.items():
+            nf = NF_PCT if column in "KQ" else NF_AMT if column in "JP" else "0" if column in "MNST" else "@"
+            put(ws, f"{column}{r}", formula, nf, "calc", align=None if column in "IJP" else "center")
+    cf_status(ws, f"C{FIRST}:U{ELIGIBILITY_LAST}", "I", FIRST)
+    for rng in (f"L{FIRST}:L{ELIGIBILITY_LAST}", f"R{FIRST}:R{ELIGIBILITY_LAST}"):
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"NOT MET"'], **AMBER))
+    for rng in (f"O{FIRST}:O{ELIGIBILITY_LAST}", f"U{FIRST}:U{ELIGIBILITY_LAST}"):
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"YES"'], **RED))
+    if not ctx.template:
+        # The columns that the formulas read the sheet through; the VBA engine reads the rows itself.
+        rows_ = "formula workbook only"
+        header(ws, 4, ELIGIBILITY_ENTERED, [f"Last row entered ({rows_})", f"Month entered before ({rows_})",
+                                            f"Valid row number ({rows_})"], "output", 11, 50.1, 0)
+        for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
+            ws.column_dimensions[column].width = 22.6
+        for r in range(FIRST, ELIGIBILITY_LAST + 1):
+            entered = f'{text(f"$C{r}")}<>""'
+            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF({entered},ROW(),0)' if r == FIRST
+                                                    else f'=IF({entered},ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
+            # An error value entered before the row is no date: the row is then not tested against it.
+            ws[f"{ELIGIBILITY_BEFORE}{r}"].value = (
+                '=""' if r == FIRST else
+                f'=IF(${ELIGIBILITY_ENTERED}{r - 1}=0,"",'
+                f'IFERROR(INDEX($C$1:$C${ELIGIBILITY_LAST},${ELIGIBILITY_ENTERED}{r - 1}),""))')
+            ws[f"{ELIGIBILITY_VALID}{r}"].value = f'=IF($I{r}="OK",COUNTIF($I${FIRST}:$I{r},"OK"),"")'
+            for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
+                cell = ws[f"{column}{r}"]
+                cell.font, cell.border = font(9, color=GREY_TXT), BOX
+                cell.alignment = Alignment(horizontal="center")
+            ws[f"{ELIGIBILITY_BEFORE}{r}"].number_format = NF_DATE
+    # The result block: the status of each approach and the figures of the last month entered.
+    section(ws, ELIGIBILITY_RESULT - 1, "Result", "C", "J")
+    header(ws, ELIGIBILITY_RESULT, "C", ["Approach", "Status", "Last month", "Size (EUR)", "Share of total assets", "Run",
+                                         "Count in last 12", "Restart condition"], "output", 11, 42.1, 1)
+    for k, approach in enumerate(ELIGIBILITY_APPROACHES):
+        row = ELIGIBILITY_RESULT + 1 + k
+        put(ws, f"C{row}", approach.label, "@", "calc", b=True, align="center", sz=10)
+        for column, formula in eligibility_result(row, k).items():
+            nf = {"E": NF_DATE, "F": NF_AMT, "G": NF_PCT, "H": "0", "I": "0"}.get(column, "@")
+            put(ws, f"{column}{row}", formula, nf, "calc", align="center" if column != "F" else None, b=column == "D")
+        ws.row_dimensions[row].height = 20.1
+    status_range = f"D{ELIGIBILITY_RESULT + 1}:D{ELIGIBILITY_RESULT + 2}"
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"CEASE"'], **RED))
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"NOT MET"'], **AMBER))
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"MET"'], **GREEN))
+    put(ws, f"C{ELIGIBILITY_RESULT + 4}",
+        "The status is that of the last month entered: CEASE where its run is 3 or more months or 7 or more of the last 12 "
+        "months miss the conditions, NOT MET where only that month misses them. Checks warns of either (C16); the requirement "
+        "does not change.", kind=None, color=GREY_TXT)
+    name(ctx.wb, "Eligibility_Results", f"Eligibility!$D${ELIGIBILITY_RESULT + 1}:$J${ELIGIBILITY_RESULT + 2}")
 
 
 # ============================================================== calc sheets
@@ -1268,7 +1448,7 @@ def build_checks(ctx: Context) -> None:
 
 
 def check_rules(ctx: Context) -> list[Rule]:
-    """The rules of the Checks sheet, in row order; the template has its own messages and rule C14."""
+    """The rules of the Checks sheet, in row order; the template has its own messages."""
     PARAM_LAST = ctx.param_last
     rules: list[Rule] = [
         ("C01", "ERROR", "IRPositions", SUMR("IRCalc"), "IRCalc Status", "Interest rate rows rejected; reason per row below and in IRCalc."),
@@ -1295,11 +1475,19 @@ def check_rules(ctx: Context) -> list[Rule]:
          "FX rows in the reporting currency, excluded (no FX risk)."),
         ("C13", "INFO", "OptionCharges", '=COUNTIF(OptionCharges!$F$5:$F$8,"<>0")', "MAR40.74-40.84",
          "Risk classes with a non-delta option charge entered by hand."),
+        ("C14", "ERROR", "Params", "=0", "MAR40",
+         "Unusable Params values and position rows beyond the sheets' capacity: counted by the VBA engine, "
+         "which stops the run on them; always 0 in the formula workbook."),
+        ("C15", "ERROR", "Eligibility", f'=COUNTIF(Eligibility!$I${FIRST}:$I${ELIGIBILITY_LAST},"INVALID*")', "CRR Art. 325a, 94",
+         "Eligibility rows rejected under the CRR regime; the reason is in the Month status of the row."),
+        ("C16", "WARNING", "Eligibility",
+         f'=COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"NOT MET")'
+         f'+COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"CEASE")', "CRR Art. 325a(5), 94(7)",
+         "Approaches whose conditions are not met in the last month entered, or that must cease; the requirement does not change."),
     ]
     if ctx.template:
-        rules.append(("C14", "ERROR", "Params", "=0", "MAR40",
-                      "Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
-                      f"position sheets with more than {CAP} rows: the run stops and lists them below."))
+        rules[13] = rules[13][:5] + ("Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
+                                     f"position sheets with more than {CAP} rows: the run stops and lists them below.",)
         rules[4] = rules[4][:5] + ("The reporting currency must be listed in FX_Table with rate 1 (the run stops).",)
         rules[5] = rules[5][:5] + ("Currency codes listed more than once in FX_Table (the run stops).",)
         rules[6] = rules[6][:5] + ("Listed currencies whose rate is missing, not a number or not positive (the run stops).",)
@@ -1406,7 +1594,8 @@ def build_readme(ctx: Context) -> None:
         ("2. Positions", "IRPositions, EQPositions, COPositions and FXPositions: one row per position, up to 500 per sheet. "
          "Values are positive; Direction gives the sign. Derivatives enter as their delta-equivalent legs."),
         ("3. Options", "OptionCharges: non-delta (gamma, vega or simplified-approach) charges per risk class, calculated outside "
-         "the workbook."),
+         "the workbook. Eligibility: under the CRR regime, the size of the business at each month end, for the finding on "
+         "the simplified standardised approach and the small trading book derogation."),
         ("4. Run" if TEMPLATE else "4. Read",
          ("Import the modules of src/ (README), save as .xlsm, then Alt+F8 > RunSSA. The outputs are values written by the "
           "engine; rerun after any change (CheckStatus tells whether an input changed after the run). A Params value the "
@@ -1502,7 +1691,7 @@ def fill_home(ctx: Context) -> None:
     r = text_block(home, r + 1, [
         ("1. Check Params", "Set the reporting date, the reporting currency and the FX rates."),
         ("2. Enter the positions", "One row per position on IRPositions, EQPositions, COPositions and FXPositions; non-delta "
-         "option charges on OptionCharges."),
+         "option charges on OptionCharges; under the CRR regime, the size of the business at each month end on Eligibility."),
         ("3. Run" if TEMPLATE else "3. Read the results",
          "Alt+F8 > RunSSA calculates and writes every output sheet (ClearOutputs empties them). If the status line says "
          "INCOMPLETE or STOPPED, Checks lists every rejected row and unusable parameter. FAILED: the run raised an error "
@@ -1521,6 +1710,7 @@ def fill_home(ctx: Context) -> None:
         ("COPositions", "Inputs. Commodity positions."),
         ("FXPositions", "Inputs. Net currency and gold positions."),
         ("OptionCharges", "Inputs. Non-delta option charges per risk class."),
+        ("Eligibility", "Inputs. Size of the business at each month end, for the eligibility of Articles 325a and 94 of the CRR."),
         ("Results", "Outputs. Requirement per risk class, scaling, total and RWA."),
         ("IR_Zones", "Outputs. Interest rate charges per currency, every offset shown."),
         ("IR_Ladder", "Outputs. Weighted positions per currency and time band."),
@@ -1650,6 +1840,9 @@ def blank_outputs(ctx: Context) -> None:
     blank(buckets, range(ctx.co.first, ctx.co.total + 1), range(3, 13), keep=(f"D{ctx.co.total}",))
     blank(buckets, range(ctx.fx.first, ctx.fx.total + 1), range(3, 12), keep=(f"D{ctx.fx.total}",))
     blank(buckets, range(ctx.fx.total + 2, ctx.fx.total + 4), [9])
+    eligibility = wb["Eligibility"]
+    blank(eligibility, range(FIRST, ELIGIBILITY_LAST + 1), range(CI("I"), CI("U") + 1))
+    blank(eligibility, range(ELIGIBILITY_RESULT + 1, ELIGIBILITY_RESULT + 3), range(CI("D"), CI("J") + 1))
     results = wb["Results"]
     blank(results, range(7, 13), range(5, 16))
     results["C4"].value = "Not calculated: run RunSSA."
@@ -1713,6 +1906,7 @@ def assemble(template: bool) -> Book:
     build_co_positions(ctx)
     build_fx_positions(ctx)
     build_option_charges(ctx)
+    build_eligibility(ctx)
     build_ir_calc(ctx)
     build_eq_calc(ctx)
     build_co_calc(ctx)

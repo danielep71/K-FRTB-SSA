@@ -172,7 +172,7 @@ class RegistryTest(unittest.TestCase):
 
     def test_cases_must_fit_the_contract(self) -> None:
         cases: dict[str, dict[str, Any]] = {
-            "calculation CALC-09 is not declared": {"calculation": "CALC-09"},
+            "calculation CALC-10 is not declared": {"calculation": "CALC-10"},
             "case missing-case has no fixture": {"calibration_cases": ["missing-case"]},
             "case demo-illustrative-calibration tests CALC-03, not CALC-02":
                 {"calibration_cases": ["demo-illustrative-calibration"]},

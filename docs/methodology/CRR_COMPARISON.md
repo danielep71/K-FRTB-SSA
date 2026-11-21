@@ -1,7 +1,7 @@
 # 🔍 Comparison with the CRR
 
 This guide compares each rule of the [calculation contracts](CALCULATION_CONTRACTS.md)
-`CALC-02` to `CALC-08`, which implement the Basel simplified standardised
+`CALC-02` to `CALC-09`, which implement the Basel simplified standardised
 approach (`SRC-02`, MAR40), with the simplified standardised approach of
 Article 325(2) of Regulation (EU) No 575/2013 (the CRR) and the articles it
 points to, so that each difference has its own implementation task and no rule
@@ -44,7 +44,7 @@ the row says so, and the rule is an assumption
 | 3 | The requirement is the simple sum of the scaled requirements | Article 325(2): *the sum of the following own funds requirements* | **Same** | |
 | 4 | Risk-weighted assets are the requirement multiplied by 12.5 | Article 92(6), point (b): the own funds requirements of Article 92(4), points (b) to (f), multiplied by 12.5 | **Same** | |
 | | No transitional multiplier | Article 495s(2), of `SRC-06`: until 2029-12-31, a multiplier of 0.9 on the result of the simplified standardised approach; Article 495v does not apply to an institution that applies only Articles 326 to 361 | **CRR only** | [#77](https://github.com/danielep71/K-FRTB-SSA/issues/77) |
-| | The workbook does not decide whether the approach may be used | Article 325a(1) and (2): at most 10% of total assets and EUR 500 million, assessed monthly; Article 94: 5% and EUR 50 million | **CRR only**: decided to be calculated in the workbook | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| | The workbook does not decide whether the approach may be used | Article 325a(1) and (2): at most 10% of total assets and EUR 500 million, assessed monthly; Article 94: 5% and EUR 50 million | **CRR only**: the workbook gives a finding from the months the user enters, and decides nothing: see `CALC-09` below | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
 | | The requirement is that of the positions entered, with no trading book boundary | Article 325(1): all trading book positions and all non-trading book positions subject to foreign exchange or commodity risk | **CRR only** | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 
 ## Interest rate risk, specific risk, `CALC-02`
@@ -136,6 +136,25 @@ the row says so, and the rule is an assumption
 | 1 | | `SRC-08`, Article 1(3): baskets, caps and floors, options on fixed-to-floating swaps and options with more than one underlying are broken down before the calculation | **Same** for caps and floors (MAR40.78); **CRR only** for the rest, which are the user's steps in the external calculation | [#83](https://github.com/danielep71/K-FRTB-SSA/issues/83) |
 | 2 | The charge is added before scaling | Article 325(2): the requirements of Chapters 2 to 4 are multiplied by 1.3 for debt instruments, 3.5 for equity instruments, 1.2 and 1.9; Articles 329(2), 352(5) and 358(3) are in those chapters | **Same**, by a reading: the other risks of options are part of the requirement of the chapter of their underlying, which Article 325(2) multiplies; the text says no more, and the reading is an assumption (#83) | [#83](https://github.com/danielep71/K-FRTB-SSA/issues/83) |
 
+## Eligibility, `CALC-09`
+
+The workbook finds, from the months the user enters, whether the size of the
+business allows the simplified standardised approach, Article 325a, and the
+derogation for small trading book business, Article 94. It does so under the
+`CRR` regime only, and changes no requirement.
+
+| Step | The contract's rule | The CRR | Result | Follow-up |
+| --- | --- | --- | --- | --- |
+| 1 | The size of a month is the absolute value of the aggregated long position plus the absolute value of the aggregated short position, for each approach; the user enters the two aggregates | Article 325a(2), point (f); Article 94(3), point (c) | **Same** in the sum. The workbook values and selects no position: the positions of Article 94(3) exclude foreign exchange and commodity positions, which those of Article 325a(2) include, so the user enters two sets of totals | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| 1 | Whether a position is long or short is the side as entered | Article 94(10) and Article 325a(2): the main risk driver of a position and whether it is long or short are left to technical standards | **Open**: no adopted standard was found ([sources](SOURCES.md#technical-standards-that-the-crr-leaves-to-the-eba)); the side as entered is an assumption | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| 2 | The conditions are met where the size is at most the share of the total assets and at most the amount: 10% and EUR 500 million, 5% and EUR 50 million; the amounts are compared as entered, in euro, and the workbook converts none | Article 325a(1); Article 94(1) | **Same** in the shares and the amounts, which are parameters. The currency of the amounts is an assumption of the workbook | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| 3, 4, 5 | A month is an event where the conditions were not met in 3 or more consecutive months, ending with it, or in more than 6 of the last 12 months | Article 325a(5), points (a) and (b); Article 94(7), points (a) and (b) | **Same** | |
+| 6 | The status is that of the last month entered: `CEASE`, `NOT MET` or `MET`; no earlier status is kept | Article 325a(5) and Article 94(7): the institution ceases to use the approach, or the derogation, and notifies the competent authority | **Same** in the conditions that give rise to the obligation. The workbook states the finding and does not keep which approach is in use | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| 7 | The restart condition is `YES` where 12 months are entered and the conditions are met in each of the last 12 | Article 325a(6); Article 94(8) | **Same** in the condition. The permission of the competent authority is the institution's step | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| 8 | Not assessed under the Basel regime | Article 325a | **Same**: a rule of the CRR | |
+| | The notifications, the period of three months to cease and the prohibition of a new use are not calculated | Article 325a(3), (4) and (7); Article 94(5), (6) and (9) | **CRR only**: the institution's obligations, documented and not calculated | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| | The simpler requirement and the relief of the derogation are not calculated | Article 94(2); Article 495u of `SRC-06` | **CRR only**; not supported | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+
 ## What the CRR holds that no contract has
 
 | Subject | The CRR | Follow-up |
@@ -143,7 +162,7 @@ the row says so, and the rule is an assumption
 | Securitisation positions and the correlation trading portfolio | Articles 337 and 338 | Outside the scope by decision ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)) |
 | Underwriting | Articles 345 to 347, read by title | Outside the scope: no issue |
 | Collective investment undertakings | Articles 348 to 350 and 353; the rates of Article 348(1) are in `CALC-04` above | [#81](https://github.com/danielep71/K-FRTB-SSA/issues/81) |
-| Size conditions and the derogation for small trading book business | Articles 325a and 94 | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| Size conditions and the derogation for small trading book business | Articles 325a and 94; the finding is `CALC-09` above, and its limits are listed there | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
 | The transitional multiplier and the derogation of Article 495u | `SRC-06` | [#77](https://github.com/danielep71/K-FRTB-SSA/issues/77), [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 | Non-trading book positions subject to foreign exchange or commodity risk | Articles 325(1) and 325(9) | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 

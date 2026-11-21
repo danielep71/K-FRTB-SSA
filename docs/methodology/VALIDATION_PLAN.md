@@ -50,6 +50,7 @@ its derivation and its tolerance
 | `CALC-06` | Two `published` values, the overall net open position and the requirement of the example of table 9 of MAR40.61 of `SRC-02`, in the `nominal` case `mar40-61-table-9`. `illustrative` values that `tests/derivations/ssa.py` computes from the contract in a `nominal`, a `boundary` and an `invalid` case. The draft accuracy contract `ACC-02` covers its two totals | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
 | `CALC-07` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case. A charge that is not a number or is negative stops the run, which no fixture expresses: the project's suites have no assertion on it either | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
 | `CALC-08` | `illustrative` values that `tests/derivations/ssa.py` computes from the contract: a `nominal` case on the sample portfolio and a `boundary` case with positions in one risk class. No `published` or `independent` value | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)). In LibreOffice, which is not a supported host, `tools/prototype/run_cases.py` finds every expected value in the workbook | Exercised |
+| `CALC-09` | No registered test case yet. The core and workbook VBA suites assert its steps, and `tools/prototype/verify.py` compares the engine with the formula workbook and with `ssa.eligibility` of `tests/derivations/ssa.py` on five series of months; those values are `illustrative` | None: nothing was run in Excel ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)) | Not validated |
 
 The *Status* of a calculation is the least advanced
 [traceability](#traceability) status of its rules: *Validated* only when every
@@ -119,6 +120,14 @@ and to the test cases that test it, with its validation status:
 | `SRC-02` | MAR40.2 | `CALC-08.3` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
 | `SRC-02` | MAR40.1 | `CALC-08.4` | `CORE_Engine.ResultsTable` | `illustrative-requirement-fx-and-options-only`, `illustrative-sample-requirement` | Exercised |
 | `SRC-06` | Article 495s(2) | `CALC-08.5` | `CORE_Engine.ResultsTable`, `CORE_Parameters.BuildRegime`, `CORE_Parameters.TransitionalFactor` | — | Not validated |
+| `SRC-04` | Article 325a(2), point (f); Article 94(3), point (c) | `CALC-09.1` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a(1); Article 94(1) | `CALC-09.2` | `CORE_Eligibility.CalculateEligibility`, `CORE_Parameters.BuildParameters` | — | Not validated |
+| `SRC-04` | Article 325a(5), point (a); Article 94(7), point (a) | `CALC-09.3` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a(5), point (b); Article 94(7), point (b) | `CALC-09.4` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a(5); Article 94(7) | `CALC-09.5` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a(5); Article 94(7) | `CALC-09.6` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a(6); Article 94(8) | `CALC-09.7` | `CORE_Eligibility.CalculateEligibility` | — | Not validated |
+| `SRC-04` | Article 325a | `CALC-09.8` | `CORE_Engine.Calculate`, `CORE_Eligibility.CalculateEligibility` | — | Not validated |
 
 - **Source and paragraph:** a `SRC-` ID of the [source register](SOURCES.md)
   and the exact paragraph, as in the step's *Source* column.

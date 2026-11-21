@@ -8,7 +8,7 @@
         "formatRows": false
       },
       "output": [
-        "A1:E33"
+        "A1:E34"
       ]
     },
     "shParams": {
@@ -18,27 +18,27 @@
         "formatRows": false
       },
       "input": [
-        "E6:E34",
-        "G38:G68",
-        "D73:F87",
-        "I73:J87",
-        "C92:E111"
+        "E6:E38",
+        "G42:G72",
+        "D77:F91",
+        "I77:J91",
+        "C96:E115"
       ],
       "output": [
         "A1:K5",
-        "A6:D34",
-        "F6:K34",
-        "A35:K37",
-        "A38:F68",
-        "H38:K68",
-        "A69:K72",
-        "A73:C87",
-        "G73:H87",
-        "K73:K87",
-        "A88:K91",
-        "A92:B111",
-        "F92:K111",
-        "A112:K112"
+        "A6:D38",
+        "F6:K38",
+        "A39:K41",
+        "A42:F72",
+        "H42:K72",
+        "A73:K76",
+        "A77:C91",
+        "G77:H91",
+        "K77:K91",
+        "A92:K95",
+        "A96:B115",
+        "F96:K115",
+        "A116:K116"
       ]
     },
     "shIRPositions": {
@@ -109,6 +109,22 @@
       "output": [
         "A1:G4",
         "A5:D8"
+      ]
+    },
+    "shEligibility": {
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:H28"
+      ],
+      "output": [
+        "A1:U4",
+        "A5:B28",
+        "I5:U28",
+        "A29:U35"
       ]
     },
     "shResults": {
@@ -198,7 +214,7 @@
         "formatRows": false
       },
       "output": [
-        "A1:J84"
+        "A1:J86"
       ]
     },
     "shTestCatalogue": {

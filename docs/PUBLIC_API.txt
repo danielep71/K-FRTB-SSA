@@ -32,6 +32,8 @@ CORE_Config	Const	SH_FX_POS
 # SIG	CORE_Config	Const	SH_FX_POS	Public Const SH_FX_POS As String = "FXPositions"
 CORE_Config	Const	SH_OPTIONS
 # SIG	CORE_Config	Const	SH_OPTIONS	Public Const SH_OPTIONS As String = "OptionCharges"
+CORE_Config	Const	SH_ELIGIBILITY
+# SIG	CORE_Config	Const	SH_ELIGIBILITY	Public Const SH_ELIGIBILITY As String = "Eligibility"
 CORE_Config	Const	SH_RESULTS
 # SIG	CORE_Config	Const	SH_RESULTS	Public Const SH_RESULTS As String = "Results"
 CORE_Config	Const	SH_IR_ZONES
@@ -122,8 +124,14 @@ CORE_Config	Const	NM_FX_RATE
 # SIG	CORE_Config	Const	NM_FX_RATE	Public Const NM_FX_RATE As String = "FX_Rate"
 CORE_Config	Const	NM_OPTIONS_PREFIX
 # SIG	CORE_Config	Const	NM_OPTIONS_PREFIX	Public Const NM_OPTIONS_PREFIX As String = "Options"
+CORE_Config	Const	NM_EL_HEADER
+# SIG	CORE_Config	Const	NM_EL_HEADER	Public Const NM_EL_HEADER As String = "Eligibility_Header"
+CORE_Config	Const	NM_EL_RESULTS
+# SIG	CORE_Config	Const	NM_EL_RESULTS	Public Const NM_EL_RESULTS As String = "Eligibility_Results"
 CORE_Config	Const	MAX_POSITION_ROWS
 # SIG	CORE_Config	Const	MAX_POSITION_ROWS	Public Const MAX_POSITION_ROWS As Long = 500
+CORE_Config	Const	ELIGIBILITY_ROWS
+# SIG	CORE_Config	Const	ELIGIBILITY_ROWS	Public Const ELIGIBILITY_ROWS As Long = 24
 CORE_Config	Const	IR_ID
 # SIG	CORE_Config	Const	IR_ID	Public Const IR_ID As Long = 1
 CORE_Config	Const	IR_INSTRUMENT
@@ -190,6 +198,20 @@ CORE_Config	Const	FX_AMOUNT
 # SIG	CORE_Config	Const	FX_AMOUNT	Public Const FX_AMOUNT As Long = 5
 CORE_Config	Const	FX_INPUT_WIDTH
 # SIG	CORE_Config	Const	FX_INPUT_WIDTH	Public Const FX_INPUT_WIDTH As Long = 6
+CORE_Config	Const	EL_MONTH
+# SIG	CORE_Config	Const	EL_MONTH	Public Const EL_MONTH As Long = 1
+CORE_Config	Const	EL_ASSETS
+# SIG	CORE_Config	Const	EL_ASSETS	Public Const EL_ASSETS As Long = 2
+CORE_Config	Const	EL_LONG_325A
+# SIG	CORE_Config	Const	EL_LONG_325A	Public Const EL_LONG_325A As Long = 3
+CORE_Config	Const	EL_SHORT_325A
+# SIG	CORE_Config	Const	EL_SHORT_325A	Public Const EL_SHORT_325A As Long = 4
+CORE_Config	Const	EL_LONG_94
+# SIG	CORE_Config	Const	EL_LONG_94	Public Const EL_LONG_94 As Long = 5
+CORE_Config	Const	EL_SHORT_94
+# SIG	CORE_Config	Const	EL_SHORT_94	Public Const EL_SHORT_94 As Long = 6
+CORE_Config	Const	EL_INPUT_WIDTH
+# SIG	CORE_Config	Const	EL_INPUT_WIDTH	Public Const EL_INPUT_WIDTH As Long = 6
 CORE_Config	Const	IR_CALC_WIDTH
 # SIG	CORE_Config	Const	IR_CALC_WIDTH	Public Const IR_CALC_WIDTH As Long = 22
 CORE_Config	Const	EQ_CALC_WIDTH
@@ -216,6 +238,12 @@ CORE_Config	Const	RESULTS_COLUMN
 # SIG	CORE_Config	Const	RESULTS_COLUMN	Public Const RESULTS_COLUMN As Long = 3
 CORE_Config	Const	FINDINGS_WIDTH
 # SIG	CORE_Config	Const	FINDINGS_WIDTH	Public Const FINDINGS_WIDTH As Long = 7
+CORE_Config	Const	EL_CALC_WIDTH
+# SIG	CORE_Config	Const	EL_CALC_WIDTH	Public Const EL_CALC_WIDTH As Long = 13
+CORE_Config	Const	EL_BLOCK_ROWS
+# SIG	CORE_Config	Const	EL_BLOCK_ROWS	Public Const EL_BLOCK_ROWS As Long = 2
+CORE_Config	Const	EL_BLOCK_WIDTH
+# SIG	CORE_Config	Const	EL_BLOCK_WIDTH	Public Const EL_BLOCK_WIDTH As Long = 7
 CORE_Config	Const	TOT_SPECIFIC
 # SIG	CORE_Config	Const	TOT_SPECIFIC	Public Const TOT_SPECIFIC As Long = 1
 CORE_Config	Const	TOT_GENERAL
@@ -286,8 +314,10 @@ CORE_Config	Const	IN_TRANSITION_END
 # SIG	CORE_Config	Const	IN_TRANSITION_END	Public Const IN_TRANSITION_END As Long = 21
 CORE_Config	Const	IN_OWN_FUNDS
 # SIG	CORE_Config	Const	IN_OWN_FUNDS	Public Const IN_OWN_FUNDS As Long = 22
+CORE_Config	Const	IN_EL_ROWS
+# SIG	CORE_Config	Const	IN_EL_ROWS	Public Const IN_EL_ROWS As Long = 23
 CORE_Config	Const	IN_COUNT
-# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 22
+# SIG	CORE_Config	Const	IN_COUNT	Public Const IN_COUNT As Long = 23
 CORE_Config	Const	OUT_IR_CALC
 # SIG	CORE_Config	Const	OUT_IR_CALC	Public Const OUT_IR_CALC As Long = 1
 CORE_Config	Const	OUT_LADDER
@@ -330,8 +360,12 @@ CORE_Config	Const	OUT_USED
 # SIG	CORE_Config	Const	OUT_USED	Public Const OUT_USED As Long = 20
 CORE_Config	Const	OUT_REQUIREMENT_BEFORE
 # SIG	CORE_Config	Const	OUT_REQUIREMENT_BEFORE	Public Const OUT_REQUIREMENT_BEFORE As Long = 21
+CORE_Config	Const	OUT_EL_CALC
+# SIG	CORE_Config	Const	OUT_EL_CALC	Public Const OUT_EL_CALC As Long = 22
+CORE_Config	Const	OUT_EL_RESULTS
+# SIG	CORE_Config	Const	OUT_EL_RESULTS	Public Const OUT_EL_RESULTS As Long = 23
 CORE_Config	Const	OUT_COUNT
-# SIG	CORE_Config	Const	OUT_COUNT	Public Const OUT_COUNT As Long = 21
+# SIG	CORE_Config	Const	OUT_COUNT	Public Const OUT_COUNT As Long = 23
 CORE_Config	Const	RC_IR
 # SIG	CORE_Config	Const	RC_IR	Public Const RC_IR As Long = 1
 CORE_Config	Const	RC_EQ
@@ -406,22 +440,30 @@ CORE_Config	Const	PI_ZONE13_CRR
 # SIG	CORE_Config	Const	PI_ZONE13_CRR	Public Const PI_ZONE13_CRR As Long = 22
 CORE_Config	Const	PI_EQ_INDEX_CRR
 # SIG	CORE_Config	Const	PI_EQ_INDEX_CRR	Public Const PI_EQ_INDEX_CRR As Long = 23
+CORE_Config	Const	PI_EL_SHARE_325A
+# SIG	CORE_Config	Const	PI_EL_SHARE_325A	Public Const PI_EL_SHARE_325A As Long = 24
+CORE_Config	Const	PI_EL_CAP_325A
+# SIG	CORE_Config	Const	PI_EL_CAP_325A	Public Const PI_EL_CAP_325A As Long = 25
+CORE_Config	Const	PI_EL_SHARE_94
+# SIG	CORE_Config	Const	PI_EL_SHARE_94	Public Const PI_EL_SHARE_94 As Long = 26
+CORE_Config	Const	PI_EL_CAP_94
+# SIG	CORE_Config	Const	PI_EL_CAP_94	Public Const PI_EL_CAP_94 As Long = 27
 CORE_Config	Const	PI_COUNT
-# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 23
+# SIG	CORE_Config	Const	PI_COUNT	Public Const PI_COUNT As Long = 27
 CORE_Config	Const	PI_REGIME_FLAG
-# SIG	CORE_Config	Const	PI_REGIME_FLAG	Public Const PI_REGIME_FLAG As Long = 24
+# SIG	CORE_Config	Const	PI_REGIME_FLAG	Public Const PI_REGIME_FLAG As Long = 28
 CORE_Config	Const	PI_VECTOR
-# SIG	CORE_Config	Const	PI_VECTOR	Public Const PI_VECTOR As Long = 24
+# SIG	CORE_Config	Const	PI_VECTOR	Public Const PI_VECTOR As Long = 28
 CORE_Config	Const	PRM_NUMERIC_CODES
-# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & "TransitionalMultiplier|FXDeMinimisRate|HorizontalZone13CRR|EQIndexRateCRR"
+# SIG	CORE_Config	Const	PRM_NUMERIC_CODES	Public Const PRM_NUMERIC_CODES As String = "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & "TransitionalMultiplier|FXDeMinimisRate|HorizontalZone13CRR|EQIndexRateCRR|" & "EligibilityShare325a|EligibilityCap325a|EligibilityShare94|EligibilityCap94"
 CORE_Config	Const	PRM_REFERENCE_VALUES
-# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02|1.5|0"
+# SIG	CORE_Config	Const	PRM_REFERENCE_VALUES	Public Const PRM_REFERENCE_VALUES As String = "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02|1.5|0|" & "0.1|500000000|0.05|50000000"
 CORE_Config	Const	PRM_REFERENCE_GOLD
 # SIG	CORE_Config	Const	PRM_REFERENCE_GOLD	Public Const PRM_REFERENCE_GOLD As String = "XAU"
 CORE_Config	Const	PRM_REFERENCE_END_DATE
 # SIG	CORE_Config	Const	PRM_REFERENCE_END_DATE	Public Const PRM_REFERENCE_END_DATE As Double = 47483
 CORE_Config	Const	PRM_DOMAINS
-# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRRRNR"
+# SIG	CORE_Config	Const	PRM_DOMAINS	Public Const PRM_DOMAINS As String = "PNPPPPPRRRRRRRRRRRRRRNRRPRP"
 CORE_Config	Const	BAND_COUNT
 # SIG	CORE_Config	Const	BAND_COUNT	Public Const BAND_COUNT As Long = 15
 CORE_Config	Const	ZONE_COUNT
@@ -542,16 +584,22 @@ CORE_Config	Const	RULE_OPTIONS
 # SIG	CORE_Config	Const	RULE_OPTIONS	Public Const RULE_OPTIONS As String = "C13"
 CORE_Config	Const	RULE_PARAMS
 # SIG	CORE_Config	Const	RULE_PARAMS	Public Const RULE_PARAMS As String = "C14"
+CORE_Config	Const	RULE_EL_ROWS
+# SIG	CORE_Config	Const	RULE_EL_ROWS	Public Const RULE_EL_ROWS As String = "C15"
+CORE_Config	Const	RULE_EL_STATUS
+# SIG	CORE_Config	Const	RULE_EL_STATUS	Public Const RULE_EL_STATUS As String = "C16"
 CORE_Config	Const	RULE_COUNT
-# SIG	CORE_Config	Const	RULE_COUNT	Public Const RULE_COUNT As Long = 14
+# SIG	CORE_Config	Const	RULE_COUNT	Public Const RULE_COUNT As Long = 16
 CORE_Config	Const	RULE_SEVERITIES
-# SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR"
+# SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING"
 CORE_Config	Const	ERR_LAYOUT
 # SIG	CORE_Config	Const	ERR_LAYOUT	Public Const ERR_LAYOUT As Long = &H80040801
 CORE_Config	Const	ERR_ARGUMENT
 # SIG	CORE_Config	Const	ERR_ARGUMENT	Public Const ERR_ARGUMENT As Long = &H80040802
 CORE_Config	Const	ERR_CLEANUP_FAILED
 # SIG	CORE_Config	Const	ERR_CLEANUP_FAILED	Public Const ERR_CLEANUP_FAILED As Long = &H80040803
+CORE_Eligibility	Sub	CalculateEligibility
+# SIG	CORE_Eligibility	Sub	CalculateEligibility	Public Sub CalculateEligibility(ByRef InputRows() As Variant, ByVal Regime As String, ByRef Parameters() As Double, ByRef RowOutput() As Variant, ByRef ResultOutput() As Variant, ByRef RejectedRows As Long, ByRef FlaggedApproaches As Long)
 CORE_Engine	Sub	Calculate
 # SIG	CORE_Engine	Sub	Calculate	Public Sub Calculate(ByRef Inputs() As Variant, ByRef Outputs() As Variant)
 CORE_Engine	Function	PositionVolumeErrors

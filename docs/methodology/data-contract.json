@@ -355,6 +355,48 @@
             "max": 1
           },
           "notes": "Name EQIndexRateCRR. Charge on the net position per index under the CRR, Article 344, in place of EQIndexRate. Reference value 0"
+        },
+        {
+          "name": "eligibility_share_325a",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EligibilityShare325a. Share of the total assets that the size of the business may not exceed for the simplified standardised approach, Article 325a(1) of the CRR; a rate, 0 to 1. Reference value 0.1"
+        },
+        {
+          "name": "eligibility_cap_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name EligibilityCap325a. Amount that the size of the business may not exceed for the simplified standardised approach, Article 325a(1); a number greater than 0. Reference value 500000000"
+        },
+        {
+          "name": "eligibility_share_94",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EligibilityShare94. Share of the total assets that the size of the business may not exceed for the small trading book derogation, Article 94(1); a rate, 0 to 1. Reference value 0.05"
+        },
+        {
+          "name": "eligibility_cap_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name EligibilityCap94. Amount that the size of the business may not exceed for the small trading book derogation, Article 94(1); a number greater than 0. Reference value 50000000"
         }
       ]
     },
@@ -1091,6 +1133,70 @@
           "required": false,
           "allowed": null,
           "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-11",
+      "illustrative": false,
+      "description": "Monthly size of the business",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per month end; up to 24 rows",
+      "source": "Eligibility",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "month_end",
+          "type": "date",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Month end. The last day of a calendar month, one month after the row entered before it. A row without it is skipped. Read under the CRR regime only"
+        },
+        {
+          "name": "total_assets",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Total assets (EUR). Of the institution at the month end. Must be a number greater than 0"
+        },
+        {
+          "name": "long_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Long 325a (EUR). The aggregated long positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "short_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Short 325a (EUR). The aggregated short positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "long_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Long 94 (EUR). The aggregated long positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "short_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Short 94 (EUR). The aggregated short positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none"
         }
       ]
     }

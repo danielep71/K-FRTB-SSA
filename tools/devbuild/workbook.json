@@ -10,6 +10,7 @@
     {"tab": "COPositions", "code_name": "shCOPositions", "role": "Input"},
     {"tab": "FXPositions", "code_name": "shFXPositions", "role": "Input"},
     {"tab": "OptionCharges", "code_name": "shOptionCharges", "role": "Input"},
+    {"tab": "Eligibility", "code_name": "shEligibility", "role": "Input"},
     {"tab": "Results", "code_name": "shResults", "role": "Output"},
     {"tab": "IR_Zones", "code_name": "shIRZones", "role": "Output"},
     {"tab": "IR_Ladder", "code_name": "shIRLadder", "role": "Output"},
@@ -55,6 +56,10 @@
     {"name": "FXDeMinimisRate", "sheet": "shParams", "cell": "E32"},
     {"name": "HorizontalZone13CRR", "sheet": "shParams", "cell": "E33"},
     {"name": "EQIndexRateCRR", "sheet": "shParams", "cell": "E34"},
+    {"name": "EligibilityShare325a", "sheet": "shParams", "cell": "E35"},
+    {"name": "EligibilityCap325a", "sheet": "shParams", "cell": "E36"},
+    {"name": "EligibilityShare94", "sheet": "shParams", "cell": "E37"},
+    {"name": "EligibilityCap94", "sheet": "shParams", "cell": "E38"},
     {"name": "IRPositions_Header", "sheet": "shIRPositions", "cell": "C4"},
     {"name": "EQPositions_Header", "sheet": "shEQPositions", "cell": "C4"},
     {"name": "COPositions_Header", "sheet": "shCOPositions", "cell": "C4"},
@@ -63,6 +68,7 @@
     {"name": "OptionsEQ", "sheet": "shOptionCharges", "cell": "F6"},
     {"name": "OptionsCO", "sheet": "shOptionCharges", "cell": "F7"},
     {"name": "OptionsFX", "sheet": "shOptionCharges", "cell": "F8"},
+    {"name": "Eligibility_Header", "sheet": "shEligibility", "cell": "C4"},
     {"name": "IRCalc_Header", "sheet": "shIRCalc", "cell": "C4"},
     {"name": "EQCalc_Header", "sheet": "shEQCalc", "cell": "C4"},
     {"name": "COCalc_Header", "sheet": "shCOCalc", "cell": "C4"},
@@ -90,7 +96,7 @@
     {"name": "Checks_Header", "sheet": "shChecks", "cell": "C6"},
     {"name": "Checks_Errors", "sheet": "shChecks", "cell": "D4"},
     {"name": "Checks_Warnings", "sheet": "shChecks", "cell": "F4"},
-    {"name": "Checks_Findings_Header", "sheet": "shChecks", "cell": "C24"}
+    {"name": "Checks_Findings_Header", "sheet": "shChecks", "cell": "C26"}
   ],
   "stamp": {
     "commit": "build_commit",

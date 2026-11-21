@@ -199,7 +199,7 @@ class Generator(NeedsOpenpyxl):
             with zipfile.ZipFile(path) as package:
                 sheets = [name for name in package.namelist()
                           if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name)]
-                self.assertEqual(len(sheets), 18)
+                self.assertEqual(len(sheets), 19)
                 for name in sheets:
                     with self.subTest(path=path.name, sheet=name):
                         element = re.search(rb"<sheetProtection[^>]*>",
@@ -231,7 +231,7 @@ class Generator(NeedsOpenpyxl):
         # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
         book = openpyxl.load_workbook(self.template)
         self.assertTrue(book["Params"]["E6"].protection.locked is False)
-        self.assertTrue(book["Params"]["G38"].protection.locked is False)
+        self.assertTrue(book["Params"]["G42"].protection.locked is False)
         self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
         self.assertTrue(book["Results"]["C6"].protection.locked)
         self.assertTrue(book["IRPositions"]["C4"].protection.locked)
@@ -256,8 +256,8 @@ class Generator(NeedsOpenpyxl):
                  "deleteColumns": "AllowDeletingColumns", "deleteRows": "AllowDeletingRows",
                  "sort": "AllowSorting", "autoFilter": "AllowFiltering",
                  "pivotTables": "AllowUsingPivotTables"}
-        for sheet in ("shResults", "shIRZones", "shIRLadder", "shBuckets", "shIRCalc", "shEQCalc",
-                      "shCOCalc", "shFXCalc", "shChecks"):
+        for sheet in ("shEligibility", "shResults", "shIRZones", "shIRLadder", "shBuckets", "shIRCalc",
+                      "shEQCalc", "shCOCalc", "shFXCalc", "shChecks"):
             options = matrix["sheets"][sheet]["protection"]
             with self.subTest(sheet=sheet):
                 self.assertTrue(options["sheet"])
@@ -280,8 +280,9 @@ class Generator(NeedsOpenpyxl):
         table = contract.split("## Sheets\n", 1)[1].split("\n\n- **Code name:**", 1)[0]
         rows = [[cell.strip() for cell in line.strip("|").split("|")]
                 for line in table.splitlines() if re.match(r"\| +\d+ +\|", line)]
-        self.assertEqual(len(rows), 18)
-        written = {row[1].strip("`") for row in rows if row[4] == "Yes"}
+        self.assertEqual(len(rows), 19)
+        # Code writes a sheet whose cells it replaces, and the calculated columns of Eligibility.
+        written = {row[1].strip("`") for row in rows if row[4] in ("Yes", "In its calculated columns")}
         source = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode(
             "cp1252").replace("\r\n", "\n")
         listed = re.search(r"SheetNames = Array\(([^)]*)\)", source.replace("_\n", " "))
@@ -489,7 +490,7 @@ class Comparison(NeedsOpenpyxl):
         book = openpyxl.Workbook()
         book.remove(book.active)
         for title in ("IRCalc", "EQCalc", "COCalc", "FXCalc", "IR_Ladder", "IR_Zones", "Buckets",
-                      "Results", "Checks", "TestCatalogue"):
+                      "Results", "Checks", "Eligibility", "TestCatalogue"):
             book.create_sheet(title)
         book["IRCalc"]["C5"] = "IR-001"
         book["IRCalc"]["D5"] = "OK"

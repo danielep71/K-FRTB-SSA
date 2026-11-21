@@ -25,6 +25,9 @@ It needs LibreOffice and openpyxl. The steps:
    only: no output cell holds an error value, and each such text reads
    "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
    for a cell that holds an error value, so the two cannot be compared here.
+   The same under the CRR regime for months of Eligibility with error values:
+   no output cell holds one, and each such month is rejected as
+   ssa.eligibility rejects it.
 6. Make two Params values unusable: the run stops and lists both.
 7. Run the three suites of the VBA tests, through TEST_Suite.Test_RunCore,
    TEST_Workbook.Test_RunWorkbook and TEST_Cases.Test_RunCases: each run
@@ -32,6 +35,12 @@ It needs LibreOffice and openpyxl. The steps:
    registered test cases.
 8. Run the registered test cases, as run_cases.py does: the workbook holds
    every expected value.
+9. Type series of months on Eligibility under the CRR regime, in both
+   workbooks: the sample months, months that all meet the conditions, a
+   series that ends in a run of three, one whose last month meets them after
+   seven of twelve that do not, and rows of each invalid kind. The engine's
+   calculated columns, result block and counts of Checks equal the formula
+   workbook's and those of ssa.eligibility in tests/derivations/ssa.py.
 
 Every macro runs through tools/devbuild/lo_macro.py, on the workbook the
 build produces. --uno-python names the Python that provides LibreOffice's
@@ -63,10 +72,12 @@ import openpyxl
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "tools" / "devbuild"))
+sys.path.insert(0, str(ROOT / "tests" / "derivations"))
 
 import build_prototype  # noqa: E402
 import build_workbook  # noqa: E402
 import compare_outputs  # noqa: E402
+import ssa  # noqa: E402
 import ssa_reference  # noqa: E402
 
 LO_MACRO = ROOT / "tools" / "devbuild" / "lo_macro.py"
@@ -257,6 +268,20 @@ def error_keys(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
+def error_months() -> list[Month | None]:
+    """Months of Eligibility with an error value in the month end, in the total assets and in a
+    long total, each a rejected row, and a row without a month end whose totals are error values,
+    which is skipped."""
+    day = datetime.date
+    return [(day(2025, 10, 31), 8e9, 1e8, 0, 1e7, 0),
+            (NOT_AVAILABLE, 8e9, 1e8, 0, 1e7, 0),
+            (day(2025, 12, 31), 8e9, 1e8, 0, 1e7, 0),
+            (day(2026, 1, 31), NOT_AVAILABLE, 1e8, 0, 1e7, 0),
+            (day(2026, 2, 28), 8e9, "#VALUE!", 0, 1e7, 0),
+            (None, NOT_AVAILABLE, NOT_AVAILABLE, 0, 1e7, 0),
+            (day(2026, 3, 31), 8e9, 1e8, 0, 1e7, 0)]
+
+
 def error_cells(path: Path) -> list[str]:
     """The cells of the output areas of a workbook of values that hold an error value."""
     workbook = openpyxl.load_workbook(path, data_only=True)
@@ -429,7 +454,20 @@ def error_values(run: Run) -> str:
                 ERROR_TEXT]
     if not all(compare_outputs.same(*pair) for pair in zip(read, expected, strict=True)):
         raise Failure(f"read {read}, expected {expected}")
-    return f"no error value in an output area; every such text reads {ERROR_TEXT}"
+    # Months of Eligibility under the CRR regime with error values: only the formula
+    # workbook, since LibreOffice's engine reads an error value typed in a cell as 0.
+    months_formula, months_values = run.folder / "errors-months.xlsx", run.folder / "errors-months-values.xlsx"
+    rows = error_months()
+    with_months(run.formula, months_formula, rows)
+    run.macro(months_formula, "-", months_values)
+    errors = error_cells(months_values)
+    differences = eligibility_differences(months_values, ssa.eligibility(sheet_months(rows), "CRR", {}), "formula")
+    if errors or differences:
+        raise Failure("\n".join([f"months with error values: {len(errors)} output cell(s) hold an error value, "
+                                 f"{len(differences)} difference(s) from ssa.eligibility",
+                                 *(errors + differences)[:compare_outputs.SHOWN]]))
+    return (f"no error value in an output area; every such text reads {ERROR_TEXT}; "
+            "months of Eligibility with error values are rejected as ssa.eligibility rejects them")
 
 
 def stopped_run(run: Run) -> str:
@@ -569,6 +607,140 @@ def crr_categories(run: Run) -> str:
     return "\n".join(lines)
 
 
+# Eligibility: the rows of the months, the first column of the calculated columns
+# (Month status, I), the result block (D32:J33) and the rows of rules C15 and C16 on Checks.
+ELIGIBILITY_ROWS = 24
+STATUS_COLUMN, RESULT_ROW, RESULT_COLUMN = 9, 32, 4
+C15_ROW, C16_ROW, COUNT_COLUMN = 21, 22, 6
+APPROACHES = ("325a", "94")
+FIGURES = ("size", "share", "result", "run", "count", "event")
+RESULTS = ("status", "last_month", "size", "share", "run", "count", "restart")
+Month = tuple[object, object, object, object, object, object]
+
+
+def months(pattern: str, *, last: datetime.date = ssa_reference.AS_OF) -> list[Month]:
+    """One row per letter, the last month in the month of ``last``: M where both approaches
+    meet the conditions, N where Article 325a misses them and Article 94 meets them. With total
+    assets of 8 billion the amounts bind: 400 and 600 million for Article 325a, 40 million for
+    Article 94."""
+    rows: list[Month] = []
+    for k, flag in enumerate(pattern):
+        size = 600e6 if flag == "N" else 400e6
+        rows.append((ssa_reference.month_end(last, len(pattern) - 1 - k), 8e9,
+                     0.6 * size, -0.4 * size, 28e6, 12e6))
+    return rows
+
+
+def eligibility_scenarios() -> tuple[tuple[str, list[Month | None]], ...]:
+    """The series of months, each with its rows from row 5 down; None leaves a row blank."""
+    day = datetime.date
+    invalid: list[Month | None] = [
+        (day(2025, 10, 31), 8e9, 1e8, 0, 1e7, 0),
+        # A month end that is a text, one that is a number but no date, one that is not the
+        # last day of its month and one that is not one month after the row before it.
+        ("2025-11-30", 8e9, 1e8, 0, 1e7, 0),
+        (20251231, 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 1, 15), 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 3, 31), 8e9, 1e8, 0, 1e7, 0),
+        # Total assets of 0, a short total that is a text, a row without a month end and one
+        # whose month end holds only blanks, which is read as empty.
+        (day(2026, 4, 30), 0, 1e8, 0, 1e7, 0),
+        (day(2026, 5, 31), 8e9, 1e8, "none", 1e7, 0),
+        (None, 8e9, 1e8, 0, 1e7, 0),
+        ("   ", 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 6, 30), 8e9, 1e8, 0, 1e7, 0)]
+    return (
+        ("the sample months", list(ssa_reference.ELIGIBILITY)),
+        ("24 months that meet the conditions", list(months("M" * 24))),
+        ("a run of three after two blank rows", [None, None, *months("MMMMMMMMNNN")]),
+        ("seven of the last twelve not met, the last met", list(months("MMMMNMNNMNNMNNMM"))),
+        ("a row of each invalid kind", invalid))
+
+
+def with_months(source: Path, target: Path, rows: Sequence[Month | None]) -> None:
+    """Save ``source`` with the CRR regime and ``rows`` on Eligibility, the other rows blank."""
+    regime(source, target, "CRR", datetime.date(2029, 12, 31), 1e10)
+    workbook = load(target)
+    sheet = workbook["Eligibility"]
+    for offset in range(ELIGIBILITY_ROWS):
+        record = rows[offset] if offset < len(rows) else None
+        for column in range(6):
+            sheet.cell(FIRST_ROW + offset, FIRST_COLUMN + column).value = (
+                None if record is None else record[column])
+    workbook.save(target)
+
+
+def sheet_months(rows: Sequence[Month | None]) -> list[Month]:
+    """The 24 rows of Eligibility as ssa.eligibility reads them: a blank row is six empty cells."""
+    blank: Month = (None, None, None, None, None, None)
+    padded = [blank if row is None else row for row in rows]
+    return padded + [blank] * (ELIGIBILITY_ROWS - len(padded))
+
+
+def same_cell(given: object, expected: object) -> bool:
+    """A cell of the engine against a value of ssa.eligibility: a date as its serial number."""
+    if isinstance(expected, datetime.date) and not isinstance(expected, datetime.datetime):
+        expected = datetime.datetime.combine(expected, datetime.time())
+    return compare_outputs.same(given, expected)
+
+
+def eligibility_differences(path: Path, expected: dict[str, Any], source: str = "VBA") -> list[str]:
+    """The cells of Eligibility and the counts of rules C15 and C16 that differ from ``expected``,
+    what ssa.eligibility gives; ``source`` names the workbook in the messages."""
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    sheet, checks = workbook["Eligibility"], workbook["Checks"]
+    differences: list[str] = []
+
+    def check(cell: Any, value: object) -> None:
+        if not same_cell(cell.value, value):
+            differences.append(f"Eligibility!{cell.coordinate}: {source}={cell.value!r} ssa.py={value!r}")
+
+    for offset, item in enumerate(expected["rows"]):
+        row = FIRST_ROW + offset
+        check(sheet.cell(row, STATUS_COLUMN), None if item is None else item["status"])
+        for k, approach in enumerate(APPROACHES):
+            figures = None if item is None else item[approach]
+            for j, key in enumerate(FIGURES):
+                check(sheet.cell(row, STATUS_COLUMN + 1 + 6 * k + j), None if figures is None else figures[key])
+    for k, approach in enumerate(APPROACHES):
+        for j, key in enumerate(RESULTS):
+            value = expected[key] if key == "last_month" else expected[key][approach]
+            check(sheet.cell(RESULT_ROW + k, RESULT_COLUMN + j), value)
+    rejected = sum(1 for item in expected["rows"] if item is not None and item["status"] != ssa.OK)
+    flagged = sum(1 for status in expected["status"].values() if status in ("NOT MET", "CEASE"))
+    for row, count in ((C15_ROW, rejected), (C16_ROW, flagged)):
+        cell = checks.cell(row, COUNT_COLUMN)
+        if not compare_outputs.same(cell.value, count):
+            differences.append(f"Checks!{cell.coordinate}: {source}={cell.value!r} ssa.py={count}")
+    return differences
+
+
+def eligibility(run: Run) -> str:
+    """Series of months under the CRR regime: the engine against the formula workbook and ssa.eligibility."""
+    lines: list[str] = []
+    for label, rows in eligibility_scenarios():
+        formula, workbook = run.folder / "months-formula.xlsx", run.folder / "months.xlsm"
+        values, output = run.folder / "months-formula-values.xlsx", run.folder / "vba-months.xlsx"
+        with_months(run.formula, formula, rows)
+        with_months(run.workbook, workbook, rows)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        expected = ssa.eligibility(sheet_months(rows), "CRR", {})
+        # The sample positions have the CRR categories: only an invalid month makes the run incomplete.
+        invalid = any(item is not None and item["status"] != ssa.OK for item in expected["rows"])
+        if not result.startswith("RESULT=INCOMPLETE;" if invalid else "RESULT=OK;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        differences = eligibility_differences(output, expected)
+        if differences:
+            raise Failure("\n".join([f"{label}: {len(differences)} difference(s) from ssa.eligibility",
+                                     *differences[:compare_outputs.SHOWN]]))
+        block = openpyxl.load_workbook(output, data_only=True)["Eligibility"]
+        statuses = [block.cell(RESULT_ROW + k, RESULT_COLUMN).value for k in range(len(APPROACHES))]
+        lines.append(f"{label}: {statuses[0]} and {statuses[1]}, as ssa.eligibility gives; {compared}")
+    return "\n".join(lines)
+
+
 def test_suite(run: Run) -> str:
     results = []
     for macro in TESTS:
@@ -602,6 +774,7 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("The offset between zones 1 and 3 of each regime", crr_zones),
     ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
+    ("Eligibility under the CRR regime against the formula workbook and ssa.eligibility", eligibility),
 )
 
 

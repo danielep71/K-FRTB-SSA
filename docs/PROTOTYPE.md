@@ -41,13 +41,13 @@ paragraph of MAR40.
 
 ## The sheets
 
-The workbook has 18 sheets, all visible, in this order
+The workbook has 19 sheets, all visible, in this order
 ([workbook contract](methodology/WORKBOOK_CONTRACT.md#sheets)):
 
 | Kind | Sheets | What you do |
 | --- | --- | --- |
 | Reference | `Home`, `README` | Read them. `Home` says what to do; `README` holds the conventions, the limits and the build stamp |
-| Input | `Params`, `IRPositions`, `EQPositions`, `COPositions`, `FXPositions`, `OptionCharges` | Type in them. No code writes them |
+| Input | `Params`, `IRPositions`, `EQPositions`, `COPositions`, `FXPositions`, `OptionCharges`, `Eligibility` | Type in them. No code writes them, except the calculated columns and the result block of `Eligibility` |
 | Output | `Results`, `IR_Zones`, `IR_Ladder`, `Buckets`, `IRCalc`, `EQCalc`, `COCalc`, `FXCalc` | Read them. A run replaces their content |
 | Diagnostics | `Checks`, `TestCatalogue` | Read them: the findings of a run, and the comparison of the sample data with expected values |
 
@@ -91,6 +91,16 @@ unit, its allowed values and how a cell is read.
   derive outside the workbook.
 - **`OptionCharges`:** the non-delta charge of each risk class, calculated
   outside the workbook, one value per class, added before scaling.
+- **`Eligibility`:** under the `CRR` regime, the size of your business at each
+  month end, one row per month, up to 24: the total assets, and the aggregated
+  long and short positions of the simplified standardised approach, Article
+  325a of the CRR, and of the small trading book derogation, Article 94, in
+  euro. The workbook finds whether the size stays within 10% of the total
+  assets and EUR 500 million, or within 5% and EUR 50 million
+  (`EligibilityShare325a`, `EligibilityCap325a`, `EligibilityShare94` and
+  `EligibilityCap94` on `Params`), and gives each approach the status `MET`,
+  `NOT MET` or `CEASE`, with a warning on `Checks`. It changes no requirement:
+  you decide what follows. Under the Basel regime the sheet is not read.
 
 The template ships synthetic sample data. It reproduces the published example
 of table 9 of MAR40.61 for foreign exchange risk, and is otherwise
