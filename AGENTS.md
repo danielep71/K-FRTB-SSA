@@ -48,3 +48,12 @@ The repository is licensed under MPL-2.0 through the root `LICENSE` unless that 
 ## Reusable defaults
 
 Preserve useful policies and assumptions for file types, tooling, and reserved paths even when this repository does not use them yet. Adapt project-specific names and historical references without stripping reusable capabilities. Describe reserved paths as conventions, not as files or directories that already exist.
+
+## Proactive suggestions
+
+Make these suggestions without waiting for me to ask:
+
+- **Merging into `main`:** tell me, with a one-line reason, when it is a good moment to merge a release branch into `main`. It is one when the issues of its milestone are closed, the checks pass on the final head, a `@codex` review covers that head, and the changelog section of the version is dated. Otherwise, say what is missing. Never merge without my explicit go-ahead.
+- **Compacting the context:** tell me when it is a good moment to run `/compact`: after a merge, at the end of an issue, before a change of topic, or when the context is full. Each time, propose the complete command, ready to paste, as `/compact Keep: <facts to keep> Drop: <details to drop>`. Keep the state of the repository (branches, open issues and pull requests, version), the decisions made, the conventions to follow and the next step. Drop drafts, conflicts already resolved, command output and closed explorations. Write it from the current session, never from an example of another project.
+- **Model for a new issue:** before implementing an issue, analyse it and suggest Sonnet, Opus or Fable, with a one-line reason.
+- **Models of the session and of subagents:** choose the model of each subagent yourself, without asking. For the main session, if a change of model would help, ask me in one short question with the proposed model and the reason; I change it with `/model`.
