@@ -736,15 +736,19 @@ def eligibility_month_status(r: int) -> str:
     month, before = f"$C{r}", f"${ELIGIBILITY_BEFORE}{r}"
     reasons = ELIGIBILITY_REASONS
     # A month entered before the row, if it is a date: the row must be the month end after it.
-    out_of_sequence = (f"IF(AND(ISNUMBER({before}),{before}>=1,{before}<={DATE_SERIAL_MAX}),"
-                       f"IFERROR({month}<>EOMONTH({before},1),TRUE),FALSE)")
-    return ('=IF(UPPER(TRIM(Regime))<>"CRR","",IF(TRIM(' + month + ')="","",'
-            f'IF(OR(NOT(ISNUMBER({month})),{month}<1,{month}>{DATE_SERIAL_MAX}),"{reasons[0]}",'
+    # Each cell is tested with ISNUMBER before it is compared: OR and AND evaluate every
+    # argument, and an error value in a cell would make the status an error, which rule
+    # C15 would not count. An error value in the month end is entered, as the engine reads it.
+    out_of_sequence = (f"IF(ISNUMBER({before}),IF(AND({before}>=1,{before}<={DATE_SERIAL_MAX}),"
+                       f"IFERROR({month}<>EOMONTH({before},1),TRUE),FALSE),FALSE)")
+    return (f'=IF(UPPER(TRIM(Regime))<>"CRR","",IF({text(month)}="","",'
+            f'IF(NOT(ISNUMBER({month})),"{reasons[0]}",'
+            f'IF(OR({month}<1,{month}>{DATE_SERIAL_MAX}),"{reasons[0]}",'
             f'IF({month}<>EOMONTH({month},0),"{reasons[1]}",'
             f'IF({out_of_sequence},"{reasons[2]}",'
-            f'IF(OR(NOT(ISNUMBER($D{r})),$D{r}<=0),"{reasons[3]}",'
+            f'IF(NOT(ISNUMBER($D{r})),"{reasons[3]}",IF($D{r}<=0,"{reasons[3]}",'
             f'IF(NOT(AND(ISNUMBER($E{r}),ISNUMBER($F{r}),ISNUMBER($G{r}),ISNUMBER($H{r}))),"{reasons[4]}",'
-            '"OK")))))))')
+            '"OK")))))))))')
 
 
 def eligibility_approach(r: int, approach: Approach) -> dict[str, str]:
@@ -830,11 +834,14 @@ def build_eligibility(ctx: Context) -> None:
         for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
             ws.column_dimensions[column].width = 22.6
         for r in range(FIRST, ELIGIBILITY_LAST + 1):
-            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF(TRIM($C{r})<>"",ROW(),0)' if r == FIRST
-                                                    else f'=IF(TRIM($C{r})<>"",ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
+            entered = f'{text(f"$C{r}")}<>""'
+            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF({entered},ROW(),0)' if r == FIRST
+                                                    else f'=IF({entered},ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
+            # An error value entered before the row is no date: the row is then not tested against it.
             ws[f"{ELIGIBILITY_BEFORE}{r}"].value = (
                 '=""' if r == FIRST else
-                f'=IF(${ELIGIBILITY_ENTERED}{r - 1}=0,"",INDEX($C$1:$C${ELIGIBILITY_LAST},${ELIGIBILITY_ENTERED}{r - 1}))')
+                f'=IF(${ELIGIBILITY_ENTERED}{r - 1}=0,"",'
+                f'IFERROR(INDEX($C$1:$C${ELIGIBILITY_LAST},${ELIGIBILITY_ENTERED}{r - 1}),""))')
             ws[f"{ELIGIBILITY_VALID}{r}"].value = f'=IF($I{r}="OK",COUNTIF($I${FIRST}:$I{r},"OK"),"")'
             for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
                 cell = ws[f"{column}{r}"]

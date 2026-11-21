@@ -25,6 +25,9 @@ It needs LibreOffice and openpyxl. The steps:
    only: no output cell holds an error value, and each such text reads
    "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
    for a cell that holds an error value, so the two cannot be compared here.
+   The same under the CRR regime for months of Eligibility with error values:
+   no output cell holds one, and each such month is rejected as
+   ssa.eligibility rejects it.
 6. Make two Params values unusable: the run stops and lists both.
 7. Run the three suites of the VBA tests, through TEST_Suite.Test_RunCore,
    TEST_Workbook.Test_RunWorkbook and TEST_Cases.Test_RunCases: each run
@@ -265,6 +268,20 @@ def error_keys(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
+def error_months() -> list[Month | None]:
+    """Months of Eligibility with an error value in the month end, in the total assets and in a
+    long total, each a rejected row, and a row without a month end whose totals are error values,
+    which is skipped."""
+    day = datetime.date
+    return [(day(2025, 10, 31), 8e9, 1e8, 0, 1e7, 0),
+            (NOT_AVAILABLE, 8e9, 1e8, 0, 1e7, 0),
+            (day(2025, 12, 31), 8e9, 1e8, 0, 1e7, 0),
+            (day(2026, 1, 31), NOT_AVAILABLE, 1e8, 0, 1e7, 0),
+            (day(2026, 2, 28), 8e9, "#VALUE!", 0, 1e7, 0),
+            (None, NOT_AVAILABLE, NOT_AVAILABLE, 0, 1e7, 0),
+            (day(2026, 3, 31), 8e9, 1e8, 0, 1e7, 0)]
+
+
 def error_cells(path: Path) -> list[str]:
     """The cells of the output areas of a workbook of values that hold an error value."""
     workbook = openpyxl.load_workbook(path, data_only=True)
@@ -437,7 +454,20 @@ def error_values(run: Run) -> str:
                 ERROR_TEXT]
     if not all(compare_outputs.same(*pair) for pair in zip(read, expected, strict=True)):
         raise Failure(f"read {read}, expected {expected}")
-    return f"no error value in an output area; every such text reads {ERROR_TEXT}"
+    # Months of Eligibility under the CRR regime with error values: only the formula
+    # workbook, since LibreOffice's engine reads an error value typed in a cell as 0.
+    months_formula, months_values = run.folder / "errors-months.xlsx", run.folder / "errors-months-values.xlsx"
+    rows = error_months()
+    with_months(run.formula, months_formula, rows)
+    run.macro(months_formula, "-", months_values)
+    errors = error_cells(months_values)
+    differences = eligibility_differences(months_values, ssa.eligibility(sheet_months(rows), "CRR", {}), "formula")
+    if errors or differences:
+        raise Failure("\n".join([f"months with error values: {len(errors)} output cell(s) hold an error value, "
+                                 f"{len(differences)} difference(s) from ssa.eligibility",
+                                 *(errors + differences)[:compare_outputs.SHOWN]]))
+    return (f"no error value in an output area; every such text reads {ERROR_TEXT}; "
+            "months of Eligibility with error values are rejected as ssa.eligibility rejects them")
 
 
 def stopped_run(run: Run) -> str:
@@ -654,16 +684,16 @@ def same_cell(given: object, expected: object) -> bool:
     return compare_outputs.same(given, expected)
 
 
-def eligibility_differences(path: Path, expected: dict[str, Any]) -> list[str]:
+def eligibility_differences(path: Path, expected: dict[str, Any], source: str = "VBA") -> list[str]:
     """The cells of Eligibility and the counts of rules C15 and C16 that differ from ``expected``,
-    what ssa.eligibility gives."""
+    what ssa.eligibility gives; ``source`` names the workbook in the messages."""
     workbook = openpyxl.load_workbook(path, data_only=True)
     sheet, checks = workbook["Eligibility"], workbook["Checks"]
     differences: list[str] = []
 
     def check(cell: Any, value: object) -> None:
         if not same_cell(cell.value, value):
-            differences.append(f"Eligibility!{cell.coordinate}: VBA={cell.value!r} ssa.py={value!r}")
+            differences.append(f"Eligibility!{cell.coordinate}: {source}={cell.value!r} ssa.py={value!r}")
 
     for offset, item in enumerate(expected["rows"]):
         row = FIRST_ROW + offset
@@ -681,7 +711,7 @@ def eligibility_differences(path: Path, expected: dict[str, Any]) -> list[str]:
     for row, count in ((C15_ROW, rejected), (C16_ROW, flagged)):
         cell = checks.cell(row, COUNT_COLUMN)
         if not compare_outputs.same(cell.value, count):
-            differences.append(f"Checks!{cell.coordinate}: VBA={cell.value!r} ssa.py={count}")
+            differences.append(f"Checks!{cell.coordinate}: {source}={cell.value!r} ssa.py={count}")
     return differences
 
 
