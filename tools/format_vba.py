@@ -9,9 +9,7 @@ style states (*Source representation*):
 3. four spaces for each tab of a line's indentation;
 4. procedure declarations, their End statements and labels at the outer
    level;
-5. after each procedure's End statement, one blank line in a component whose
-   header has a WHY THIS EXISTS field, the layout of Layout of a component,
-   and two blank lines in a component of the earlier layout.
+5. after each procedure's End statement, one blank line.
 
 It never changes a string literal: every rule works on indentation, on the
 end of a line, or on whole lines it recognises outside literals, and a
@@ -37,8 +35,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIRECTORIES = ("src", "tests/modules", "examples/modules")
 EXTENSIONS = frozenset({".bas", ".cls", ".frm"})
 INDENT = "    "
-# The field that marks a component header as the nine-field layout.
-NINE_FIELD = re.compile(r"^'[ \t]+WHY THIS EXISTS[ \t\r]*$", re.M)
 
 PROCEDURE = re.compile(r"^(?:(?:Public|Private|Friend)\s+)?(?:Static\s+)?"
                        r"(?:Sub|Function|Property\s+(?:Get|Let|Set))\s+[A-Za-z_]\w*",
@@ -90,12 +86,7 @@ def outer_level(line: str) -> bool:
     return bool(PROCEDURE.match(code) or PROCEDURE_END.match(code) or LABEL.match(code))
 
 
-def blank_lines_after_end(text: str) -> int:
-    """The blank lines between a procedure's End statement and what follows it."""
-    return 1 if NINE_FIELD.search(text) else 2
-
-
-def format_body(lines: Sequence[str], blanks: int = 2) -> list[str]:
+def format_body(lines: Sequence[str]) -> list[str]:
     out: list[str] = []
     continued = False
     pending_end = False
@@ -106,8 +97,8 @@ def format_body(lines: Sequence[str], blanks: int = 2) -> list[str]:
                 out.append(line)
             continue
         if pending_end:
-            # The blank lines between a procedure's End and what follows it.
-            out.extend([""] * blanks)
+            # One blank line between a procedure's End and what follows it.
+            out.append("")
             pending_end = False
         if not continued and outer_level(line):
             line = line.lstrip()
@@ -125,7 +116,7 @@ def format_text(text: str) -> str:
     if lines and lines[-1] == "":
         lines.pop()
     split = header_length(lines)
-    body = format_body(lines[split:], blank_lines_after_end("\n".join(lines)))
+    body = format_body(lines[split:])
     return "".join(f"{line}\r\n" for line in [*lines[:split], *body])
 
 
