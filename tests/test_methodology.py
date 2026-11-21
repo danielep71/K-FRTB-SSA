@@ -24,7 +24,8 @@ FIXTURES = ROOT / "tests" / "fixtures"
 CORE = ROOT / "src" / "core"
 # The contract whose Failure behaviour lists the statuses of a module's rows.
 ROW_MODULES = {"CALC-03": "CORE_InterestRate.bas", "CALC-04": "CORE_Equity.bas",
-               "CALC-05": "CORE_Commodity.bas", "CALC-06": "CORE_ForeignExchange.bas"}
+               "CALC-05": "CORE_Commodity.bas", "CALC-06": "CORE_ForeignExchange.bas",
+               "CALC-09": "CORE_Eligibility.bas"}
 PREFIXES = {"ST_INVALID": "INVALID: ", "ST_EXCLUDED": "EXCLUDED: "}
 STATUS_IN_SOURCE = re.compile(r'\b(ST_INVALID|ST_EXCLUDED) & "([^"]+)"')
 STATUS_IN_CONTRACT = re.compile(r"^- `((?:INVALID|EXCLUDED): [^`]+)`$", re.M)

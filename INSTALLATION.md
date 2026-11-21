@@ -261,8 +261,10 @@ is never Excel evidence, and it validates no rule.
 installed, `python3 tools/prototype/verify.py` builds the formula workbook and
 the development workbook, runs `RunSSA` in LibreOffice on the sample data, on
 a scenario of invalid rows and on unusable parameters, compares every output
-area with the formula workbook's, runs the three suites of the VBA tests that run in LibreOffice, and
-runs the test cases as `run_cases.py` does. Error
+area with the formula workbook's, runs the three suites of the VBA tests that run in LibreOffice,
+runs the test cases as `run_cases.py` does, and compares the months of
+`Eligibility` under the `CRR` regime with the formula workbook and with
+`tests/derivations/ssa.py`. Error
 values typed as texts are checked on the formula workbook alone: LibreOffice
 gives the engine 0 for a cell that holds one, where Excel gives the error.
 `--uno-python PYTHON` names the Python that provides the UNO bridge, when it
@@ -333,8 +335,8 @@ from an entry point without arguments:
 <!-- BEGIN generated: project-suite-results -->
 | Suite | Type | A passing run ends with |
 | --- | --- | --- |
-| `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=14; assertions=149; failures=0; cleanup=PASS; recovery=NONE` |
-| `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=4; assertions=41; failures=0; cleanup=PASS; recovery=NONE` |
+| `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=16; assertions=210; failures=0; cleanup=PASS; recovery=NONE` |
+| `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=5; assertions=56; failures=0; cleanup=PASS; recovery=NONE` |
 | `probes` | `TEST_Probes.RunProbeTests` | `RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE; cases=7; assertions=49; failures=0; cleanup=PASS; recovery=NONE` |
 | `cases` | `TEST_Cases.RunCaseTests` | `RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE; cases=20; assertions=386; failures=0; cleanup=PASS; recovery=NONE` |
 <!-- END generated: project-suite-results -->

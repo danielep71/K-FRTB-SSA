@@ -32,10 +32,12 @@ Option Private Module
 '   error, as tools/devbuild/lo_macro.py. CertifyWorkbook certifies the run and
 '   saves its log and its certification log as evidence of an Excel run
 '
-'   RunSuite runs four cases in a fixed order between BeginRun and EndRun:
+'   RunSuite runs five cases in a fixed order between BeginRun and EndRun:
 '     - CaseSamplePortfolio: the sample data against the totals of the test case
 '     - CaseFailedRun: runs that fail while they write and before they write
 '     - CaseVolume: a position sheet with more rows than the workbook supports
+'     - CaseEligibility: the months of Eligibility under the Basel regime and
+'       under the CRR, and an invalid month
 '     - CaseOutdatedResults: a parameter and a position changed after a run
 '
 '   The private helpers are AllowWritingToSheets, RunError, CheckOutcome,
@@ -65,7 +67,8 @@ Option Private Module
 '   State ownership: rewrites the output sheets through RunSSA_Silent, and
 '   leaves them cleared: the last case ends with ClearOutputs_Silent, so no
 '   result of a test run stays in the workbook. Two cases change a cell or a
-'   workbook name for one operation and put it back before they assert.
+'   workbook name for one operation and put it back before they assert;
+'   CaseEligibility changes three input cells for two runs and puts them back
 '   Excel's settings are those the entry points restore; the harness compares
 '   them with their values at the start of the run
 '
@@ -84,7 +87,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '==============================================================================
 
 '------------------------------------------------------------------------------
@@ -92,8 +95,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "workbook"    'Name of the suite in its records
-    Private Const EXPECTED_CASES      As Long = 4               'Cases of a complete run
-    Private Const EXPECTED_ASSERTIONS As Long = 41              'Assertions of a complete run
+    Private Const EXPECTED_CASES      As Long = 5               'Cases of a complete run
+    Private Const EXPECTED_ASSERTIONS As Long = 56              'Assertions of a complete run
 
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md, Decisions)
     Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -122,7 +125,7 @@ Public Sub RunWorkbookTests()
 ' PURPOSE
 '   Run the workbook suite. A passing run ends with
 '   RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE;
-'   cases=4; assertions=41; failures=0; cleanup=PASS; recovery=NONE
+'   cases=5; assertions=56; failures=0; cleanup=PASS; recovery=NONE
 '
 ' WHY THIS EXISTS
 '   Gives the workbook suite one documented entry point that raises when the
@@ -148,7 +151,7 @@ Public Sub RunWorkbookTests()
 '   Rewrites the output sheets and leaves them cleared
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -328,7 +331,7 @@ Private Sub RunSuite()
 '   Nothing
 '
 ' BEHAVIOR
-'   Begins the run, allows writing to the sheets, runs the four cases and ends
+'   Begins the run, allows writing to the sheets, runs the five cases and ends
 '   the run, passing EndRun the error that escaped a case, if any
 '
 ' ERROR POLICY
@@ -337,14 +340,14 @@ Private Sub RunSuite()
 '
 ' DEPENDENCIES
 '   TEST_Harness.BeginRun and EndRun; AllowWritingToSheets, CaseSamplePortfolio,
-'   CaseFailedRun, CaseVolume and CaseOutdatedResults; SUITE_NAME,
+'   CaseFailedRun, CaseVolume, CaseEligibility and CaseOutdatedResults; SUITE_NAME,
 '   EXPECTED_CASES and EXPECTED_ASSERTIONS
 '
 ' NOTES
 '   None
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -370,6 +373,7 @@ Private Sub RunSuite()
         CaseSamplePortfolio
         CaseFailedRun
         CaseVolume
+        CaseEligibility
         CaseOutdatedResults
 
 '------------------------------------------------------------------------------
@@ -767,6 +771,190 @@ Private Sub CaseVolume()
     'Record an error of the case as a failure of the case; the run continues
 CaseFailed:
         TEST_Harness.RecordCaseError
+
+End Sub
+
+Private Sub CaseEligibility()
+
+'
+'------------------------------------------------------------------------------
+'                              CASE ELIGIBILITY
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The eligibility of Articles 325a and 94 of the CRR on the months the
+'   template ships: under the Basel regime nothing is assessed; under the CRR
+'   the calculated columns and the result block of Eligibility are written,
+'   and Checks counts the approach not met; a month end that is not the last
+'   day of its month is counted as an invalid row
+'
+' WHY THIS EXISTS
+'   Shows that a run writes the calculated columns and the result block of
+'   Eligibility, which the template protects, and the counts of rules C15 and
+'   C16 on Checks
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Begins the case eligibility and runs the calculation under the Basel
+'   regime of the template. Keeps the regime, the total own funds and the
+'   last month end, sets the CRR regime and total own funds, runs and asserts
+'   the cells of the first and last month, the result block and the counts of
+'   Checks; makes the last month end the day before and asserts again. Then
+'   puts the three cells back and asserts it
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case by
+'   TEST_Harness.RecordCaseError, and the cells are put back on that path too;
+'   the run continues
+'
+' DEPENDENCIES
+'   TEST_Harness; RunSSA_Silent, NumberOf and PlainText; the names
+'   NM_EL_HEADER, NM_EL_RESULTS, NM_CHECKS_HEADER, PRM_REGIME and
+'   PRM_OWN_FUNDS; EL_INPUT_WIDTH, ELIGIBILITY_ROWS and ST_INVALID
+'
+'   Reference: calculation contract CALC-09. The sample months, from
+'   tools/prototype/ssa_reference.py: the size of Article 325a in the last
+'   month, 309 million long and 206 million short, is 515 million, above EUR
+'   500 million; that of Article 94 is 43 million, below EUR 50 million in each
+'   of the last 12 months
+'
+' NOTES
+'   Rewrites the output sheets. Changes the regime, the total own funds and
+'   the last month end of Eligibility, and puts them back
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Header      As Range    'First header cell of Eligibility
+    Dim Block       As Range    'Result block of Eligibility
+    Dim Rules       As Range    'Header of the Checks rules
+    Dim Regime      As Range    'Regime cell
+    Dim OwnFunds    As Range    'TotalOwnFunds cell
+    Dim LastMonth   As Range    'Month end of the last row of Eligibility
+    Dim SavedRegime As Variant  'Regime before the case
+    Dim SavedFunds  As Variant  'TotalOwnFunds before the case
+    Dim SavedMonth  As Variant  'Last month end before the case
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim RestoreDue  As Boolean  'True once the cells are kept
+    Dim Restored    As Boolean  'True when the three cells hold their values again
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as a failure of the case and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "eligibility"
+    'Locate the cells the case reads and changes
+        Set Header = ThisWorkbook.Names(NM_EL_HEADER).RefersToRange
+        Set Block = ThisWorkbook.Names(NM_EL_RESULTS).RefersToRange
+        Set Rules = ThisWorkbook.Names(NM_CHECKS_HEADER).RefersToRange
+        Set Regime = ThisWorkbook.Names(PRM_REGIME).RefersToRange
+        Set OwnFunds = ThisWorkbook.Names(PRM_OWN_FUNDS).RefersToRange
+        Set LastMonth = Header.Offset(ELIGIBILITY_ROWS, 0)
+
+'------------------------------------------------------------------------------
+' RUN UNDER BASEL
+'------------------------------------------------------------------------------
+    'Run under the Basel regime of the template: no approach is assessed and no row written
+        ResultText = RunSSA_Silent()
+        TEST_Harness.AssertEqualText "basel-status", "NOT ASSESSED: Basel regime", PlainText(Block.Cells(1, 1).Value)
+        TEST_Harness.AssertEqualText "basel-writes-no-row", vbNullString, _
+            PlainText(Header.Offset(1, EL_INPUT_WIDTH).Value)
+
+'------------------------------------------------------------------------------
+' KEEP CELLS
+'------------------------------------------------------------------------------
+    'Keep the regime, the total own funds and the last month end
+        SavedRegime = Regime.Value
+        SavedFunds = OwnFunds.Value
+        SavedMonth = LastMonth.Value
+    'From here the cells are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN UNDER THE CRR
+'------------------------------------------------------------------------------
+    'Set the CRR regime, with total own funds, and run
+        Regime.Value = "CRR"
+        OwnFunds.Value = 10000000000#
+        ResultText = RunSSA_Silent()
+    'Assert the first and the last month of Article 325a
+        TEST_Harness.AssertEqualText "first-month-status", "OK", PlainText(Header.Offset(1, EL_INPUT_WIDTH).Value)
+        TEST_Harness.AssertEqualDouble "last-month-size-of-325a", 515000000#, _
+            NumberOf(Header.Offset(ELIGIBILITY_ROWS, EL_INPUT_WIDTH + 1).Value)
+        TEST_Harness.AssertEqualText "last-month-of-325a-not-met", "NOT MET", _
+            PlainText(Header.Offset(ELIGIBILITY_ROWS, EL_INPUT_WIDTH + 3).Value)
+    'Assert the result block: Article 325a not met, Article 94 met and free to restart
+        TEST_Harness.AssertEqualText "status-of-325a", "NOT MET", PlainText(Block.Cells(1, 1).Value)
+        TEST_Harness.AssertEqualText "status-of-94", "MET", PlainText(Block.Cells(2, 1).Value)
+        TEST_Harness.AssertEqualText "restart-of-94", "YES", PlainText(Block.Cells(2, 7).Value)
+    'Assert the counts of rules C15 and C16, on the 15th and 16th rows below the header, in its Count column
+        TEST_Harness.AssertEqualText "no-row-counted-in-c15", "0", PlainText(Rules.Offset(15, 3).Value)
+        TEST_Harness.AssertEqualText "approach-counted-in-c16", "1", PlainText(Rules.Offset(16, 3).Value)
+
+'------------------------------------------------------------------------------
+' RUN WITH AN INVALID MONTH
+'------------------------------------------------------------------------------
+    'Make the last month end the day before the end of its month, and run
+        LastMonth.Value = SavedMonth - 1
+        ResultText = RunSSA_Silent()
+    'Assert the status of the row, the result block and the count of rule C15
+        TEST_Harness.AssertEqualText "invalid-month-status", _
+            ST_INVALID & "MonthEnd must be the last day of a month", _
+            PlainText(Header.Offset(ELIGIBILITY_ROWS, EL_INPUT_WIDTH).Value)
+        TEST_Harness.AssertEqualText "invalid-month-not-assessed", "NOT ASSESSED: a row is invalid", _
+            PlainText(Block.Cells(1, 1).Value)
+        TEST_Harness.AssertEqualText "invalid-month-shows-no-size", vbNullString, PlainText(Block.Cells(1, 3).Value)
+        TEST_Harness.AssertEqualText "invalid-month-counted-in-c15", "1", PlainText(Rules.Offset(15, 3).Value)
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the three cells back, on the success and the error path; an empty cell is cleared
+        If RestoreDue Then
+            Regime.Value = SavedRegime
+            If IsEmpty(SavedFunds) Then
+                OwnFunds.ClearContents
+            Else
+                OwnFunds.Value = SavedFunds
+            End If
+            LastMonth.Value = SavedMonth
+            'Compare the texts, whether each cell is empty, and the month end as a serial
+            Restored = (PlainText(Regime.Value) = PlainText(SavedRegime)) And _
+                       (IsEmpty(OwnFunds.Value) = IsEmpty(SavedFunds)) And _
+                       (PlainText(OwnFunds.Value) = PlainText(SavedFunds)) And _
+                       (CDbl(LastMonth.Value) = CDbl(SavedMonth))
+        Else
+            Restored = True
+        End If
+    'Assert once that the cells are put back, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Restored, _
+            "the regime, the total own funds and the last month end must hold their values again"
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record an error of the case as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
 
 End Sub
 

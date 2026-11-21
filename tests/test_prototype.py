@@ -490,7 +490,7 @@ class Comparison(NeedsOpenpyxl):
         book = openpyxl.Workbook()
         book.remove(book.active)
         for title in ("IRCalc", "EQCalc", "COCalc", "FXCalc", "IR_Ladder", "IR_Zones", "Buckets",
-                      "Results", "Checks", "TestCatalogue"):
+                      "Results", "Checks", "Eligibility", "TestCatalogue"):
             book.create_sheet(title)
         book["IRCalc"]["C5"] = "IR-001"
         book["IRCalc"]["D5"] = "OK"

@@ -12,8 +12,9 @@ Option Private Module
 '   to every output table: validates Params, stops when a parameter is unusable
 '   or a position sheet holds more rows than the workbook supports, otherwise
 '   calculates the four risk classes, scales and sums them into the own funds
-'   requirement and RWA, and assembles the Checks rules, the findings and the
-'   Results status line
+'   requirement and RWA, assesses the eligibility for the simplified
+'   standardised approach and the small trading book derogation under the CRR,
+'   and assembles the Checks rules, the findings and the Results status line
 '
 ' WHY THIS EXISTS
 '   Keeps the sequence of the whole calculation in one procedure that depends
@@ -33,8 +34,9 @@ Option Private Module
 '       sheets
 '     - stops, with only the Checks outputs, when an input is unusable
 '     - otherwise calculates the interest rate, equity, commodity and foreign
-'       exchange classes, aggregates them in the Results table and evaluates the
-'       Checks rules
+'       exchange classes, assesses the eligibility of the CRR approaches,
+'       aggregates the classes in the Results table and evaluates the Checks
+'       rules
 '
 '   Public surface, visible only inside this VBA project (Option Private Module):
 '   Calculate and PositionVolumeErrors. The other procedures are private helpers:
@@ -48,9 +50,11 @@ Option Private Module
 '
 ' DEPENDENCIES
 '   CORE_Config, CORE_Util, CORE_Parameters, CORE_InterestRate, CORE_Equity,
-'   CORE_Commodity and CORE_ForeignExchange
+'   CORE_Commodity, CORE_ForeignExchange and CORE_Eligibility
 '
-'   Reference: BCBS MAR40.1-40.2 (aggregation and scaling), MAR40 throughout
+'   Reference: BCBS MAR40.1-40.2 (aggregation and scaling), MAR40 throughout;
+'   Articles 94 and 325a of Regulation (EU) No 575/2013 (calculation contract
+'   CALC-09)
 '
 ' NOTES
 '   Option Explicit requires explicit declarations; Option Private Module keeps
@@ -64,7 +68,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '
@@ -93,8 +97,9 @@ Public Sub Calculate( _
 '   Inputs
 '     Vector (1 To IN_COUNT), filled as CORE_Config describes for each IN_ index:
 '     raw Params values and tables, the four input tables as cell values, the
-'     sheet row of each table's first data row and the market and commodity
-'     capacity of Buckets. Read only; the procedure does not change it
+'     sheet row of each table's first data row, the market and commodity
+'     capacity of Buckets and the rows of Eligibility as cell values. Read only;
+'     the procedure does not change it
 '
 '   Outputs
 '     Vector (1 To OUT_COUNT), sized here and filled as CORE_Config describes
@@ -110,8 +115,12 @@ Public Sub Calculate( _
 '   counts the Checks rules that depend on the inputs. If any parameter, table
 '   or position sheet is unusable, it sets the stopped outputs and exits. Otherwise
 '   it calculates the interest rate, equity, commodity and foreign exchange
-'   classes in turn, adds the findings of their rejected rows, builds the Results
-'   table, evaluates the remaining Checks rules and sets the status line
+'   classes in turn, adds the findings of their rejected rows, assesses the
+'   eligibility of the CRR approaches, builds the Results table, evaluates the
+'   remaining Checks rules and sets the status line. The eligibility changes no
+'   requirement: its invalid rows are errors of rule C15, counted and not
+'   listed as findings, and its approaches not met or to cease are warnings
+'   of rule C16
 '
 ' ERROR POLICY
 '   Cell content never raises: unusable values become findings. Arrays of the
@@ -123,19 +132,20 @@ Public Sub Calculate( _
 '   BuildOptionCharges, BuildFxTable, ChangedParameterCount, TransitionalFactor
 '   (through ResultsTable), CalculateInterestRate, CalculateEquity,
 '   CalculateCommodity, CalculateForeignExchange, DeMinimisWaived, PositionVolumeErrors,
-'   AddRowFindings, ResultsTable, CountBySeverity, RuleTable, FindingTable and
-'   MaxOf; the IN_, OUT_ and other constants of CORE_Config
+'   CalculateEligibility, AddRowFindings, ResultsTable, CountBySeverity, RuleTable,
+'   FindingTable and MaxOf; the IN_, OUT_ and other constants of CORE_Config
 '
 '   Reference: MAR40.2: requirement = 1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each
 '   class including its non-delta option charge; MAR40.1: RWA = 12.5 x it; CRR
-'   Article 351 for the foreign exchange de minimis
+'   Article 351 for the foreign exchange de minimis; CRR Articles 94 and 325a
+'   for the eligibility (CALC-09)
 '
 ' NOTES
 '   Each table has its own variable: LibreOffice (the test host) keeps arrays in
 '   a Variant by reference, so an array stored in Outputs must not be reused
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -190,6 +200,11 @@ Public Sub Calculate( _
     Dim EqRows()                    As Variant  'EQPositions cells
     Dim CoRows()                    As Variant  'COPositions cells
     Dim FxRows()                    As Variant  'FXPositions cells
+    Dim EligibilityRows()           As Variant  'Eligibility cells
+    Dim EligibilityCalc()           As Variant  'Eligibility calculated columns
+    Dim EligibilityBlock()          As Variant  'Eligibility result block
+    Dim RejectedMonths              As Long     'C15
+    Dim FlaggedApproaches           As Long     'C16
     Dim i                           As Long     'Rule or class index
 
 '------------------------------------------------------------------------------
@@ -330,6 +345,17 @@ Public Sub Calculate( _
         Outputs(OUT_FX_SUMMARY) = Summary
 
 '------------------------------------------------------------------------------
+' ASSESS ELIGIBILITY
+'------------------------------------------------------------------------------
+    'Assess the eligibility of the CRR approaches, which changes no requirement
+        EligibilityRows = Inputs(IN_EL_ROWS)
+        CalculateEligibility EligibilityRows, Regime, Parameters, EligibilityCalc, EligibilityBlock, _
+            RejectedMonths, FlaggedApproaches
+    'Store the calculated columns and the result block of Eligibility
+        Outputs(OUT_EL_CALC) = EligibilityCalc
+        Outputs(OUT_EL_RESULTS) = EligibilityBlock
+
+'------------------------------------------------------------------------------
 ' AGGREGATE RESULTS
 '------------------------------------------------------------------------------
     'Aggregate the four classes into the Results table (MAR40.2)
@@ -361,6 +387,9 @@ Public Sub Calculate( _
         For i = 1 To RC_COUNT
             If OptionCharges(i) <> 0 Then RuleCounts(13) = RuleCounts(13) + 1
         Next i
+    'Count the rejected Eligibility rows (C15) and the approaches not met or to cease (C16)
+        RuleCounts(15) = RejectedMonths
+        RuleCounts(16) = FlaggedApproaches
 
 '------------------------------------------------------------------------------
 ' SET CHECKS OUTPUTS
@@ -822,7 +851,7 @@ Private Function RuleTable( _
 '     (1 To RULE_COUNT); Empty for a rule not evaluated
 '
 ' RETURNS
-'   Variant (1 To RULE_COUNT, 1 To 2): "C01".."C14", count or Empty
+'   Variant (1 To RULE_COUNT, 1 To 2): "C01".."C16", count or Empty
 '
 ' BEHAVIOR
 '   Writes the identifier "C" followed by the two-digit rule number in column 1
@@ -838,13 +867,13 @@ Private Function RuleTable( _
 '   None
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
 ' DECLARE
 '------------------------------------------------------------------------------
-    Dim Table(1 To 14, 1 To 2)  As Variant  'Result (RULE_COUNT rows)
+    Dim Table(1 To 16, 1 To 2)  As Variant  'Result (RULE_COUNT rows)
     Dim i                       As Long     'Rule
 
 '------------------------------------------------------------------------------

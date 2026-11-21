@@ -60,9 +60,10 @@ Option Explicit
 '
 '   State ownership: reads the input sheets and Params; clears and writes the
 '   output sheets (IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder, IR_Zones,
-'   Buckets, Results, Checks). Changes Calculation, ScreenUpdating and
-'   EnableEvents for the duration of an operation and restores them. Applies
-'   UserInterfaceOnly to the protection of each output sheet, without a
+'   Buckets, Results, Checks) and the calculated columns and the result block
+'   of Eligibility. Changes Calculation, ScreenUpdating and EnableEvents for
+'   the duration of an operation and restores them. Applies UserInterfaceOnly
+'   to the protection of each output sheet and of Eligibility, without a
 '   password, so that code may write a sheet that users cannot change; the
 '   setting lasts until the workbook is closed. mSilent holds the silent flag
 '   of the running operation, and mStatusWritten tells whether the last check
@@ -75,7 +76,7 @@ Option Explicit
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -85,7 +86,7 @@ Option Explicit
     Private Const OP_CLEAR              As Long = 2                                 'Operation: clear outputs
     Private Const OP_CHECK              As Long = 3                                 'Operation: check the status line
 
-    Private Const CLEAR_PARTS           As Long = 18                                'Parts ClearPart clears
+    Private Const CLEAR_PARTS           As Long = 20                                'Parts ClearPart clears
     Private Const CHECKS_COUNT_COLUMN   As Long = 4                                 'Count, from the rule column (F)
     Private Const CHECKS_RESULT_COLUMN  As Long = 5                                 'Result, from the rule column (G)
 
@@ -827,12 +828,13 @@ Private Sub AllowWritingToOutputs()
 '                           ALLOW WRITING TO OUTPUTS
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Lets the operation write every output sheet, which the template protects:
-'   applies UserInterfaceOnly to each of them
+'   Lets the operation write every output sheet, and the calculated columns of
+'   Eligibility, which the template protects: applies UserInterfaceOnly to each
+'   of those sheets
 '
 ' WHY THIS EXISTS
-'   The output sheets are protected, and code can write a protected sheet only
-'   after UserInterfaceOnly is applied to it
+'   The output sheets and Eligibility are protected, and code can write a
+'   protected sheet only after UserInterfaceOnly is applied to it
 '
 ' INPUTS
 '   None
@@ -842,8 +844,8 @@ Private Sub AllowWritingToOutputs()
 '
 ' BEHAVIOR
 '   Lists the output sheets (Results, IR_Zones, IR_Ladder, Buckets, IRCalc,
-'   EQCalc, COCalc, FXCalc and Checks, by their SH_ constants) and calls
-'   AllowWriting for each of them
+'   EQCalc, COCalc, FXCalc and Checks) and Eligibility, by their SH_
+'   constants, and calls AllowWriting for each of them
 '
 ' ERROR POLICY
 '   Raises the error of AllowWriting for the first sheet it cannot reach
@@ -853,25 +855,25 @@ Private Sub AllowWritingToOutputs()
 '   ThisWorkbook.Worksheets
 '
 ' NOTES
-'   State ownership: changes the protection mode of the output sheets, not who
-'   may change them: users still cannot
+'   State ownership: changes the protection mode of the output sheets and of
+'   Eligibility, not who may change them: users still cannot
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
 ' DECLARE
 '------------------------------------------------------------------------------
-    Dim SheetNames  As Variant  'Names of the output sheets
+    Dim SheetNames  As Variant  'Names of the sheets code writes
     Dim Item        As Variant  'One name
 
 '------------------------------------------------------------------------------
 ' LIST OUTPUT SHEETS
 '------------------------------------------------------------------------------
-    'Name the output sheets
+    'Name the output sheets and Eligibility, whose calculated columns code writes
         SheetNames = Array(SH_RESULTS, SH_IR_ZONES, SH_IR_LADDER, SH_BUCKETS, SH_IR_CALC, _
-                           SH_EQ_CALC, SH_CO_CALC, SH_FX_CALC, SH_CHECKS)
+                           SH_EQ_CALC, SH_CO_CALC, SH_FX_CALC, SH_CHECKS, SH_ELIGIBILITY)
 
 '------------------------------------------------------------------------------
 ' ALLOW WRITING
@@ -1444,8 +1446,8 @@ Private Sub ReadInputs( _
 '                           READ INPUTS FROM SHEETS
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Fills the engine input vector from Params, OptionCharges and the four
-'   position sheets
+'   Fills the engine input vector from Params, OptionCharges, the four
+'   position sheets and Eligibility
 '
 ' WHY THIS EXISTS
 '   CORE_Engine takes its inputs as one vector of values, and this procedure is
@@ -1462,22 +1464,25 @@ Private Sub ReadInputs( _
 '   Sizes Inputs, then reads the numeric parameters and the other Params
 '   values, the ladder matrix and its labels, the specific-risk and foreign
 '   exchange tables, the option charges, the four position tables with the
-'   sheet row of each first data row, and the capacity of the equity and
-'   commodity blocks of Buckets
+'   sheet row of each first data row, the capacity of the equity and
+'   commodity blocks of Buckets, and the ELIGIBILITY_ROWS rows of Eligibility
+'   below its header, whatever the regime
 '
 ' ERROR POLICY
 '   Raises ERR_LAYOUT when a workbook name is missing
 '
 ' DEPENDENCIES
 '   NamedRange, ColumnValues, PairedColumns, TableValues, PlainText and
-'   ListItem (CORE_Util); the IN_, PI_, PRM_, NM_, LD_, RC_ and table-width
-'   constants of CORE_Config
+'   ListItem (CORE_Util); the IN_, PI_, PRM_, NM_, LD_, RC_, EL_ and
+'   table-width constants of CORE_Config
 '
 ' NOTES
-'   None
+'   The rows of Eligibility are read under the Basel regime too, so that the
+'   fingerprint of the inputs covers them; the engine assesses them under the
+'   CRR only
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1589,6 +1594,13 @@ Private Sub ReadInputs( _
     'Count the bucket rows that fit in the equity and commodity blocks of Buckets
         Inputs(IN_EQ_CAPACITY) = NamedRange(NM_EQ_GENERAL).Row - NamedRange(NM_BK_EQ_HEADER).Row - 1
         Inputs(IN_CO_CAPACITY) = NamedRange(NM_CO_DIRECTIONAL).Row - NamedRange(NM_BK_CO_HEADER).Row - 1
+
+'------------------------------------------------------------------------------
+' READ ELIGIBILITY
+'------------------------------------------------------------------------------
+    'Read every row of Eligibility below its header, input columns only
+        Inputs(IN_EL_ROWS) = NamedRange(NM_EL_HEADER).Offset(1, 0).Resize(ELIGIBILITY_ROWS, _
+                                                                          EL_INPUT_WIDTH).Value
 
 End Sub
 
@@ -1869,7 +1881,8 @@ Private Sub WriteOutputs( _
 '
 ' NOTES
 '   State ownership: writes IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder,
-'   IR_Zones, Buckets, Results and Checks
+'   IR_Zones, Buckets, Results and Checks, and the calculated columns and the
+'   result block of Eligibility
 '
 ' UPDATED
 '   2026-11-15
@@ -1920,21 +1933,25 @@ Private Sub WriteResults( _
 ' BEHAVIOR
 '   Writes the IRCalc, EQCalc, COCalc and FXCalc tables, the ladder, the zones
 '   and the Results table, then the equity and commodity blocks of Buckets, the
-'   currency block and the FX ONOP and charge cells
+'   currency block and the FX ONOP and charge cells, and last the calculated
+'   columns of Eligibility, right of its input columns, and its result block
 '
 ' ERROR POLICY
-'   Propagates ERR_LAYOUT when a workbook name is missing
+'   Propagates ERR_LAYOUT when a workbook name is missing. Raises ERR_LAYOUT
+'   when Eligibility_Results is not EL_BLOCK_ROWS rows by EL_BLOCK_WIDTH
+'   columns
 '
 ' DEPENDENCIES
-'   WriteBlock, WriteBuckets, NamedRange; the OUT_ indexes and NM_ names of
-'   CORE_Config
+'   WriteBlock, WriteBuckets, NamedRange; the OUT_ indexes, NM_ names, EL_
+'   widths and ERR_LAYOUT of CORE_Config
 '
 ' NOTES
 '   State ownership: writes IRCalc, EQCalc, COCalc, FXCalc, IR_Ladder,
-'   IR_Zones, Buckets and the table of Results
+'   IR_Zones, Buckets, the table of Results, and the columns I to U and the
+'   result block of Eligibility
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1983,6 +2000,20 @@ Private Sub WriteResults( _
         SummaryTable = Outputs(OUT_FX_SUMMARY)
         NamedRange(NM_FX_ONOP).Value = SummaryTable(1, 1)
         NamedRange(NM_FX_CHARGE).Value = SummaryTable(2, 1)
+
+'------------------------------------------------------------------------------
+' WRITE ELIGIBILITY
+'------------------------------------------------------------------------------
+    'Write the calculated columns of each row of Eligibility, right of its input columns
+        WriteBlock NamedRange(NM_EL_HEADER).Offset(1, EL_INPUT_WIDTH), Outputs(OUT_EL_CALC)
+    'Reject a result block of another size, then write the status and the figures of each approach
+        Set Header = NamedRange(NM_EL_RESULTS)
+        If Header.Rows.Count <> EL_BLOCK_ROWS Or Header.Columns.Count <> EL_BLOCK_WIDTH Then
+            Err.Raise ERR_LAYOUT, "M_Main.WriteResults", _
+                "Workbook name " & NM_EL_RESULTS & " must refer to " & EL_BLOCK_ROWS & _
+                " rows of " & EL_BLOCK_WIDTH & " cells."
+        End If
+        WriteBlock Header, Outputs(OUT_EL_RESULTS)
 
 End Sub
 
@@ -2375,21 +2406,22 @@ Private Function ClearPart( _
 '   Clears the part that Part selects: the status line, the fingerprint, the
 '   calculation tables, the findings, the zones, the Buckets blocks (with the
 '   label of each total row put back), the FX ONOP and charge cells, the
-'   Results table and the Checks cells
+'   Results table, the Checks cells, and the calculated columns and the result
+'   block of Eligibility
 '
 ' ERROR POLICY
 '   Contains its own error; never raises
 '
 ' DEPENDENCIES
 '   NamedRange, ClearToEnd, ClearRows; the NM_ names, table widths, LBL_TOTAL_
-'   labels, RULE_COUNT and RESULTS_ constants of CORE_Config; STATUS_EMPTY and
-'   CHECKS_COUNT_COLUMN
+'   labels, RULE_COUNT, RESULTS_, ELIGIBILITY_ROWS and EL_ constants of
+'   CORE_Config; STATUS_EMPTY and CHECKS_COUNT_COLUMN
 '
 ' NOTES
 '   None
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -2467,6 +2499,12 @@ Private Function ClearPart( _
                 NamedRange(NM_CHECKS_ERRORS).ClearContents
             Case 18
                 NamedRange(NM_CHECKS_WARNINGS).ClearContents
+            'Clear the calculated columns of Eligibility, never its input columns, and its result block
+            Case 19
+                NamedRange(NM_EL_HEADER).Offset(1, EL_INPUT_WIDTH).Resize(ELIGIBILITY_ROWS, _
+                                                                          EL_CALC_WIDTH).ClearContents
+            Case 20
+                NamedRange(NM_EL_RESULTS).ClearContents
         End Select
 
 '------------------------------------------------------------------------------

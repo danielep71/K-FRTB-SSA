@@ -738,7 +738,7 @@ def eligibility_month_status(r: int) -> str:
     # A month entered before the row, if it is a date: the row must be the month end after it.
     out_of_sequence = (f"IF(AND(ISNUMBER({before}),{before}>=1,{before}<={DATE_SERIAL_MAX}),"
                        f"IFERROR({month}<>EOMONTH({before},1),TRUE),FALSE)")
-    return ('=IF(UPPER(TRIM(Regime))<>"CRR","",IF(' + month + '="","",'
+    return ('=IF(UPPER(TRIM(Regime))<>"CRR","",IF(TRIM(' + month + ')="","",'
             f'IF(OR(NOT(ISNUMBER({month})),{month}<1,{month}>{DATE_SERIAL_MAX}),"{reasons[0]}",'
             f'IF({month}<>EOMONTH({month},0),"{reasons[1]}",'
             f'IF({out_of_sequence},"{reasons[2]}",'
@@ -830,8 +830,8 @@ def build_eligibility(ctx: Context) -> None:
         for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
             ws.column_dimensions[column].width = 22.6
         for r in range(FIRST, ELIGIBILITY_LAST + 1):
-            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF($C{r}<>"",ROW(),0)' if r == FIRST
-                                                    else f'=IF($C{r}<>"",ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
+            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF(TRIM($C{r})<>"",ROW(),0)' if r == FIRST
+                                                    else f'=IF(TRIM($C{r})<>"",ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
             ws[f"{ELIGIBILITY_BEFORE}{r}"].value = (
                 '=""' if r == FIRST else
                 f'=IF(${ELIGIBILITY_ENTERED}{r - 1}=0,"",INDEX($C$1:$C${ELIGIBILITY_LAST},${ELIGIBILITY_ENTERED}{r - 1}))')

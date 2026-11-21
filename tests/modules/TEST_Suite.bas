@@ -49,6 +49,10 @@ Option Private Module
 '       faulty FX table
 '     - CaseRegime: the regime, the transitional factor and the de minimis of
 '       Article 351
+'     - CaseEligibility: the eligibility of Articles 325a and 94 of the CRR,
+'       their run, count, restart condition and invalid rows
+'     - CaseEligibilityEngine: the eligibility in the whole calculation, which
+'       changes no requirement
 '     - CaseVolume: the largest volume of a position table the workbook
 '       supports
 '     - CaseFacade: the worksheet functions and their error values
@@ -64,8 +68,8 @@ Option Private Module
 '
 ' DEPENDENCIES
 '   TEST_Harness; CORE_Config, CORE_Util, CORE_Parameters, CORE_Engine,
-'   CORE_InterestRate, CORE_Equity, CORE_Commodity, CORE_ForeignExchange and
-'   FRTBSSA_Formulas.
+'   CORE_InterestRate, CORE_Equity, CORE_Commodity, CORE_ForeignExchange,
+'   CORE_Eligibility and FRTBSSA_Formulas.
 '
 '   Reference: Expected values: hand calculation, stated in each case, and
 '   MAR40.61 table 9. The fingerprints of CaseFingerprint were calculated apart
@@ -91,7 +95,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-21
 '==============================================================================
 
 '------------------------------------------------------------------------------
@@ -99,8 +103,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'Name and size of a complete run, which starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "core"        'Suite name given to BeginRun and BeginCertification
-    Private Const EXPECTED_CASES      As Long = 14              'Cases of a complete run
-    Private Const EXPECTED_ASSERTIONS As Long = 149             'Assertions of a complete run
+    Private Const EXPECTED_CASES      As Long = 16              'Cases of a complete run
+    Private Const EXPECTED_ASSERTIONS As Long = 210             'Assertions of a complete run
 
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md, Decisions)
     Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -124,7 +128,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=14; assertions=149; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=16; assertions=210; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   It is the documented entry point of the core suite: typed in the Immediate
@@ -151,7 +155,7 @@ Public Sub RunCoreTests()
 '   an error; CertifyCore certifies the run.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -342,8 +346,9 @@ Private Sub RunSuite()
 '   calls the cases in this order, each alone on its line: CaseTimeBand,
 '   CaseLadderCharges, CaseForeignExchange, CaseEquity, CaseCommodity,
 '   CaseInterestRateRows, CaseSpecificRiskCrr, CaseIssueNetting,
-'   CaseDateBounds, CaseParameters, CaseRegime, CaseVolume, CaseFacade and
-'   CaseFingerprint, and ends the run with EndRun.
+'   CaseDateBounds, CaseParameters, CaseRegime, CaseEligibility,
+'   CaseEligibilityEngine, CaseVolume, CaseFacade and CaseFingerprint, and
+'   ends the run with EndRun.
 '
 ' ERROR POLICY
 '   An error escaping a case handler is passed to EndRun, which reports it and
@@ -357,7 +362,7 @@ Private Sub RunSuite()
 '   this procedure that hold one Case procedure name each.
 '
 ' UPDATED
-'   2026-11-17
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -389,6 +394,8 @@ Private Sub RunSuite()
         CaseDateBounds
         CaseParameters
         CaseRegime
+        CaseEligibility
+        CaseEligibilityEngine
         CaseVolume
         CaseFacade
         CaseFingerprint
@@ -2078,6 +2085,364 @@ CaseFailed:
 
 End Sub
 
+Private Sub CaseEligibility()
+
+'
+'------------------------------------------------------------------------------
+'                              CHECK ELIGIBILITY
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The eligibility of CALC-09 on series of months whose conditions are met
+'   or not met in a known pattern: a run of two and of three months, a count
+'   of six and of seven of the last 12, the restart condition, a row of each
+'   INVALID status, the Basel regime and a sheet with no month.
+'
+' WHY THIS EXISTS
+'   The status of an approach depends on the run and the count of the months
+'   before the last, so each boundary of Article 325a(5) and (6) and Article
+'   94(7) and (8) is checked on both of its sides.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Begins the case eligibility and loads the reference parameters. Calculates
+'   a run of two months not met and checks the figures of a month, the status
+'   NOT MET and the restart condition; a run of three, CEASE; a count of six
+'   of 12 with the last month met, MET; a count of seven, CEASE; rows with each
+'   INVALID status and a blank month end; the Basel regime; and no month.
+'
+' ERROR POLICY
+'   An unexpected error inside the case is recorded as a failure of the case
+'   with TEST_Harness.RecordCaseError, and the run continues.
+'
+' DEPENDENCIES
+'   ReferenceParameters, CalculateEligibility, MonthRows, NumberOf;
+'   TEST_Harness (BeginCase, AssertEqualDouble, AssertEqualText, AssertNear,
+'   AssertTrue, RecordCaseError); REGIME_BASEL, REGIME_CRR, ST_INVALID, ST_OK
+'   and the EL_ columns
+'
+'   Reference: calculation contract CALC-09. Hand calculation: with total
+'   assets of 10 billion the amounts bind, EUR 500 million for Article 325a
+'   and EUR 50 million for Article 94; a month not met has a size of 600 and
+'   60 million, a month met 400 and 40 million. The first month, 400 million
+'   of 10 billion, has a share of 4%.
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Parameters()    As Double   'MAR40 and CRR reference parameters
+    Dim InputRows()     As Variant  'Eligibility cells
+    Dim RowOutput()     As Variant  'Eligibility I:U
+    Dim Block()         As Variant  'Eligibility_Results
+    Dim Rejected        As Long     'Rows rejected, C15
+    Dim Flagged         As Long     'Approaches not met or to cease, C16
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Route an error of the case to its handler and begin the case
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "eligibility"
+    'Load the reference parameters: 10% and EUR 500 million, 5% and EUR 50 million
+        ReferenceParameters Parameters
+
+'------------------------------------------------------------------------------
+' CHECK RUN OF TWO
+'------------------------------------------------------------------------------
+    'Twelve months: Article 325a misses its conditions in the last two, Article 94 meets them in each
+        InputRows = MonthRows("MMMMMMMMMMNN", "MMMMMMMMMMMM")
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+    'Check the size, the share and the conditions of the first month of Article 325a
+        TEST_Harness.AssertEqualText "first-month-is-ok", ST_OK, CStr(RowOutput(1, 1))
+        TEST_Harness.AssertEqualDouble "size-of-the-first-month", 400000000#, NumberOf(RowOutput(1, 2))
+        TEST_Harness.AssertNear "share-of-the-first-month", 0.04, NumberOf(RowOutput(1, 3)), _
+            TOL_ABSOLUTE, TOL_RELATIVE
+        TEST_Harness.AssertEqualText "conditions-of-the-first-month", "MET", CStr(RowOutput(1, 4))
+    'Check the eleventh month: not met, a run of one and no event
+        TEST_Harness.AssertEqualText "conditions-of-the-eleventh-month", "NOT MET", CStr(RowOutput(11, 4))
+        TEST_Harness.AssertEqualDouble "run-of-the-eleventh-month", 1, NumberOf(RowOutput(11, 5))
+    'Check the result block of Article 325a: NOT MET, with a run and a count of two, and no restart
+        TEST_Harness.AssertEqualText "run-of-two-is-not-met", "NOT MET", CStr(Block(1, 1))
+        TEST_Harness.AssertEqualDouble "last-month", CDbl(DateSerial(2024, 12, 31)), NumberOf(Block(1, 2))
+        TEST_Harness.AssertEqualDouble "size-of-the-last-month", 600000000#, NumberOf(Block(1, 3))
+        TEST_Harness.AssertEqualDouble "run-of-two", 2, NumberOf(Block(1, 5))
+        TEST_Harness.AssertEqualDouble "count-of-two", 2, NumberOf(Block(1, 6))
+        TEST_Harness.AssertEqualText "run-of-two-is-no-event", "NO", CStr(RowOutput(12, 7))
+        TEST_Harness.AssertEqualText "not-met-does-not-restart", "NO", CStr(Block(1, 7))
+    'Check Article 94: met in each of 12 months, so it may restart
+        TEST_Harness.AssertEqualText "met-in-each-month", "MET", CStr(Block(2, 1))
+        TEST_Harness.AssertEqualText "met-for-twelve-months-restarts", "YES", CStr(Block(2, 7))
+    'Check the counts of rules C15 and C16
+        TEST_Harness.AssertEqualDouble "no-row-rejected", 0, Rejected
+        TEST_Harness.AssertEqualDouble "one-approach-flagged", 1, Flagged
+
+'------------------------------------------------------------------------------
+' CHECK RUN OF THREE
+'------------------------------------------------------------------------------
+    'The last three months of Article 325a miss the conditions: an event
+        InputRows = MonthRows("MMMMMMMMMNNN", "MMMMMMMMMMMM")
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+    'Check the event of the last month and the status CEASE
+        TEST_Harness.AssertEqualText "run-of-three-is-an-event", "YES", CStr(RowOutput(12, 7))
+        TEST_Harness.AssertEqualText "run-of-three-ceases", "CEASE", CStr(Block(1, 1))
+        TEST_Harness.AssertEqualDouble "run-of-three", 3, NumberOf(Block(1, 5))
+
+'------------------------------------------------------------------------------
+' CHECK COUNT OF SIX AND OF SEVEN
+'------------------------------------------------------------------------------
+    'Six of the last 12 months miss the conditions, never two in a row, and the last is met
+        InputRows = MonthRows("NMNMNMNMNMNM", "MMMMMMMMMMMM")
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+    'Check that a count of six is no event, and that it does not allow a restart
+        TEST_Harness.AssertEqualDouble "count-of-six", 6, NumberOf(Block(1, 6))
+        TEST_Harness.AssertEqualText "count-of-six-is-met", "MET", CStr(Block(1, 1))
+        TEST_Harness.AssertEqualText "count-of-six-does-not-restart", "NO", CStr(Block(1, 7))
+    'Seven of the last 12 miss the conditions, never three in a row, and the last is met
+        InputRows = MonthRows("NMNNMNNMNNMM", "MMMMMMMMMMMM")
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+    'Check that a count of seven is an event although the last month is met
+        TEST_Harness.AssertEqualDouble "count-of-seven", 7, NumberOf(Block(1, 6))
+        TEST_Harness.AssertEqualDouble "count-of-seven-run", 0, NumberOf(Block(1, 5))
+        TEST_Harness.AssertEqualText "count-of-seven-ceases", "CEASE", CStr(Block(1, 1))
+
+'------------------------------------------------------------------------------
+' CHECK INVALID ROWS
+'------------------------------------------------------------------------------
+    'Eight months, all met, then one invalid row of each kind and a blank month end
+        InputRows = MonthRows("MMMMMMMM", "MMMMMMMM")
+        InputRows(2, EL_MONTH) = "not a date"
+        InputRows(3, EL_MONTH) = DateSerial(2024, 3, 15)
+        InputRows(4, EL_MONTH) = DateSerial(2024, 5, 31)
+        InputRows(5, EL_MONTH) = DateSerial(2024, 6, 30)
+        InputRows(5, EL_ASSETS) = 0
+        InputRows(6, EL_MONTH) = DateSerial(2024, 7, 31)
+        InputRows(6, EL_LONG_325A) = Empty
+        InputRows(7, EL_MONTH) = Empty
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+    'Check the status of each row: a month end that is no date, not a month end, not after the one before
+        TEST_Harness.AssertEqualText "month-end-not-a-date", ST_INVALID & "MonthEnd must be a date", _
+            CStr(RowOutput(2, 1))
+        TEST_Harness.AssertEqualText "month-end-not-the-last-day", _
+            ST_INVALID & "MonthEnd must be the last day of a month", CStr(RowOutput(3, 1))
+        TEST_Harness.AssertEqualText "month-end-not-one-month-after", _
+            ST_INVALID & "MonthEnd must be one month after the previous row", CStr(RowOutput(4, 1))
+    'Total assets of 0, a blank total and a blank month end, which skips the row
+        TEST_Harness.AssertEqualText "total-assets-of-zero", _
+            ST_INVALID & "TotalAssets must be a number greater than 0", CStr(RowOutput(5, 1))
+        TEST_Harness.AssertEqualText "blank-total", ST_INVALID & "a long or short total must be a number", _
+            CStr(RowOutput(6, 1))
+        TEST_Harness.AssertTrue "blank-month-end-is-skipped", IsEmpty(RowOutput(7, 1)), _
+            "a row without a month end must be skipped"
+    'Check that the row after them is valid and keeps its figures
+        TEST_Harness.AssertEqualText "row-after-the-invalid-rows", ST_OK, CStr(RowOutput(8, 1))
+        TEST_Harness.AssertEqualDouble "valid-row-keeps-its-size", 400000000#, NumberOf(RowOutput(8, 2))
+    'Check the count of rule C15 and that neither approach is assessed
+        TEST_Harness.AssertEqualDouble "five-rows-rejected", 5, Rejected
+        TEST_Harness.AssertEqualText "invalid-row-not-assessed", "NOT ASSESSED: a row is invalid", _
+            CStr(Block(2, 1))
+        TEST_Harness.AssertTrue "not-assessed-shows-no-month", IsEmpty(Block(1, 2)), _
+            "an approach that is not assessed shows no month"
+        TEST_Harness.AssertEqualDouble "not-assessed-is-not-flagged", 0, Flagged
+
+'------------------------------------------------------------------------------
+' CHECK BASEL AND NO MONTH
+'------------------------------------------------------------------------------
+    'Under the Basel regime no row is read, not even an invalid one
+        CalculateEligibility InputRows, REGIME_BASEL, Parameters, RowOutput, Block, Rejected, Flagged
+        TEST_Harness.AssertEqualText "basel-not-assessed", "NOT ASSESSED: Basel regime", CStr(Block(1, 1))
+        TEST_Harness.AssertTrue "basel-writes-no-row", IsEmpty(RowOutput(2, 1)) And IsEmpty(RowOutput(1, 2)), _
+            "no row is written under the Basel regime"
+        TEST_Harness.AssertEqualDouble "basel-rejects-no-row", 0, Rejected
+    'With no month entered neither approach is assessed
+        InputRows = MonthRows(vbNullString, vbNullString)
+        CalculateEligibility InputRows, REGIME_CRR, Parameters, RowOutput, Block, Rejected, Flagged
+        TEST_Harness.AssertEqualText "no-month-entered", "NOT ASSESSED: no month entered", CStr(Block(1, 1))
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+Private Sub CaseEligibilityEngine()
+
+'
+'------------------------------------------------------------------------------
+'                        CHECK ELIGIBILITY IN THE ENGINE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The eligibility in the whole calculation: an approach that must cease is a
+'   warning and an invalid row an error of Checks, neither changes the
+'   requirement, the Basel regime assesses nothing, and an unusable share
+'   stops the run.
+'
+' WHY THIS EXISTS
+'   The finding of CALC-09 must reach Checks and the status line and leave
+'   the requirement as it is, so the engine is run with and without months.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Begins the case eligibility-in-the-engine. Runs CORE_Engine.Calculate on
+'   one FX position under the CRR with a series whose Article 325a must
+'   cease, with no month, and with an invalid row, then under the Basel
+'   regime, and checks the requirement, the counts of Checks, the status line
+'   and the result block. Last it makes a share unusable and checks the stop.
+'
+' ERROR POLICY
+'   An unexpected error inside the case is recorded as a failure of the case
+'   with TEST_Harness.RecordCaseError, and the run continues.
+'
+' DEPENDENCIES
+'   EngineInputs, MonthRows, Calculate, NumberOf; TEST_Harness (BeginCase,
+'   AssertNear, AssertEqualDouble, AssertEqualText, AssertTrue,
+'   RecordCaseError); the IN_, OUT_ and PI_ constants
+'
+'   Reference: calculation contract CALC-09 and CALC-08. Hand calculation:
+'   USD 1,000,000 long at 0.9 is an open position of 900,000; 8% of it is
+'   72,000, scaled by 1.2 to 86,400, and under the CRR multiplied by 0.9 to
+'   77,760, as 2% of own funds of 1,000,000 is below the position.
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Inputs()    As Variant  'Engine input vector
+    Dim Outputs()   As Variant  'Engine output vector
+    Dim Numeric()   As Variant  'Numeric parameters as read
+    Dim Block       As Variant  'Eligibility_Results
+    Dim Months      As Variant  'Eligibility cells, then Eligibility I:U
+    Dim Rules       As Variant  'Checks rules
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Route an error of the case to its handler and begin the case
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "eligibility-in-the-engine"
+
+'------------------------------------------------------------------------------
+' CHECK AN APPROACH THAT MUST CEASE
+'------------------------------------------------------------------------------
+    'Under the CRR, Article 325a misses its conditions in the last three months
+        EngineInputs "CRR", MonthRows("MMMMMMMMMNNN", "MMMMMMMMMMMM"), Inputs
+        CORE_Engine.Calculate Inputs, Outputs
+        Block = Outputs(OUT_EL_RESULTS)
+    'Check the status, the warning it counts, the status line and the requirement
+        TEST_Harness.AssertEqualText "ceasing-approach-status", "CEASE", CStr(Block(1, 1))
+        TEST_Harness.AssertEqualDouble "ceasing-approach-is-a-warning", 1, NumberOf(Outputs(OUT_WARNINGS))
+        TEST_Harness.AssertEqualText "ceasing-approach-run-is-ok", "OK: ", Left$(CStr(Outputs(OUT_STATUS)), 4)
+        TEST_Harness.AssertNear "requirement-with-a-ceasing-approach", 77760, _
+            NumberOf(Outputs(OUT_REQUIREMENT)), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK NO MONTH
+'------------------------------------------------------------------------------
+    'Under the CRR with no month the requirement is the same
+        EngineInputs "CRR", MonthRows(vbNullString, vbNullString), Inputs
+        CORE_Engine.Calculate Inputs, Outputs
+        Block = Outputs(OUT_EL_RESULTS)
+        TEST_Harness.AssertEqualText "no-month-status", "NOT ASSESSED: no month entered", CStr(Block(1, 1))
+        TEST_Harness.AssertEqualDouble "no-month-no-warning", 0, NumberOf(Outputs(OUT_WARNINGS))
+        TEST_Harness.AssertNear "requirement-without-months", 77760, _
+            NumberOf(Outputs(OUT_REQUIREMENT)), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK AN INVALID ROW
+'------------------------------------------------------------------------------
+    'A month end that is not the last day of its month is an error of rule C15
+        Months = MonthRows("MMMMMMMMMMMM", "MMMMMMMMMMMM")
+        Months(12, EL_MONTH) = DateSerial(2024, 12, 30)
+        EngineInputs "CRR", Months, Inputs
+        CORE_Engine.Calculate Inputs, Outputs
+        Rules = Outputs(OUT_RULES)
+    'Check the count of C15, the status line, that no finding lists the row, and the requirement
+        TEST_Harness.AssertEqualDouble "invalid-row-counted-in-c15", 1, NumberOf(Rules(15, 2))
+        TEST_Harness.AssertEqualDouble "invalid-row-is-an-error", 1, NumberOf(Outputs(OUT_ERRORS))
+        TEST_Harness.AssertEqualText "invalid-row-run-is-incomplete", "INCOMPLETE: ", _
+            Left$(CStr(Outputs(OUT_STATUS)), 12)
+        TEST_Harness.AssertTrue "invalid-row-is-no-finding", IsEmpty(Outputs(OUT_FINDINGS)), _
+            "the reason of an invalid month stays in its row"
+        TEST_Harness.AssertNear "requirement-with-an-invalid-row", 77760, _
+            NumberOf(Outputs(OUT_REQUIREMENT)), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK BASEL
+'------------------------------------------------------------------------------
+    'Under the Basel regime the same months are not assessed
+        EngineInputs "Basel", MonthRows("MMMMMMMMMNNN", "MMMMMMMMMMMM"), Inputs
+        CORE_Engine.Calculate Inputs, Outputs
+        Block = Outputs(OUT_EL_RESULTS)
+        Months = Outputs(OUT_EL_CALC)
+        Rules = Outputs(OUT_RULES)
+        TEST_Harness.AssertEqualText "basel-status", "NOT ASSESSED: Basel regime", CStr(Block(2, 1))
+        TEST_Harness.AssertTrue "basel-leaves-the-rows-empty", IsEmpty(Months(1, 1)), _
+            "no row is written under the Basel regime"
+        TEST_Harness.AssertEqualDouble "basel-counts-no-approach", 0, NumberOf(Rules(16, 2))
+        TEST_Harness.AssertNear "requirement-under-basel", 86400, _
+            NumberOf(Outputs(OUT_REQUIREMENT)), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK AN UNUSABLE SHARE
+'------------------------------------------------------------------------------
+    'A share of the total assets above 1 is unusable: the run stops on rule C14
+        EngineInputs "CRR", MonthRows("MMMMMMMMMNNN", "MMMMMMMMMMMM"), Inputs
+        Numeric = Inputs(IN_NUMERIC)
+        Numeric(PI_EL_SHARE_94) = 1.5
+        Inputs(IN_NUMERIC) = Numeric
+        CORE_Engine.Calculate Inputs, Outputs
+        Rules = Outputs(OUT_RULES)
+        TEST_Harness.AssertTrue "unusable-share-stops-the-run", CBool(Outputs(OUT_STOPPED)), _
+            "a share above 1 must stop the run"
+        TEST_Harness.AssertEqualDouble "unusable-share-counted-in-c14", 1, NumberOf(Rules(14, 2))
+        TEST_Harness.AssertTrue "eligibility-not-run-when-stopped", _
+            IsEmpty(Rules(15, 2)) And IsEmpty(Rules(16, 2)), "rules C15 and C16 are not evaluated"
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
 Private Sub CaseVolume()
 
 '
@@ -2708,5 +3073,226 @@ Private Sub FxTable( _
             Codes(i) = Items(i - 1)
             Rates(i) = 1#
         Next i
+
+End Sub
+
+Private Function MonthRows( _
+    ByVal Pattern325a As String, _
+    ByVal Pattern94 As String) _
+    As Variant
+'
+'------------------------------------------------------------------------------
+'                          BUILD ELIGIBILITY MONTHS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Build the cells of Eligibility, as Range.Value would return them, from a
+'   pattern of months whose conditions are met or not met.
+'
+' WHY THIS EXISTS
+'   The eligibility cases need series of months with a known run and count,
+'   and only whether each month meets the conditions matters.
+'
+' INPUTS
+'   Pattern325a
+'     One letter per month, from January 2024: M where the size of Article
+'     325a meets the conditions (400 million), N where it does not (600
+'     million). At most ELIGIBILITY_ROWS letters; empty for no month.
+'
+'   Pattern94
+'     The same for Article 94 (40 and 60 million), as long as Pattern325a.
+'
+' RETURNS
+'   Variant (1 To ELIGIBILITY_ROWS, 1 To EL_INPUT_WIDTH): one row per letter,
+'   with the last day of each month from 31 January 2024 as a date, total
+'   assets of 10 billion, the long total of each approach positive and its
+'   short total negative for Article 325a and positive for Article 94; the
+'   rows after the pattern stay Empty.
+'
+' BEHAVIOR
+'   Sizes the table, then for each letter writes the month end, the total
+'   assets and the long and short totals, 60% and 40% of the size of Article
+'   325a and 70% and 30% of the size of Article 94.
+'
+' ERROR POLICY
+'   None
+'
+' DEPENDENCIES
+'   DateSerial; ELIGIBILITY_ROWS and the EL_ columns of CORE_Config
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Table() As Variant  'Result
+    Dim Size    As Double   'Size of the business of an approach
+    Dim k       As Long     'Month
+
+'------------------------------------------------------------------------------
+' SIZE TABLE
+'------------------------------------------------------------------------------
+    'Size the table to the rows of the sheet
+        ReDim Table(1 To ELIGIBILITY_ROWS, 1 To EL_INPUT_WIDTH)
+
+'------------------------------------------------------------------------------
+' FILL MONTHS
+'------------------------------------------------------------------------------
+    'Write the month end, the total assets and the totals of each approach of each month
+        For k = 1 To Len(Pattern325a)
+            Table(k, EL_MONTH) = DateSerial(2024, k + 1, 0)
+            Table(k, EL_ASSETS) = 10000000000#
+            If Mid$(Pattern325a, k, 1) = "N" Then Size = 600000000# Else Size = 400000000#
+            Table(k, EL_LONG_325A) = Size * 3 / 5
+            Table(k, EL_SHORT_325A) = -Size * 2 / 5
+            If Mid$(Pattern94, k, 1) = "N" Then Size = 60000000# Else Size = 40000000#
+            Table(k, EL_LONG_94) = Size * 7 / 10
+            Table(k, EL_SHORT_94) = Size * 3 / 10
+        Next k
+
+'------------------------------------------------------------------------------
+' RETURN TABLE
+'------------------------------------------------------------------------------
+    'Return the table
+        MonthRows = Table
+
+End Function
+
+Private Sub EngineInputs( _
+    ByVal Regime As String, _
+    ByVal Months As Variant, _
+    ByRef Inputs() As Variant)
+'
+'------------------------------------------------------------------------------
+'                          BUILD ENGINE INPUT VECTOR
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Build the input vector of CORE_Engine.Calculate, as M_Main.ReadInputs
+'   would read it, for one FX position and the months of Eligibility given.
+'
+' WHY THIS EXISTS
+'   The eligibility must be checked in the whole calculation, which needs
+'   every input of the vector, and the requirement of one FX position is
+'   known by hand.
+'
+' INPUTS
+'   Regime
+'     The Regime cell: Basel or CRR.
+'
+'   Months
+'     Eligibility cells (1 To ELIGIBILITY_ROWS, 1 To EL_INPUT_WIDTH), as
+'     MonthRows builds them.
+'
+'   Inputs
+'     Receives the vector (1 To IN_COUNT).
+'
+' RETURNS
+'   Inputs: the reference parameters, the reporting date 30 September 2026,
+'   EUR and XAU, the reference ladder with its open bounds blank, a blank
+'   specific-risk table, EUR at 1 and USD at 0.9, no option charge, empty
+'   interest rate, equity and commodity tables, one FX row long USD 1,000,000,
+'   the regime, the last date 31 December 2029, total own funds of 1,000,000
+'   and the months.
+'
+' BEHAVIOR
+'   Sizes the vector, then fills each input with an array of its own, as
+'   LibreOffice keeps an array in a Variant by reference.
+'
+' ERROR POLICY
+'   None
+'
+' DEPENDENCIES
+'   ReferenceParameters, ReferenceLadder, RowsFrom; the IN_, PI_, LD_, BAND_
+'   and width constants of CORE_Config
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Reference() As Double   'Reference parameters
+    Dim Ladder()    As Double   'Reference ladder
+    Dim Numeric()   As Variant  'Numeric parameters as cells
+    Dim RawLadder() As Variant  'Ladder as cells
+    Dim Labels()    As String   'Ladder labels
+    Dim SrTable()   As Variant  'Specific-risk table
+    Dim FxRows()    As Variant  'FX table
+    Dim Options()   As Variant  'Option charges
+    Dim i           As Long     'Parameter
+    Dim b           As Long     'Band
+    Dim c           As Long     'Ladder column
+
+'------------------------------------------------------------------------------
+' SIZE VECTOR
+'------------------------------------------------------------------------------
+    'Size the input vector
+        ReDim Inputs(1 To IN_COUNT)
+
+'------------------------------------------------------------------------------
+' FILL PARAMETERS
+'------------------------------------------------------------------------------
+    'Copy the reference parameters as cells
+        ReferenceParameters Reference
+        ReDim Numeric(1 To PI_COUNT)
+        For i = 1 To PI_COUNT
+            Numeric(i) = Reference(i)
+        Next i
+        Inputs(IN_NUMERIC) = Numeric
+    'Set the reporting date, the currency, the gold code, the regime, the last date and the own funds
+        Inputs(IN_ASOF) = DateSerial(2026, 9, 30)
+        Inputs(IN_REPCCY) = "EUR"
+        Inputs(IN_GOLD) = "XAU"
+        Inputs(IN_REGIME) = Regime
+        Inputs(IN_TRANSITION_END) = DateSerial(2029, 12, 31)
+        Inputs(IN_OWN_FUNDS) = 1000000#
+
+'------------------------------------------------------------------------------
+' FILL TABLES
+'------------------------------------------------------------------------------
+    'Copy the reference ladder as cells, an open bound as a blank cell
+        ReferenceLadder Ladder
+        ReDim RawLadder(1 To BAND_COUNT, 1 To LD_WIDTH)
+        ReDim Labels(1 To BAND_COUNT, 1 To 2)
+        For b = 1 To BAND_COUNT
+            For c = 1 To LD_WIDTH
+                If Ladder(b, c) < OPEN_BOUND Then RawLadder(b, c) = Ladder(b, c)
+            Next c
+        Next b
+        Inputs(IN_LADDER) = RawLadder
+        Inputs(IN_LADDER_LABELS) = Labels
+    'A blank specific-risk table, EUR at 1 and USD at 0.9, and no option charge
+        ReDim SrTable(1 To 1, 1 To 2)
+        Inputs(IN_SR_TABLE) = SrTable
+        FxRows = RowsFrom(2, Array(Array("EUR", 1), Array("USD", 0.9)))
+        Inputs(IN_FX_TABLE) = FxRows
+        ReDim Options(1 To RC_COUNT)
+        Inputs(IN_OPTIONS) = Options
+
+'------------------------------------------------------------------------------
+' FILL POSITIONS AND MONTHS
+'------------------------------------------------------------------------------
+    'One blank row in each position table but the FX one, which holds one position
+        Inputs(IN_IR_ROWS) = RowsFrom(IR_INPUT_WIDTH, Array(Array(Empty)))
+        Inputs(IN_EQ_ROWS) = RowsFrom(EQ_INPUT_WIDTH, Array(Array(Empty)))
+        Inputs(IN_CO_ROWS) = RowsFrom(CO_INPUT_WIDTH, Array(Array(Empty)))
+        Inputs(IN_FX_ROWS) = RowsFrom(FX_INPUT_WIDTH, Array(Array("FX-1", Empty, "USD", "Long", 1000000)))
+    'The first rows of the tables and the capacity of the Buckets blocks
+        Inputs(IN_IR_FIRST_ROW) = 5
+        Inputs(IN_EQ_FIRST_ROW) = 5
+        Inputs(IN_CO_FIRST_ROW) = 5
+        Inputs(IN_FX_FIRST_ROW) = 5
+        Inputs(IN_EQ_CAPACITY) = 30
+        Inputs(IN_CO_CAPACITY) = 30
+    'The months of Eligibility
+        Inputs(IN_EL_ROWS) = Months
 
 End Sub

@@ -12,8 +12,8 @@ Option Private Module
 '   workbook names that locate each table, the column of each input field,
 '   the width of each output table, the parameter codes with their indices
 '   in the parameter vector and their MAR40 reference values, the default
-'   MAR40 maturity ladder, row-status and severity labels, the Checks rule
-'   identifiers and the error numbers
+'   MAR40 maturity ladder, the layout of the Eligibility sheet, row-status and
+'   severity labels, the Checks rule identifiers and the error numbers
 '
 ' WHY THIS EXISTS
 '   When a layout changes, it changes here and nowhere else
@@ -30,8 +30,9 @@ Option Private Module
 '     - PRODUCT: product name and engine version
 '     - SHEET NAMES: worksheet tab names
 '     - TABLE LOCATION: workbook names that locate each table and output
-'     - VOLUME: rows a position sheet supports
-'     - INPUT COLUMNS: column of each field of the four position sheets
+'     - VOLUME: rows a position sheet and the Eligibility sheet support
+'     - INPUT COLUMNS: column of each field of the four position sheets and of
+'       the Eligibility sheet
 '     - OUTPUT WIDTHS: columns each core procedure returns
 '     - TOTAL VECTORS: indices of the Totals() vector of a risk class
 '     - ENGINE BUNDLES: indices of the input and output vectors of the engine
@@ -51,7 +52,8 @@ Option Private Module
 '   None. Every value is a literal
 '
 '   Reference: BCBS MAR40.26 (Table 4), MAR40.60; Regulation (EU) No
-'   575/2013, Articles 325(2), 339(9)(f), 344(4), 351 and 495s(2)
+'   575/2013, Articles 94(1), 325(2), 325a(1), 339(9)(f), 344(4), 351 and
+'   495s(2)
 '
 ' NOTES
 '   Option Explicit requires explicit declarations. Option Private Module
@@ -64,7 +66,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -83,6 +85,7 @@ Option Private Module
     Public Const SH_CO_POS      As String = "COPositions"       'Commodity inputs
     Public Const SH_FX_POS      As String = "FXPositions"       'FX and gold inputs
     Public Const SH_OPTIONS     As String = "OptionCharges"     'Non-delta option charges
+    Public Const SH_ELIGIBILITY As String = "Eligibility"       'Size of the business by month end
     Public Const SH_RESULTS     As String = "Results"           'Requirement per risk class
     Public Const SH_IR_ZONES    As String = "IR_Zones"          'IR charges per currency
     Public Const SH_IR_LADDER   As String = "IR_Ladder"         'IR ladder per currency and band
@@ -136,6 +139,8 @@ Option Private Module
     Public Const NM_FX_CCY          As String = "FX_Ccy"                    'FX table currencies
     Public Const NM_FX_RATE         As String = "FX_Rate"                   'FX table rates
     Public Const NM_OPTIONS_PREFIX  As String = "Options"                   '+ IR, EQ, CO, FX
+    Public Const NM_EL_HEADER       As String = "Eligibility_Header"        'Header "Month end"
+    Public Const NM_EL_RESULTS      As String = "Eligibility_Results"       'Result block, one row per approach
 
 '------------------------------------------------------------------------------
 ' VOLUME
@@ -145,6 +150,10 @@ Option Private Module
     'validates and colours this many rows, and the formula workbook calculates
     'them. A run on a sheet that holds more stops (rule C14).
     Public Const MAX_POSITION_ROWS  As Long = 500   'Position rows the workbook supports per sheet
+
+    'Rows of the Eligibility sheet, one per month end: the sheet holds this many
+    'rows below its header, and every one of them is read.
+    Public Const ELIGIBILITY_ROWS   As Long = 24    'Month rows of Eligibility
 
 '------------------------------------------------------------------------------
 ' INPUT COLUMNS
@@ -191,6 +200,15 @@ Option Private Module
     Public Const FX_AMOUNT      As Long = 5     'Amount, currency units
     Public Const FX_INPUT_WIDTH As Long = 6     'Columns read
 
+    'Size of the business by month end (Eligibility), amounts in euro.
+    Public Const EL_MONTH       As Long = 1     'Month end, a date
+    Public Const EL_ASSETS      As Long = 2     'Total assets
+    Public Const EL_LONG_325A   As Long = 3     'Aggregated long positions, Article 325a(2)
+    Public Const EL_SHORT_325A  As Long = 4     'Aggregated short positions, Article 325a(2)
+    Public Const EL_LONG_94     As Long = 5     'Aggregated long positions, Article 94(3)
+    Public Const EL_SHORT_94    As Long = 6     'Aggregated short positions, Article 94(3)
+    Public Const EL_INPUT_WIDTH As Long = 6     'Columns read
+
 '------------------------------------------------------------------------------
 ' OUTPUT WIDTHS
 '------------------------------------------------------------------------------
@@ -209,6 +227,9 @@ Option Private Module
     Public Const RESULTS_ROWS   As Long = 6     'Results rows: 4 classes, the total and the transitional row
     Public Const RESULTS_COLUMN As Long = 3     'Results data column (E) from the header (C)
     Public Const FINDINGS_WIDTH As Long = 7     'Checks findings C:I
+    Public Const EL_CALC_WIDTH  As Long = 13    'Eligibility I:U, right of the input columns
+    Public Const EL_BLOCK_ROWS  As Long = 2     'Eligibility_Results rows: 325a, then 94
+    Public Const EL_BLOCK_WIDTH As Long = 7     'Eligibility_Results D:J
 
 '------------------------------------------------------------------------------
 ' TOTAL VECTORS
@@ -259,7 +280,8 @@ Option Private Module
     Public Const IN_REGIME              As Long = 20    'Regime cell
     Public Const IN_TRANSITION_END      As Long = 21    'TransitionalEndDate cell
     Public Const IN_OWN_FUNDS           As Long = 22    'TotalOwnFunds cell
-    Public Const IN_COUNT               As Long = 22    'Size of the input vector
+    Public Const IN_EL_ROWS             As Long = 23    'Eligibility cells (1 To ELIGIBILITY_ROWS, 1 To EL_INPUT_WIDTH)
+    Public Const IN_COUNT               As Long = 23    'Size of the input vector
 
     'Outputs.
     Public Const OUT_IR_CALC            As Long = 1     'IRCalc table
@@ -283,7 +305,9 @@ Option Private Module
     Public Const OUT_WARNINGS           As Long = 19    'Warnings on Checks
     Public Const OUT_USED               As Long = 20    'Positions used
     Public Const OUT_REQUIREMENT_BEFORE As Long = 21    'Own funds requirement before the transitional multiplier
-    Public Const OUT_COUNT              As Long = 21    'Size of the output vector
+    Public Const OUT_EL_CALC            As Long = 22    'Eligibility I:U (1 To ELIGIBILITY_ROWS, 1 To EL_CALC_WIDTH)
+    Public Const OUT_EL_RESULTS         As Long = 23    'Eligibility_Results (1 To EL_BLOCK_ROWS, 1 To EL_BLOCK_WIDTH)
+    Public Const OUT_COUNT              As Long = 23    'Size of the output vector
 
 '------------------------------------------------------------------------------
 ' RISK CLASSES
@@ -336,27 +360,33 @@ Option Private Module
     Public Const PI_FX_DE_MINIMIS       As Long = 21        'FX de minimis, share of total own funds, CRR Article 351
     Public Const PI_ZONE13_CRR          As Long = 22        'Horizontal, zones 1 and 3, CRR Article 339(9)(f)
     Public Const PI_EQ_INDEX_CRR        As Long = 23        'Equity charge, indices, CRR Article 344(4)
-    Public Const PI_COUNT               As Long = 23        'Parameters read from the sheet
-    Public Const PI_REGIME_FLAG         As Long = 24        'Set by the engine: 1 under the CRR regime, 0 under Basel
-    Public Const PI_VECTOR              As Long = 24        'Size of the parameter vector
+    Public Const PI_EL_SHARE_325A       As Long = 24        'Share of total assets, CRR Article 325a(1)
+    Public Const PI_EL_CAP_325A         As Long = 25        'Amount in euro, CRR Article 325a(1)
+    Public Const PI_EL_SHARE_94         As Long = 26        'Share of total assets, CRR Article 94(1)
+    Public Const PI_EL_CAP_94           As Long = 27        'Amount in euro, CRR Article 94(1)
+    Public Const PI_COUNT               As Long = 27        'Parameters read from the sheet
+    Public Const PI_REGIME_FLAG         As Long = 28        'Set by the engine: 1 under the CRR regime, 0 under Basel
+    Public Const PI_VECTOR              As Long = 28        'Size of the parameter vector
 
     Public Const PRM_NUMERIC_CODES      As String = _
         "DaysPerYear|CouponThreshold|ScalingIR|ScalingEQ|ScalingCO|ScalingFX|" & _
         "RWAMultiplier|VerticalDisallowance|HorizontalZone1|HorizontalZone2|" & _
         "HorizontalZone3|HorizontalAdjacent|HorizontalZone13|EQSpecificRate|" & _
         "EQIndexRate|EQGeneralRate|FXChargeRate|COMDirectionalRate|COMGrossRate|" & _
-        "TransitionalMultiplier|FXDeMinimisRate|HorizontalZone13CRR|EQIndexRateCRR" 'Parameter names, vector order
+        "TransitionalMultiplier|FXDeMinimisRate|HorizontalZone13CRR|EQIndexRateCRR|" & _
+        "EligibilityShare325a|EligibilityCap325a|EligibilityShare94|EligibilityCap94" 'Parameter names, vector order
 
     'Reference values, same order
     Public Const PRM_REFERENCE_VALUES   As String = _
-        "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02|1.5|0"
+        "365|0.03|1.3|3.5|1.9|1.2|12.5|0.1|0.4|0.3|0.3|0.4|1|0.08|0.02|0.08|0.08|0.15|0.03|0.9|0.02|1.5|0|" & _
+        "0.1|500000000|0.05|50000000"
 
     Public Const PRM_REFERENCE_GOLD     As String = "XAU"   'MAR40.60 reference gold code
     Public Const PRM_REFERENCE_END_DATE As Double = 47483   '2029-12-31, the last date of Article 495s(2)
 
     'Kind of check applied to each numeric parameter, in the same order:
     'P = > 0, R = rate in [0, 1], N = >= 0.
-    Public Const PRM_DOMAINS    As String = "PNPPPPPRRRRRRRRRRRRRRNR"   'Check kind per numeric parameter, same order
+    Public Const PRM_DOMAINS    As String = "PNPPPPPRRRRRRRRRRRRRRNRRPRP"   'Check kind per parameter, same order
 
 '------------------------------------------------------------------------------
 ' MATURITY LADDER (MAR40.26 TABLE 4)
@@ -450,11 +480,13 @@ Option Private Module
     Public Const RULE_FX_EXCL       As String = "C12"   'FX rows in reporting currency
     Public Const RULE_OPTIONS       As String = "C13"   'Option charges entered
     Public Const RULE_PARAMS        As String = "C14"   'Unusable parameter or table value, rows over MAX_POSITION_ROWS
-    Public Const RULE_COUNT         As Long = 14        'Rules C01 to C14
+    Public Const RULE_EL_ROWS       As String = "C15"   'Eligibility rows rejected, CRR regime
+    Public Const RULE_EL_STATUS     As String = "C16"   'Approaches NOT MET or to CEASE, CRR regime
+    Public Const RULE_COUNT         As Long = 16        'Rules C01 to C16
 
-    'Severity of rules C01 to C14, in order
+    'Severity of rules C01 to C16, in order
     Public Const RULE_SEVERITIES    As String = _
-        "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR"
+        "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING"
 
 '------------------------------------------------------------------------------
 ' ERROR NUMBERS
