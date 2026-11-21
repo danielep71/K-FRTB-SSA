@@ -65,6 +65,21 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The eligibility for the simplified standardised approach, Article 325a of
+  Regulation (EU) No 575/2013, and for the derogation for small trading book
+  business, Article 94, under the `CRR` regime (`CALC-09`). On the new sheet
+  `Eligibility` you enter, for up to 24 month-ends, the total assets and the
+  aggregated long and short positions of each approach, in euro; the workbook
+  tests the thresholds of each month (10% and EUR 500 million, 5% and EUR 50
+  million, four new parameters on `Params`), the runs of three months and the
+  counts of more than six in twelve, and gives each approach a status, `MET`,
+  `NOT MET` or `CEASE`, and the restart condition of a year. A status `NOT MET`
+  or `CEASE` is a warning of `Checks` (rule `C16`), and a month that fails a test
+  is rejected (rule `C15`). The status changes no requirement and stops no run;
+  the notifications and the other obligations of the two Articles are yours.
+  Under the Basel regime the sheet is not read. The parameters, the ladder and the
+  tables of `Params` below them moved down four rows. Nothing was run in Excel
+  ([#84](https://github.com/danielep71/K-FRTB-SSA/issues/84)).
 - The options and the market of the equity risk under the `CRR` regime,
   compared with Delegated Regulations (EU) No 528/2014 and No 525/2014, whose
   Official Journal texts are now read and `verified` in the source register
