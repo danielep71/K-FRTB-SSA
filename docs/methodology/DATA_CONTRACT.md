@@ -7,7 +7,7 @@ and fields by name.
 
 The workbook imports no file. Every dataset is typed on a sheet of the
 workbook: the parameters and the three tables of `Params`, the four position
-sheets and `OptionCharges`. The [workbook contract](WORKBOOK_CONTRACT.md)
+sheets, `OptionCharges` and `Eligibility`. The [workbook contract](WORKBOOK_CONTRACT.md)
 gives the place of each on its sheet.
 
 ## Datasets
@@ -28,6 +28,7 @@ This table and the field tables are rendered from the
 | `DS-08` | Commodity positions | Typed by the user | Per reporting date | One row per position in a commodity; up to 500 rows | `COPositions` |  |
 | `DS-09` | FX positions | Typed by the user | Per reporting date | One row per net position in a currency or in gold; up to 500 rows | `FXPositions` |  |
 | `DS-10` | Non-delta option charges | Typed by the user | Per reporting date | One row per risk class; 4 rows | `OptionCharges` |  |
+| `DS-11` | Monthly size of the business | Typed by the user | Per reporting date | One row per month end; up to 24 rows | `Eligibility` |  |
 <!-- END generated: data-contract-datasets -->
 
 A name with an extension is a file; one without is a sheet. A file is one
@@ -113,6 +114,10 @@ Read from the sheet `Params`.
 | `fx_de_minimis_rate` | Decimal | Decimal fraction | Yes | 0 to 1 | Name FXDeMinimisRate. Reference value 0.02 |
 | `horizontal_zone_1_3_crr` | Decimal | Decimal fraction | Yes | ≥ 0 | Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5 |
 | `eq_index_rate_crr` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EQIndexRateCRR. Charge on the net position per index under the CRR, Article 344, in place of EQIndexRate. Reference value 0 |
+| `eligibility_share_325a` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EligibilityShare325a. Share of the total assets that the size of the business may not exceed for the simplified standardised approach, Article 325a(1) of the CRR; a rate, 0 to 1. Reference value 0.1 |
+| `eligibility_cap_325a` | Decimal | Euro | Yes | ≥ 0 | Name EligibilityCap325a. Amount that the size of the business may not exceed for the simplified standardised approach, Article 325a(1); a number greater than 0. Reference value 500000000 |
+| `eligibility_share_94` | Decimal | Decimal fraction | Yes | 0 to 1 | Name EligibilityShare94. Share of the total assets that the size of the business may not exceed for the small trading book derogation, Article 94(1); a rate, 0 to 1. Reference value 0.05 |
+| `eligibility_cap_94` | Decimal | Euro | Yes | ≥ 0 | Name EligibilityCap94. Amount that the size of the business may not exceed for the small trading book derogation, Article 94(1); a number greater than 0. Reference value 50000000 |
 
 ### `DS-03` Specific-risk charges
 
@@ -230,6 +235,19 @@ Read from the sheet `OptionCharges`.
 | `method` | Text | — | No | Any | Column Method. The method the charge was calculated by; not read |
 | `charge` | Decimal | Reporting currency | No | ≥ 0 | Column Charge (rep ccy), names OptionsIR, OptionsEQ, OptionsCO and OptionsFX. Empty: zero |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
+
+### `DS-11` Monthly size of the business
+
+Read from the sheet `Eligibility`.
+
+| Field | Type | Unit or currency | Required | Allowed values or range | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `month_end` | Date, `YYYY-MM-DD` | — | Yes | Any | Column Month end. The last day of a calendar month, one month after the row entered before it. A row without it is skipped. Read under the CRR regime only |
+| `total_assets` | Decimal | Euro | Yes | ≥ 0 | Column Total assets (EUR). Of the institution at the month end. Must be a number greater than 0 |
+| `long_325a` | Decimal | Euro | Yes | Any | Column Long 325a (EUR). The aggregated long positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none |
+| `short_325a` | Decimal | Euro | Yes | Any | Column Short 325a (EUR). The aggregated short positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none |
+| `long_94` | Decimal | Euro | Yes | Any | Column Long 94 (EUR). The aggregated long positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none |
+| `short_94` | Decimal | Euro | Yes | Any | Column Short 94 (EUR). The aggregated short positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none |
 <!-- END generated: data-contract-fields -->
 
 <a id="reading-a-sheet"></a>
@@ -246,7 +264,8 @@ reads a cell this way:
   calculation uses: it is there for the reader.
 - **Rows.** A position table is read from the row below its header to the
   last row with a value in its first column. A row whose `position_id` is
-  empty is skipped.
+  empty is skipped. `DS-11` is read from its first row to its last, row 28: a
+  row whose `month_end` is empty is skipped, whatever its other cells hold.
 - **Text and codes.** A text is read without the blanks at its ends, and a
   code or one of a list of allowed values without regard to case: `long`,
   `Long` and ` LONG ` are the same direction. Keys that group rows, such as
@@ -374,7 +393,7 @@ workbook reports its own rule IDs.
 ## Validation and invalid input
 
 The workbook reports a finding with the identifier of a rule of its `Checks`
-sheet, `C01` to `C14`, and, for a row, with a status text that gives the
+sheet, `C01` to `C16`, and, for a row, with a status text that gives the
 reason. The texts are listed in the *Failure behaviour* of each
 [calculation contract](CALCULATION_CONTRACTS.md).
 
@@ -388,8 +407,9 @@ reason. The texts are listed in the *Failure behaviour* of each
 | `C06` | A currency listed twice in `DS-05` | As `C05` |
 | `C07` | A rate of `DS-05` that is not a number greater than 0 | As `C05` |
 | `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code, a regime that is neither `Basel` nor `CRR`, a last date of the transitional multiplier that is not a date, or total own funds that are not a number greater than 0, under the `CRR`; or a position table of `DS-06` to `DS-09` with more than 500 rows ([volume](#volume)) | As `C05` |
+| `C15` | A row of `DS-11` that fails a test, under the `CRR` regime: its month end, total assets or totals | The row is excluded and the run goes on. `Eligibility` gives the reason, `Checks` counts the row, and the status line reads `INCOMPLETE`. Both approaches read `NOT ASSESSED: a row is invalid` |
 
-Four rules report without rejecting:
+Seven rules report without rejecting:
 
 | Rule | Reports | Effect |
 | --- | --- | --- |
@@ -397,6 +417,7 @@ Four rules report without rejecting:
 | `C09` | An issue of `DS-06` whose rows differ in category, rating grade or currency | A warning: the issue takes the rate and the currency of its first row |
 | `C10`, `C11` | More than 30 markets in `DS-07`, or more than 30 commodities in `DS-08` | A warning: `Buckets` lists the first 30, and the totals include all |
 | `C12`, `C13` | A row of `DS-09` in the reporting currency; an option charge entered in `DS-10` | For information: the row is excluded, and the charge is added |
+| `C16` | An approach of `DS-11` whose status is `NOT MET` or `CEASE`, under the `CRR` regime | A warning, counted once for each approach: the requirement is unchanged |
 
 - A row is tested in the order of its contract's list, and the first test
   that fails gives the reason.
@@ -438,6 +459,7 @@ for it.
 | --- | --- | --- |
 | `DS-06` to `DS-09` | 500 rows each, counted from the row below the header to the last row with a PositionID, blank rows included | The run stops: no result is calculated, `Checks` lists the sheet and the rows found under `C14`, and the status line reads `STOPPED`. A table of exactly 500 rows is not stopped |
 | `DS-05` | 20 currencies, gold included | The table has 20 rows |
+| `DS-11` | 24 rows, from row 5 to row 28 of `Eligibility` | The sheet has 24 rows: enter the last 24 month ends |
 | `DS-03`, `DS-04` | 18 and 15 rows | Fixed by `SRC-02` |
 | Markets of `DS-07`, commodities of `DS-08` | Any number; 30 of each are listed on `Buckets` | The totals include all, and `Checks` warns (`C10`, `C11`) |
 

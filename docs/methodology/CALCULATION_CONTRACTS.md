@@ -775,13 +775,13 @@ any requirement.
 | Step | Rule | Source |
 | --- | --- | --- |
 | 1 | The size of the business of a month is the absolute value of the aggregated long position plus the absolute value of the aggregated short position, for each approach. The user enters the two aggregates, valued as the Article says | `SRC-04`, Article 325a(2), point (f); Article 94(3), point (c) |
-| 2 | The conditions are met in a month where the size is equal to or less than both the share of the total assets and the amount: 10% and EUR 500 million for the simplified standardised approach, 5% and EUR 50 million for the derogation | `SRC-04`, Article 325a(1); Article 94(1) |
-| 3 | The run of a month is the number of consecutive months, that month included, in which the conditions are not met | `SRC-04`, Article 325a(5), point (a); Article 94(7), point (a) |
+| 2 | The conditions are met in a month where the size is equal to or less than both the share of the total assets and the amount: 10% and EUR 500 million for the simplified standardised approach, 5% and EUR 50 million for the derogation. The size is compared with the share multiplied by the total assets, and with the amount | `SRC-04`, Article 325a(1); Article 94(1) |
+| 3 | The run of a month is the number of consecutive months entered, that month included, in which the conditions are not met | `SRC-04`, Article 325a(5), point (a); Article 94(7), point (a) |
 | 4 | The count of a month is the number of months, among the last 12 up to and including that month, in which the conditions are not met. Before the twelfth month entered, the months entered are counted | `SRC-04`, Article 325a(5), point (b); Article 94(7), point (b) |
 | 5 | A month is an event where its run is 3 or more, or its count is more than 6 | `SRC-04`, Article 325a(5); Article 94(7) |
 | 6 | The status is that of the last month entered: `CEASE` where that month is an event, otherwise `NOT MET` where the conditions are not met in it, otherwise `MET` | `SRC-04`, Article 325a(5); Article 94(7) |
 | 7 | The restart condition is `YES` where 12 months are entered and the conditions are met in each of the last 12, otherwise `NO` | `SRC-04`, Article 325a(6); Article 94(8) |
-| 8 | The assessment is made under the `CRR` regime only. Under the Basel regime the sheet is not read and the status is `NOT ASSESSED: Basel regime` | `SRC-04`, Article 325a |
+| 8 | The assessment is made under the `CRR` regime only. Under the Basel regime the sheet is not read, no row is tested and no cell of the rows or of the figures of the result block is written, and the status is `NOT ASSESSED: Basel regime` | `SRC-04`, Article 325a |
 
 **Outputs:**
 
@@ -815,6 +815,15 @@ derogation. The quantity of the expected files gives it after the name:
 - A month is the last day of a calendar month. The months entered follow one
   another without a gap; a month that is not entered is not assumed to meet or to
   miss the conditions.
+- The sheet holds 24 rows, from row 5 to row 28, and reads each of them in
+  order. A row whose month-end is empty is skipped, whatever its other cells
+  hold, and the row entered before it is the reference of the next row for the
+  test of one month after the previous row. The run and the count go over the
+  valid rows, in the order of the sheet. A month in which an approach has no
+  position is entered with its totals at 0: a blank total is not a number.
+- Where a status reads `NOT ASSESSED`, the result block shows no month, size,
+  share, run, count or restart condition of that approach, and a row that is
+  valid still shows its figures, except under the Basel regime.
 - Only the last month entered is judged. A month earlier in the series that is an
   event stays visible in its row, and no status of an approach already
   ceased or restarted is kept: the user decides which approach is in use.
@@ -835,11 +844,16 @@ derogation. The quantity of the expected files gives it after the name:
 - `INVALID: TotalAssets must be a number greater than 0`
 - `INVALID: a long or short total must be a number`
 
-A row that fails a test contributes nothing, `Checks` lists it (rule `C15`)
-and the status line reads `INCOMPLETE`. While a row is invalid, both statuses read
-`NOT ASSESSED: a row is invalid`. With no month entered, they read
-`NOT ASSESSED: no month entered`. A status `NOT MET` or `CEASE` is a
-warning of `Checks` (rule `C16`), and the requirement is unchanged.
+A month is tested in the order of this list, and the first test that fails gives
+the status. The test of one month after the previous row applies from the second row
+entered, against the month-end of the row entered before it when that is a date.
+
+A row that fails a test contributes nothing, `Checks` counts it (rule `C15`)
+and the status line reads `INCOMPLETE`; the reason stays in the status of the row.
+While a row is invalid, both statuses read `NOT ASSESSED: a row is invalid`. With no
+month entered, they read `NOT ASSESSED: no month entered`. A status `NOT MET` or
+`CEASE` is a warning of `Checks`, counted in rule `C16` once for each approach, and
+the requirement is unchanged.
 
 **Validation:** the VBA test suites check the engine against the derivation of
 `tests/derivations/ssa.py`; no registered test case or `published` value covers it

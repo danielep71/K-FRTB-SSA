@@ -17,6 +17,7 @@ Prints the re-calculation of the sample data as JSON.
 
 from __future__ import annotations
 
+import calendar
 import json
 import sys
 from datetime import date
@@ -32,6 +33,9 @@ EqRow = tuple[str, str, str, str, str, str, str, float, str]
 CoRow = tuple[str, str, str, str, float, str, float, str, date, str]
 # (ID, portfolio, currency, direction, amount, comment)
 FxRow = tuple[str, str, str, str, float, str]
+# (month end, total assets, long and short totals of Article 325a, long and
+#  short totals of Article 94), all amounts in EUR
+EligibilityRow = tuple[date, float, float, float, float, float]
 
 
 class IrCurrency(TypedDict):
@@ -155,6 +159,37 @@ FXPOS: list[FxRow] = [
     ("FX-004", "FX", "NOK", "Short", 250_000_000, "-20m EUR (Table 9: -20)"),
     ("FX-005", "FX", "USD", "Short", 200_000_000, "-180m EUR (Table 9: -180)"),
     ("FX-006", "FX", "XAU", "Short", 10_000, "-35m EUR (Table 9: gold -35)"),
+]
+
+# ---- Monthly size of the business (Articles 325a and 94 of the CRR) -----
+# 24 month ends, the last in the month of AS_OF, and the size of the business
+# of each month in EUR millions. The size of Article 325a is its long total
+# plus the absolute value of its short total, split 60% and 40% here, the
+# short entered with a minus sign; that of Article 94 is split 70% and 30%,
+# the short entered with a plus sign: the workbook reads both the same way.
+# With total assets of 8 billion and more, the amounts of EUR 500 million and
+# EUR 50 million bind, not the shares of 10% and 5%. Counting the months from
+# 1, the size of Article 325a is above its amount in months 6 to 8 (a run of
+# three, an event), 20 and 24 (the last), and exactly at it in month 19; the
+# size of Article 94 is above its amount in month 3 only.
+ELIGIBILITY_SIZE_325A = (410, 425, 440, 455, 490, 505, 520, 530, 480, 470, 465, 450,
+                         440, 430, 445, 460, 485, 495, 500, 502, 470, 455, 460, 515)
+ELIGIBILITY_SIZE_94 = (31, 33, 52, 36, 38, 40, 41, 43, 44, 42, 40, 38,
+                       37, 39, 41, 43, 45, 47, 46, 44, 42, 40, 41, 43)
+
+
+def month_end(last: date, back: int) -> date:
+    """The last day of the month that lies back months before the month of last."""
+    index = last.year * 12 + last.month - 1 - back
+    year, month = divmod(index, 12)
+    return date(year, month + 1, calendar.monthrange(year, month + 1)[1])
+
+
+ELIGIBILITY: list[EligibilityRow] = [
+    (month_end(AS_OF, len(ELIGIBILITY_SIZE_325A) - 1 - k), 8_000_000_000 + 25_000_000 * k,
+     600_000 * ELIGIBILITY_SIZE_325A[k], -400_000 * ELIGIBILITY_SIZE_325A[k],
+     700_000 * ELIGIBILITY_SIZE_94[k], 300_000 * ELIGIBILITY_SIZE_94[k])
+    for k in range(len(ELIGIBILITY_SIZE_325A))
 ]
 
 # ---- Regulatory constants -------------------------------------------------

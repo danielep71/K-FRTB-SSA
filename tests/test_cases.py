@@ -3,7 +3,9 @@ sample data, and the tool that runs the cases on the engine."""
 
 from __future__ import annotations
 
+import calendar
 import contextlib
+import datetime
 import io
 import json
 import sys
@@ -150,6 +152,248 @@ class Derivation(unittest.TestCase):
     def test_an_unknown_calculation_is_refused(self) -> None:
         with self.assertRaises(SystemExit):
             ssa.derive({**ir_case(), "calculation": "CALC-99"})
+
+
+def month_ends(count: int, year: int = 2025, month: int = 1) -> list[datetime.date]:
+    """count month ends, the first in the month of year and month."""
+    ends = []
+    for _ in range(count):
+        ends.append(datetime.date(year, month, calendar.monthrange(year, month)[1]))
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return ends
+
+
+def sheet_rows(pattern: str, total: float = 8_000_000_000, **sizes: float) -> list[tuple[Any, ...]]:
+    """One row per letter of the pattern: N, a month that misses both conditions, or M, one that
+    meets them. The size of Article 325a is 600 million in an N and 300 million in an M, split
+    60% long and 40% short with a minus sign; that of Article 94 is 60 million and 30 million,
+    split 70% and 30%."""
+    rows = []
+    for end, flag in zip(month_ends(len(pattern)), pattern, strict=True):
+        size_325a, size_94 = (600_000_000, 60_000_000) if flag == "N" else (300_000_000, 30_000_000)
+        rows.append((end, total, 0.6 * size_325a, -0.4 * size_325a, 0.7 * size_94, 0.3 * size_94))
+    return rows
+
+
+def at_last(result: dict[str, Any], approach: str = "325a") -> tuple[Any, ...]:
+    """The status, run, count and restart condition of an approach."""
+    return (result["status"][approach], result["run"][approach], result["count"][approach],
+            result["restart"][approach])
+
+
+class Eligibility(unittest.TestCase):
+    """tests/derivations/ssa.py, CALC-09: the eligibility under the CRR."""
+
+    def test_the_size_at_the_share_or_at_the_amount_meets_the_conditions_and_one_above_does_not(self) -> None:
+        end = datetime.date(2026, 1, 31)
+        # With total assets of 1 billion, 10% is 100 million, below the amount of 500 million,
+        # and 5% is 50 million, which is the amount; with 6 billion, the amounts are the limits.
+        for total, size_325a, size_94, status_325a, status_94 in (
+                (1_000_000_000, 100_000_000, 50_000_000, "MET", "MET"),
+                (1_000_000_000, 100_000_001, 50_000_001, "NOT MET", "NOT MET"),
+                (6_000_000_000, 500_000_000, 50_000_000, "MET", "MET"),
+                (6_000_000_000, 500_000_001, 50_000_001, "NOT MET", "NOT MET"),
+                (6_000_000_000, 500_000_000, 50_000_001, "MET", "NOT MET")):
+            with self.subTest(total=total, size_325a=size_325a, size_94=size_94):
+                result = ssa.eligibility([(end, total, size_325a, 0, size_94, 0)], "CRR", {})
+                self.assertEqual(result["status"], {"325a": status_325a, "94": status_94})
+                self.assertEqual(result["size"], {"325a": size_325a, "94": size_94})
+                self.assertEqual(result["share"], {"325a": size_325a / total, "94": size_94 / total})
+
+    def test_the_size_adds_the_absolute_values_of_the_long_and_the_short_total(self) -> None:
+        for long, short in ((300, -200), (300, 200), (-300, -200), (-300, 200), (500, 0), (0, -500)):
+            with self.subTest(long=long, short=short):
+                result = ssa.eligibility([(datetime.date(2026, 1, 31), 1e12, long * 1e6, short * 1e6, 0, 0)],
+                                         "CRR", {})
+                self.assertEqual(result["size"]["325a"], abs(long) * 1e6 + abs(short) * 1e6)
+
+    def test_a_parameter_that_is_given_replaces_its_reference_value(self) -> None:
+        rows = [(datetime.date(2026, 1, 31), 1_000_000_000, 150_000_000, 0, 60_000_000, 0)]
+        self.assertEqual(ssa.eligibility(rows, "CRR", {})["status"], {"325a": "NOT MET", "94": "NOT MET"})
+        given = {"EligibilityShare325a": 0.2, "EligibilityCap325a": 150_000_000,
+                 "EligibilityShare94": 0.1, "EligibilityCap94": 60_000_000}
+        self.assertEqual(ssa.eligibility(rows, "CRR", given)["status"], {"325a": "MET", "94": "MET"})
+        self.assertEqual(ssa.eligibility(rows, "CRR", {"EligibilityCap325a": 149_999_999})["status"]["325a"],
+                         "NOT MET")
+
+    def test_a_run_of_two_months_is_not_met_and_a_run_of_three_ceases(self) -> None:
+        for pattern, expected in (("MMNN", ("NOT MET", 2, 2, "NO")), ("MMNNN", ("CEASE", 3, 3, "NO")),
+                                  ("NNNM", ("MET", 0, 3, "NO")), ("MNNMN", ("NOT MET", 1, 3, "NO")),
+                                  ("NNNNN", ("CEASE", 5, 5, "NO")), ("M", ("MET", 0, 0, "NO"))):
+            with self.subTest(pattern=pattern):
+                self.assertEqual(at_last(ssa.eligibility(sheet_rows(pattern), "CRR", {})), expected)
+
+    def test_a_run_of_three_stays_visible_in_its_row_after_the_months_that_meet_the_conditions(self) -> None:
+        result = ssa.eligibility(sheet_rows("MNNNMM"), "CRR", {})
+        events = [item["325a"]["event"] for item in result["rows"]]
+        self.assertEqual(events, ["NO", "NO", "NO", "YES", "NO", "NO"])
+        self.assertEqual(result["status"]["325a"], "MET")
+
+    def test_a_count_of_seven_in_twelve_months_ceases_and_a_count_of_six_does_not(self) -> None:
+        for pattern, expected in (("NMNMNMNMNMNM", ("MET", 0, 6, "NO")),
+                                  ("NMNMNMNMNMMN", ("NOT MET", 1, 6, "NO")),
+                                  ("NMNMNMNMNMNN", ("CEASE", 2, 7, "NO")),
+                                  ("NNMNNMNMNMNM", ("CEASE", 0, 7, "NO")),
+                                  ("NNMNNMNMNMNMM", ("MET", 0, 6, "NO"))):
+            with self.subTest(pattern=pattern):
+                self.assertEqual(at_last(ssa.eligibility(sheet_rows(pattern), "CRR", {})), expected)
+
+    def test_the_count_goes_over_the_last_twelve_months_and_over_all_of_them_before_the_twelfth(self) -> None:
+        # Seven months that miss the conditions in a row of seven, then five that meet them.
+        self.assertEqual(ssa.eligibility(sheet_rows("NMNMNMN"), "CRR", {})["count"]["325a"], 4)
+        counts = [item["325a"]["count"] for item in ssa.eligibility(sheet_rows("NNMMMMMMMMMMMMM"), "CRR", {})["rows"]]
+        # The first month leaves the window at the 13th row.
+        self.assertEqual(counts, [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0])
+
+    def test_the_restart_condition_needs_twelve_months_that_meet_the_conditions(self) -> None:
+        for pattern, restart in (("M" * 11, "NO"), ("M" * 12, "YES"), ("N" + "M" * 11, "NO"),
+                                 ("N" + "M" * 12, "YES"), ("M" * 11 + "N", "NO"), ("M" * 30, "YES")):
+            with self.subTest(pattern=pattern):
+                # The sheet holds 24 rows, but the derivation takes as many as it is given.
+                self.assertEqual(ssa.eligibility(sheet_rows(pattern), "CRR", {})["restart"],
+                                 {"325a": restart, "94": restart})
+
+    def test_the_two_approaches_are_assessed_apart(self) -> None:
+        rows = [(end, 8e9, 300e6, 0, 60e6 if flag == "N" else 30e6, 0)
+                for end, flag in zip(month_ends(3), "MNN", strict=True)]
+        result = ssa.eligibility(rows, "CRR", {})
+        self.assertEqual(at_last(result, "325a"), ("MET", 0, 0, "NO"))
+        self.assertEqual(at_last(result, "94"), ("NOT MET", 2, 2, "NO"))
+        self.assertEqual(result["last_month"], datetime.date(2025, 3, 31))
+
+    def test_nothing_is_assessed_under_the_basel_regime_and_the_sheet_is_not_read(self) -> None:
+        rows = [*sheet_rows("MMM"), ("not a date", 0, None, None, None, None)]
+        for regime in ("Basel", "BASEL", "", None, "Other"):
+            with self.subTest(regime=regime):
+                result = ssa.eligibility(rows, regime, {})
+                reading = "NOT ASSESSED: Basel regime"
+                self.assertEqual(result["status"], {"325a": reading, "94": reading})
+                self.assertEqual(result["rows"], [None] * 4)
+                self.assertIsNone(result["last_month"])
+                for key in ("restart", "run", "count", "size", "share"):
+                    self.assertEqual(result[key], {"325a": None, "94": None})
+
+    def test_the_regime_is_read_without_regard_to_case_and_blanks(self) -> None:
+        for regime in ("CRR", "crr", " Crr "):
+            with self.subTest(regime=regime):
+                self.assertEqual(ssa.eligibility(sheet_rows("M"), regime, {})["status"],
+                                 {"325a": "MET", "94": "MET"})
+
+    def test_no_month_entered_is_not_assessed(self) -> None:
+        for rows in ([], [(None, None, None, None, None, None)], [(None, 8e9, 1, 2, 3, 4), ("", 8e9, 1, 2, 3, 4)]):
+            with self.subTest(rows=rows):
+                result = ssa.eligibility(rows, "CRR", {})
+                reading = "NOT ASSESSED: no month entered"
+                self.assertEqual(result["status"], {"325a": reading, "94": reading})
+                self.assertEqual(result["rows"], [None] * len(rows))
+                self.assertIsNone(result["last_month"])
+
+    def test_each_reason_that_rejects_a_month_and_its_order(self) -> None:
+        end = datetime.date(2026, 1, 31)
+        cases: tuple[tuple[tuple[Any, ...], str], ...] = (
+            (("abc", 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be a date"),
+            ((True, 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be a date"),
+            ((0, 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be a date"),
+            ((3_000_000, 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be a date"),
+            ((datetime.date(2026, 1, 30), 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be the last day of a month"),
+            ((datetime.date(2026, 2, 27), 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be the last day of a month"),
+            ((46053.5, 1e9, 1, 1, 1, 1), "INVALID: MonthEnd must be the last day of a month"),
+            ((end, 0, 1, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"),
+            ((end, -5, 1, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"),
+            ((end, None, 1, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"),
+            ((end, "1e9", 1, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"),
+            ((end, True, 1, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"),
+            ((end, 1e9, None, 1, 1, 1), "INVALID: a long or short total must be a number"),
+            ((end, 1e9, 1, "x", 1, 1), "INVALID: a long or short total must be a number"),
+            ((end, 1e9, 1, 1, False, 1), "INVALID: a long or short total must be a number"),
+            ((end, 1e9, 1, 1, 1, None), "INVALID: a long or short total must be a number"),
+            # A row that fails several tests gives the first reason of the list.
+            ((datetime.date(2026, 1, 30), 0, None, 1, 1, 1), "INVALID: MonthEnd must be the last day of a month"),
+            (("abc", 0, None, 1, 1, 1), "INVALID: MonthEnd must be a date"),
+            ((end, 0, None, 1, 1, 1), "INVALID: TotalAssets must be a number greater than 0"))
+        for values, reason in cases:
+            with self.subTest(values=values):
+                result = ssa.eligibility([values], "CRR", {})
+                self.assertEqual(result["rows"][0], {"status": reason, "325a": None, "94": None})
+                reading = "NOT ASSESSED: a row is invalid"
+                self.assertEqual(result["status"], {"325a": reading, "94": reading})
+                self.assertIsNone(result["last_month"])
+                self.assertEqual(result["restart"], {"325a": None, "94": None})
+
+    def test_a_month_follows_the_row_entered_before_it(self) -> None:
+        first, second, third = (datetime.date(2026, 1, 31), datetime.date(2026, 2, 28), datetime.date(2026, 3, 31))
+        sequence = "INVALID: MonthEnd must be one month after the previous row"
+
+        def status(*ends: Any) -> list[str]:
+            rows = [(end, 8e9, 1, 1, 1, 1) for end in ends]
+            return [item["status"] for item in ssa.eligibility(rows, "CRR", {})["rows"]]
+
+        self.assertEqual(status(first, second, third), ["OK", "OK", "OK"])
+        self.assertEqual(status(first, third), ["OK", sequence])
+        self.assertEqual(status(second, first), ["OK", sequence])
+        self.assertEqual(status(first, first), ["OK", sequence])
+        self.assertEqual(status(datetime.date(2025, 12, 31), first), ["OK", "OK"])
+        self.assertEqual(status(datetime.date(2024, 2, 29), datetime.date(2024, 3, 31)), ["OK", "OK"])
+        # The first row has no previous row. A row after one that is not a date is not tested.
+        self.assertEqual(status("abc", third), ["INVALID: MonthEnd must be a date", "OK"])
+        # A previous row that is a date but not a month end is the reference all the same.
+        self.assertEqual(status(datetime.date(2026, 1, 30), second),
+                         ["INVALID: MonthEnd must be the last day of a month", "OK"])
+        # The last day of 9999 has no month after it.
+        self.assertEqual(status(2958465, 2958496), ["OK", "INVALID: MonthEnd must be a date"])
+
+    def test_a_row_without_a_month_end_is_skipped_and_the_row_entered_before_it_is_the_reference(self) -> None:
+        full = sheet_rows("MMNNN")
+        rows: list[tuple[Any, ...]] = [full[0], (None, 8e9, 1, 1, 1, 1), full[1], ("", None, None, None, None, None),
+                                       (None, None, None, None, None, None), full[2], full[3], (None, 1, 2, 3, 4, 5), full[4]]
+        result = ssa.eligibility(rows, "CRR", {})
+        self.assertEqual([item is None for item in result["rows"]], [False, True, False, True, True, False, False, True, False])
+        # The run and the count are those of the rows entered, as if the blank rows were not there.
+        dense = ssa.eligibility(full, "CRR", {})
+        self.assertEqual([item for item in result["rows"] if item is not None], dense["rows"])
+        self.assertEqual({key: result[key] for key in ("status", "run", "count", "restart", "last_month")},
+                         {key: dense[key] for key in ("status", "run", "count", "restart", "last_month")})
+        self.assertEqual(at_last(result), ("CEASE", 3, 3, "NO"))
+
+    def test_a_rejected_row_leaves_the_others_their_figures_and_stops_the_assessment(self) -> None:
+        rows = sheet_rows("NNMN")
+        rows[1] = (rows[1][0], 0, *rows[1][2:])
+        result = ssa.eligibility(rows, "CRR", {})
+        self.assertEqual([item["status"] for item in result["rows"]],
+                         ["OK", "INVALID: TotalAssets must be a number greater than 0", "OK", "OK"])
+        self.assertIsNone(result["rows"][1]["325a"])
+        # The run and the count go over the valid rows, in the order of the sheet: the rejected month is passed over.
+        self.assertEqual([(item["325a"]["run"], item["325a"]["count"]) for item in result["rows"] if item["325a"]],
+                         [(1, 1), (0, 1), (1, 2)])
+        self.assertEqual(result["status"], {"325a": "NOT ASSESSED: a row is invalid",
+                                            "94": "NOT ASSESSED: a row is invalid"})
+
+    def test_a_month_end_is_a_date_a_datetime_at_midnight_or_a_serial_number(self) -> None:
+        january = datetime.date(2026, 1, 31)
+        serial = (january - datetime.date(1899, 12, 30)).days
+        for value in (january, datetime.datetime(2026, 1, 31), serial, float(serial)):
+            with self.subTest(value=value):
+                result = ssa.eligibility([(value, 8e9, 1, 1, 1, 1)], "CRR", {})
+                self.assertEqual(result["rows"][0]["status"], "OK")
+                self.assertEqual(result["last_month"], value)
+        late = ssa.eligibility([(datetime.datetime(2026, 1, 31, 12), 8e9, 1, 1, 1, 1)], "CRR", {})
+        self.assertEqual(late["rows"][0]["status"], "INVALID: MonthEnd must be the last day of a month")
+
+    def test_the_sample_series_of_the_workbook(self) -> None:
+        rows = ssa_reference.ELIGIBILITY
+        self.assertEqual(len(rows), 24)
+        self.assertEqual(rows[-1][0], ssa_reference.AS_OF)
+        result = ssa.eligibility(rows, "CRR", {})
+        self.assertEqual([item["status"] for item in result["rows"]], ["OK"] * 24)
+        # The series meets and misses the conditions of Article 325a, and has a month at the amount.
+        self.assertEqual({item["325a"]["result"] for item in result["rows"]}, {"MET", "NOT MET"})
+        self.assertEqual(result["rows"][18]["325a"]["size"], 500_000_000)
+        self.assertEqual(result["rows"][18]["325a"]["result"], "MET")
+        self.assertIn("YES", {item["325a"]["event"] for item in result["rows"]})
+        self.assertEqual(result["status"], {"325a": "NOT MET", "94": "MET"})
+        self.assertEqual(result["restart"], {"325a": "NO", "94": "YES"})
+        self.assertEqual(result["last_month"], ssa_reference.AS_OF)
+        self.assertEqual(ssa.eligibility(rows, "Basel", {})["status"]["325a"], "NOT ASSESSED: Basel regime")
 
 
 class Registered(unittest.TestCase):

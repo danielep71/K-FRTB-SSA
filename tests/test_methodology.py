@@ -100,7 +100,7 @@ class Parameters(unittest.TestCase):
         self.reference = dict(zip(codes, map(float, values), strict=True))
 
     def test_every_numeric_parameter_is_traced(self) -> None:
-        self.assertEqual(len(self.reference), 23)
+        self.assertEqual(len(self.reference), 27)
         for code in self.reference:
             with self.subTest(code=code):
                 self.assertIn(f"`{code}`", self.section)
@@ -114,7 +114,8 @@ class Parameters(unittest.TestCase):
             codes = re.findall(r"`([A-Za-z0-9]+)`", cells[0])
             if not all(code in self.reference for code in codes):
                 continue  # A table of Params, or a parameter that is a text.
-            values = [float(value) for value in cells[1].split(", ")]
+            # An amount is written with its currency and thousands separators: EUR 500,000,000.
+            values = [float(value.removeprefix("EUR ").replace(",", "")) for value in cells[1].split(", ")]
             self.assertEqual(len(values), len(codes), line)
             for code, value in zip(codes, values, strict=True):
                 with self.subTest(code=code):
@@ -169,7 +170,7 @@ class DataContract(unittest.TestCase):
         sources = {dataset["source"] for dataset in self.datasets.values()
                    if not dataset["illustrative"]}
         self.assertEqual(sources, {"Params", "IRPositions", "EQPositions", "COPositions",
-                                   "FXPositions", "OptionCharges"})
+                                   "FXPositions", "OptionCharges", "Eligibility"})
 
     def test_the_fields_of_a_position_dataset_are_the_columns_of_its_sheet(self) -> None:
         config = vba("CORE_Config.bas")
@@ -185,6 +186,18 @@ class DataContract(unittest.TestCase):
                     read = re.search(rf"Public Const {width}\s+As Long = (\d+)", config)
                     assert read is not None
                     self.assertEqual(int(read.group(1)), len(fields))
+
+    def test_the_fields_of_the_size_of_the_business_are_the_input_columns_of_eligibility(self) -> None:
+        fields = self.datasets["DS-11"]["fields"]
+        headers = self.headers("Eligibility")
+        # Columns C to H are typed; the 13 columns right of them are calculated.
+        self.assertEqual(len(headers), len(fields) + 13)
+        for field, header in zip(fields, headers, strict=False):
+            self.assertRegex(field["notes"], rf"^Column {re.escape(header)}(\.|,|$)", field["name"])
+        self.assertIn("24 rows", self.datasets["DS-11"]["granularity"].replace("up to ", ""))
+        names = self.template.defined_names
+        self.assertEqual(names["Eligibility_Header"].attr_text, "Eligibility!$C$4")
+        self.assertEqual(names["Eligibility_Results"].attr_text, "Eligibility!$D$32:$J$33")
 
     def test_the_parameters_are_those_of_the_template_in_its_order(self) -> None:
         sheet = self.template["Params"]

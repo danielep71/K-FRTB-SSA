@@ -10,15 +10,20 @@ the reporting date and currency, the FX rates (DS-05), the positions (DS-06
 to DS-09) and the option charges (DS-10). Every parameter has its reference
 value, which the Parameters table of the contracts traces to SRC-02.
 
+eligibility() derives CALC-09, the eligibility under the CRR, from the rows of
+the Eligibility sheet and the regime; no fixture holds them, so a test calls it.
+
 It is written from the contracts and shares no code with the VBA engine. Its
 values are illustrative all the same, because the project derived them.
 """
 
 from __future__ import annotations
 
+import calendar
 import datetime
 import json
 import sys
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 # ------------------------------------------------------------- parameters
@@ -63,7 +68,23 @@ SPECIFIC: dict[tuple[str, str, str], float] = {
 SERIAL_EPOCH = datetime.date(1899, 12, 30)
 SERIAL_MIN, SERIAL_MAX = 1, 2958465
 OK, INVALID, EXCLUDED = "OK", "INVALID: ", "EXCLUDED: "
+NOT_ASSESSED = "NOT ASSESSED"
 RISK_CLASSES = ("IR", "EQ", "CO", "FX")
+
+# Articles 325a(1) and 94(1) of the CRR: the share of the total assets and the amount in
+# euro that the size of the business may not exceed, by approach, under the names of
+# the parameters, which eligibility() takes from its params or, missing there, here.
+ELIGIBILITY_REFERENCE = {"EligibilityShare325a": 0.10, "EligibilityCap325a": 500_000_000.0,
+                         "EligibilityShare94": 0.05, "EligibilityCap94": 50_000_000.0}
+APPROACHES = ("325a", "94")
+# The months of the run and of the count of an approach's conditions that are not met:
+# a run of this many months, or a count over the limit among the last WINDOW months, is an event.
+EVENT_RUN, EVENT_COUNT, WINDOW = 3, 6, 12
+MONTH_REASONS = ("INVALID: MonthEnd must be a date",
+                 "INVALID: MonthEnd must be the last day of a month",
+                 "INVALID: MonthEnd must be one month after the previous row",
+                 "INVALID: TotalAssets must be a number greater than 0",
+                 "INVALID: a long or short total must be a number")
 
 Record = dict[str, Any]
 Output = dict[str, Any]
@@ -487,6 +508,124 @@ def requirement(case: Case, outputs: list[Output]) -> None:
         outputs.append({"quantity": "requirement_after_scaling", "scope": scope, "value": after[name]})
     outputs.append(total("own_funds_requirement", sum(after.values())))
     outputs.append(total("risk_weighted_assets", RWA_MULTIPLIER * sum(after.values())))
+
+
+# ------------------------------------------------------------ eligibility
+def month_serial(value: object) -> float | None:
+    """A month end as a date serial number; None when the value is neither a date nor a number."""
+    if isinstance(value, datetime.datetime):
+        return (value - datetime.datetime.combine(SERIAL_EPOCH, datetime.time())).total_seconds() / 86400
+    if isinstance(value, datetime.date):
+        return float((value - SERIAL_EPOCH).days)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def month_end_serial(serial_number: float, months: int) -> float | None:
+    """The serial of the last day of the month that lies months after the month of a date serial
+    number; None when it is beyond 31 December 9999."""
+    day = SERIAL_EPOCH + datetime.timedelta(days=int(serial_number))
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    if year > 9999:
+        return None
+    last = datetime.date(year, month + 1, calendar.monthrange(year, month + 1)[1])
+    return float((last - SERIAL_EPOCH).days)
+
+
+def month_status(values: Sequence[Any], previous: float | None) -> str:
+    """OK, or the first test of CALC-09 that a month fails. previous is the serial of the month end
+    of the row entered before it, when that was a date."""
+    serial_number = month_serial(values[0])
+    if serial_number is None or not is_date(serial_number):
+        return MONTH_REASONS[0]
+    if serial_number != month_end_serial(serial_number, 0):
+        return MONTH_REASONS[1]
+    if previous is not None and serial_number != month_end_serial(previous, 1):
+        return MONTH_REASONS[2]
+    if not is_number(values[1]) or values[1] <= 0:
+        return MONTH_REASONS[3]
+    if not all(is_number(value) for value in values[2:6]):
+        return MONTH_REASONS[4]
+    return OK
+
+
+def eligibility_month(values: Sequence[Any], approach: str, params: Mapping[str, float],
+                      missed: list[bool]) -> Record:
+    """The figures of a valid month for one approach; missed holds the months before it that did not
+    meet the conditions, valid months only, and takes this one."""
+    long, short = values[2:4] if approach == "325a" else values[4:6]
+    size = abs(long) + abs(short)
+    share = params.get(f"EligibilityShare{approach}", ELIGIBILITY_REFERENCE[f"EligibilityShare{approach}"])
+    cap = params.get(f"EligibilityCap{approach}", ELIGIBILITY_REFERENCE[f"EligibilityCap{approach}"])
+    missed.append(not (size <= share * values[1] and size <= cap))
+    run = 0
+    for flag in reversed(missed):
+        if not flag:
+            break
+        run += 1
+    count = sum(missed[-WINDOW:])
+    return {"size": size, "share": size / values[1], "result": "NOT MET" if missed[-1] else "MET",
+            "run": run, "count": count, "event": "YES" if run >= EVENT_RUN or count > EVENT_COUNT else "NO"}
+
+
+def eligibility(rows: Sequence[Sequence[Any]], regime: object, params: Mapping[str, float]) -> Record:
+    """CALC-09: the eligibility for the simplified standardised approach (Article 325a) and the
+    small trading book derogation (Article 94) of the CRR, from the rows of the Eligibility sheet.
+
+    rows: one tuple (month end, total assets, long 325a, short 325a, long 94, short 94) per row,
+    as the sheet holds it. A month end that is None, or an empty text, skips the row. regime is the
+    value of the Regime parameter, read without regard to case and blanks: anything but CRR is
+    not assessed. params holds EligibilityShare325a, EligibilityCap325a, EligibilityShare94 and
+    EligibilityCap94; one that is missing takes its reference value.
+
+    Returns the dict "rows", one item per row: None for a skipped row and under the Basel regime;
+    otherwise {"status": OK or an INVALID text, "325a": ..., "94": ...}, where each approach is
+    {"size", "share", "result" (MET or NOT MET), "run", "count", "event" (YES or NO)} for a valid
+    row and None for an invalid one. The run and the count of a row go over the valid rows, in
+    the order of the sheet. Then "status", "restart", "run", "count", "size" and "share", each by
+    approach, and "last_month": the month end of the last row entered. Where the status is NOT
+    ASSESSED, every item but "status" is None."""
+    assessed = code(regime) == "CRR"
+    items: list[Record | None] = [None] * len(rows)
+    missed: dict[str, list[bool]] = {approach: [] for approach in APPROACHES}
+    entered = 0
+    rejected = False
+    previous: float | None = None
+    last: Record = {}
+    last_month: object = None
+    for index, values in enumerate(rows):
+        if not assessed or values[0] is None or text(values[0]) == "":
+            continue
+        entered += 1
+        status = month_status(values, previous)
+        serial_number = month_serial(values[0])
+        previous = serial_number if serial_number is not None and is_date(serial_number) else None
+        items[index] = {"status": status, "325a": None, "94": None}
+        last_month = values[0]
+        if status != OK:
+            rejected = True
+            continue
+        for approach in APPROACHES:
+            figures = eligibility_month(values, approach, params, missed[approach])
+            items[index][approach] = figures  # type: ignore[index]
+            last[approach] = figures
+    result: Record = {"rows": items, "status": {}, "last_month": None}
+    for key in ("restart", "run", "count", "size", "share"):
+        result[key] = dict.fromkeys(APPROACHES)
+    if not assessed or entered == 0 or rejected:
+        reason = "Basel regime" if not assessed else "no month entered" if entered == 0 else "a row is invalid"
+        result["status"] = dict.fromkeys(APPROACHES, f"{NOT_ASSESSED}: {reason}")
+        return result
+    result["last_month"] = last_month
+    for approach in APPROACHES:
+        figures = last[approach]
+        result["status"][approach] = ("CEASE" if figures["event"] == "YES"
+                                      else "NOT MET" if figures["result"] == "NOT MET" else "MET")
+        for key in ("size", "share", "run", "count"):
+            result[key][approach] = figures[key]
+        result["restart"][approach] = "YES" if len(missed[approach]) >= WINDOW and figures["count"] == 0 else "NO"
+    return result
 
 
 # ---------------------------------------------------------------- outputs
