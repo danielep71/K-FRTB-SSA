@@ -352,6 +352,9 @@ def reader(fixture: dict[str, Any], output: dict[str, Any]) -> tuple[str, bool]:
     if scope is None:
         if quantity in run_cases.NAMED:
             return f"NamedCell({NAMES[run_cases.NAMED[quantity]]})", False
+        if quantity in run_cases.RESULTS_CELLS:
+            row, column = run_cases.RESULTS_CELLS[quantity]
+            return f"ResultsCell({row - results_first}, {column - FIRST_COLUMN})", False
         name, column = run_cases.TOTALS[quantity]
         return (f"ResultsCell({run_cases.RESULTS_ROW[name] - results_first}, "
                 f"{column - FIRST_COLUMN})"), False

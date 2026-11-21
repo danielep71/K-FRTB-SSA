@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-sample-requirement",
+  "synthetic": true,
+  "description": "The positions and option charges of the template's sample under the CRR regime, each debt security in the category of Article 336 whose rates are those of its Basel category: the requirement differs from that of illustrative-sample-requirement by the charge on the indices and the transitional multiplier only, since the sample has no offset between zones 1 and 3 and its overall net open position is above 2% of the total own funds",
+  "category": "nominal",
+  "calculation": "CALC-08",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "JPY", "inputs": {"fx_rate": 0.0058}},
+      {"id": "CAD", "inputs": {"fx_rate": 0.625}},
+      {"id": "SEK", "inputs": {"fx_rate": 0.1}},
+      {"id": "NOK", "inputs": {"fx_rate": 0.08}},
+      {"id": "DKK", "inputs": {"fx_rate": 0.134}},
+      {"id": "AUD", "inputs": {"fx_rate": 0.56}},
+      {"id": "PLN", "inputs": {"fx_rate": 0.235}},
+      {"id": "CZK", "inputs": {"fx_rate": 0.041}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-06": [
+      {"id": "IR-001", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 25000000, "rate_type_code": "Fixed", "coupon_rate": 0.04, "final_maturity_date": "2034-03-01", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": "BTP 4.00% 03/34"}},
+      {"id": "IR-002", "inputs": {"instrument_code": "Forward leg", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 5000000, "rate_type_code": "Fixed", "coupon_rate": 0.04, "final_maturity_date": "2034-03-01", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": "BTP 4.00% 03/34"}},
+      {"id": "IR-003", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 15000000, "rate_type_code": "Fixed", "coupon_rate": 0.025, "final_maturity_date": "2030-02-15", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": "DBR 2.50% 02/30"}},
+      {"id": "IR-004", "inputs": {"instrument_code": "Swap leg", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 20000000, "rate_type_code": "Fixed", "coupon_rate": 0.028, "final_maturity_date": "2036-09-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "IR-005", "inputs": {"instrument_code": "Swap leg", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 20000000, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2036-09-30", "next_repricing_date": "2027-03-31", "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "IR-006", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 8000000, "rate_type_code": "Fixed", "coupon_rate": 0.045, "final_maturity_date": "2029-06-15", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": "XS-CORP-A 4.50% 06/29"}},
+      {"id": "IR-007", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.0625, "final_maturity_date": "2031-05-15", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 100%", "issue_id": "XS-CORP-HY 6.25% 05/31"}},
+      {"id": "IR-008", "inputs": {"instrument_code": "FRN", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 5000000, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2028-12-15", "next_repricing_date": "2026-12-15", "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": "XS-SSA-FRN 12/28"}},
+      {"id": "IR-009", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 12000000, "rate_type_code": "Fixed", "coupon_rate": 0.0475, "final_maturity_date": "2055-05-15", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": "UST 4.75% 05/55"}},
+      {"id": "IR-010", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Short", "position_value_amount": 18000000, "rate_type_code": "Fixed", "coupon_rate": 0.03875, "final_maturity_date": "2028-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": "UST 3.875% 09/28"}},
+      {"id": "IR-011", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 2000000, "rate_type_code": "Fixed", "coupon_rate": 0.075, "final_maturity_date": "2030-04-01", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 150%", "issue_id": "US-CORP-B 7.50% 04/30"}},
+      {"id": "IR-012", "inputs": {"instrument_code": "Bond", "currency_code": "GBP", "direction_code": "Long", "position_value_amount": 6000000, "rate_type_code": "Fixed", "coupon_rate": 0.0125, "final_maturity_date": "2041-10-22", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": "UKT 1.25% 10/41"}}
+    ],
+    "DS-07": [
+      {"id": "EQ-001", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 4000000}},
+      {"id": "EQ-002", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ISP", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 6000000}},
+      {"id": "EQ-003", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "UCG", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 2000000}},
+      {"id": "EQ-004", "inputs": {"market_code": "IT", "type_code": "Index", "identifier_code": "FTSE MIB", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 5000000}},
+      {"id": "EQ-005", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "SAP", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 5000000}},
+      {"id": "EQ-006", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "SIE", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 3000000}},
+      {"id": "EQ-007", "inputs": {"market_code": "DE", "type_code": "Index", "identifier_code": "DAX", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 4000000}},
+      {"id": "EQ-008", "inputs": {"market_code": "US", "type_code": "Single name", "identifier_code": "AAPL", "currency_code": "USD", "direction_code": "Long", "market_value_amount": 3000000}},
+      {"id": "EQ-009", "inputs": {"market_code": "US", "type_code": "Single name", "identifier_code": "MSFT", "currency_code": "USD", "direction_code": "Short", "market_value_amount": 1500000}},
+      {"id": "EQ-010", "inputs": {"market_code": "US", "type_code": "Index", "identifier_code": "S&P 500", "currency_code": "USD", "direction_code": "Long", "market_value_amount": 2000000}},
+      {"id": "EQ-011", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 1000000}}
+    ],
+    "DS-08": [
+      {"id": "CO-001", "inputs": {"commodity_code": "Brent crude", "direction_code": "Long", "quantity_count": 50000, "spot_price_amount": 72.0, "currency_code": "USD"}},
+      {"id": "CO-002", "inputs": {"commodity_code": "Brent crude", "direction_code": "Short", "quantity_count": 20000, "spot_price_amount": 72.0, "currency_code": "USD"}},
+      {"id": "CO-003", "inputs": {"commodity_code": "WTI crude", "direction_code": "Long", "quantity_count": 10000, "spot_price_amount": 68.0, "currency_code": "USD"}},
+      {"id": "CO-004", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 200, "spot_price_amount": 9800.0, "currency_code": "USD"}},
+      {"id": "CO-005", "inputs": {"commodity_code": "Copper", "direction_code": "Short", "quantity_count": 50, "spot_price_amount": 9800.0, "currency_code": "USD"}},
+      {"id": "CO-006", "inputs": {"commodity_code": "TTF natural gas", "direction_code": "Short", "quantity_count": 100000, "spot_price_amount": 35.0, "currency_code": "EUR"}}
+    ],
+    "DS-09": [
+      {"id": "FX-001", "inputs": {"currency_code": "CAD", "direction_code": "Long", "net_position_amount": 80000000}},
+      {"id": "FX-002", "inputs": {"currency_code": "SEK", "direction_code": "Long", "net_position_amount": 1000000000}},
+      {"id": "FX-003", "inputs": {"currency_code": "GBP", "direction_code": "Long", "net_position_amount": 125000000}},
+      {"id": "FX-004", "inputs": {"currency_code": "NOK", "direction_code": "Short", "net_position_amount": 250000000}},
+      {"id": "FX-005", "inputs": {"currency_code": "USD", "direction_code": "Short", "net_position_amount": 200000000}},
+      {"id": "FX-006", "inputs": {"currency_code": "XAU", "direction_code": "Short", "net_position_amount": 10000}}
+    ],
+    "DS-10": [
+      {"id": "IR", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "EQ", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "CO", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "FX", "inputs": {"charge_amount": 0, "currency_code": "EUR"}}
+    ]
+  }
+}

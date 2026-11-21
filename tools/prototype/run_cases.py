@@ -77,6 +77,8 @@ TOTALS = {"ir_specific_risk_charge": ("IR", 5), "ir_general_market_risk_charge":
 BY_CLASS = {"option_charge": 8, "requirement_before_scaling": 9, "requirement_after_scaling": 11}
 NAMED = {"fx_overall_net_open_position": "FX_ONOP", "own_funds_requirement": "SSA_Requirement",
          "risk_weighted_assets": "SSA_RWA"}
+# A quantity of the whole calculation in a cell of Results without a name: its row and column.
+RESULTS_CELLS = {"transitional_factor": (12, 10)}
 # The currencies of the FX block of Buckets: the column of the code and of the net position.
 FX_BLOCK_CODE, FX_BLOCK_NET = 4, 8
 # A parameter a fixture may set: the workbook name of its cell, and its value when the
@@ -200,6 +202,8 @@ def actual(workbook: Any, fixture: dict[str, Any], output: dict[str, Any]) -> ob
     if scope is None:
         if quantity in NAMED:
             return verify.named_cell(workbook, NAMED[quantity]).value
+        if quantity in RESULTS_CELLS:
+            return workbook["Results"].cell(*RESULTS_CELLS[quantity]).value
         name, column = TOTALS[quantity]
         return workbook["Results"].cell(RESULTS_ROW[name], column).value
     dataset, record = scope["dataset"], scope["record"]

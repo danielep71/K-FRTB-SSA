@@ -154,6 +154,113 @@ class Derivation(unittest.TestCase):
             ssa.derive({**ir_case(), "calculation": "CALC-99"})
 
 
+def under_crr(case: dict[str, Any], own_funds: float | None = 10_000) -> dict[str, Any]:
+    """A fixture under the CRR regime, with total own funds unless None."""
+    parameters: dict[str, object] = {"regime_code": "CRR"}
+    if own_funds is not None:
+        parameters["total_own_funds_amount"] = own_funds
+    return {**case, "parameters": parameters}
+
+
+def fx_case(amount: float, reporting_date: str = "2026-12-31") -> dict[str, Any]:
+    """A fixture of CALC-06 with one long USD position of amount, at rate 1."""
+    return {"calculation": "CALC-06", "reporting_date": reporting_date, "reporting_currency_code": "EUR",
+            "datasets": {"DS-05": [{"id": "EUR", "inputs": {"fx_rate": 1.0}},
+                                   {"id": "USD", "inputs": {"fx_rate": 1.0}}],
+                         "DS-09": [{"id": "F1", "inputs": {"currency_code": "USD", "direction_code": "Long",
+                                                           "net_position_amount": amount}}]}}
+
+
+class CrrDerivation(unittest.TestCase):
+    """tests/derivations/ssa.py under the CRR regime, on values that can be worked out by hand."""
+
+    def test_the_category_of_a_row_is_crr_or_none_under_the_crr_and_never_crr_under_basel(self) -> None:
+        cases: tuple[tuple[dict[str, object], str, str], ...] = (
+            ({"sr_category_code": "crr", "rating_grade_code": " rw 20% "}, "OK",
+             "INVALID: SR category must be GOV, QUAL, OTHER or NONE"),
+            ({"sr_category_code": "NONE"}, "OK", "OK"),
+            ({"sr_category_code": "GOV", "rating_grade_code": "AAA to AA-"},
+             "INVALID: SR category must be CRR or NONE under the CRR", "OK"),
+            ({"sr_category_code": "CRR", "rating_grade_code": "RW 35%"},
+             "INVALID: no Article 336 charge for this risk weight",
+             "INVALID: SR category must be GOV, QUAL, OTHER or NONE"),
+            ({"sr_category_code": "CRR", "rating_grade_code": "AAA to AA-"},
+             "INVALID: no Article 336 charge for this risk weight",
+             "INVALID: SR category must be GOV, QUAL, OTHER or NONE"),
+        )
+        for inputs, crr, basel in cases:
+            with self.subTest(inputs=inputs):
+                self.assertEqual(derived(under_crr(ir_case(**inputs)))[("ir_position_status", "P1")], crr)
+                self.assertEqual(derived(ir_case(**inputs))[("ir_position_status", "P1")], basel)
+
+    def test_the_rates_of_article_336_by_risk_weight_and_residual_term(self) -> None:
+        # 1,000,000 at each risk weight and final maturity: the rate of table 1 of Article 336(1),
+        # half of it at 10% (Article 336(3)). 2028-12-30 is 730 days, two years, after the
+        # reporting date: the limit of the middle range, which it belongs to.
+        cases = (("RW 0%", "2040-12-31", 0.0), ("RW 10%", "2027-06-30", 1250.0),
+                 ("RW 10%", "2028-12-30", 5000.0), ("RW 10%", "2029-01-01", 8000.0),
+                 ("RW 20%", "2027-06-30", 2500.0), ("RW 50%", "2028-12-30", 10000.0),
+                 ("RW 50%", "2040-12-31", 16000.0), ("RW 75%", "2027-01-31", 80000.0),
+                 ("RW 100%", "2040-12-31", 80000.0), ("RW 150%", "2027-01-31", 120000.0))
+        for grade, maturity, charge in cases:
+            with self.subTest(grade=grade, maturity=maturity):
+                case = under_crr(ir_case(sr_category_code="CRR", rating_grade_code=grade,
+                                         final_maturity_date=maturity))
+                case["calculation"] = "CALC-02"
+                self.assertAlmostEqual(derived(case)[("ir_specific_risk_charge", None)], charge, places=6)
+
+    def test_the_offset_between_zones_1_and_3_is_charged_at_150_percent_under_the_crr(self) -> None:
+        # 700 weighted long in band 4 (zone 1) against 700 weighted short in band 11 (zone 3).
+        weighted = {4: [700.0, 0.0], 11: [0.0, 700.0]}
+        self.assertAlmostEqual(ssa.ladder_charges(weighted, ssa.ZONES_1_AND_3)[
+            "ir_horizontal_disallowance_between_zones"], 700.0, places=9)
+        self.assertAlmostEqual(ssa.ladder_charges(weighted, ssa.ZONES_1_AND_3_CRR)[
+            "ir_horizontal_disallowance_between_zones"], 1050.0, places=9)
+
+    def test_an_index_carries_no_charge_of_its_own_under_the_crr(self) -> None:
+        case = {"calculation": "CALC-04", "reporting_date": "2026-12-31", "reporting_currency_code": "EUR",
+                "datasets": {"DS-05": [{"id": "EUR", "inputs": {"fx_rate": 1.0}}],
+                             "DS-07": [{"id": "E1", "inputs": {
+                                 "market_code": "EA", "type_code": "Index", "identifier_code": "IDX",
+                                 "currency_code": "EUR", "direction_code": "Long",
+                                 "market_value_amount": 1000000}}]}}
+        for regime, index in ((under_crr(case), 0.0), (case, 20000.0)):
+            outputs = derived(regime)
+            with self.subTest(parameters=regime.get("parameters")):
+                self.assertAlmostEqual(outputs[("eq_index_charge", None)], index, places=6)
+                self.assertAlmostEqual(outputs[("eq_general_market_risk_charge", None)], 80000.0, places=6)
+
+    def test_no_fx_requirement_up_to_two_percent_of_the_total_own_funds_and_all_of_it_above(self) -> None:
+        # 2% of 10,000 is 200: a position of 200 carries nothing, one of 200.01 its whole 8%.
+        for amount, charge in ((200.0, 0.0), (200.01, 16.0008), (0.0, 0.0)):
+            with self.subTest(amount=amount):
+                outputs = derived(under_crr(fx_case(amount)))
+                self.assertAlmostEqual(outputs[("fx_overall_net_open_position", None)], amount, places=9)
+                self.assertAlmostEqual(outputs[("fx_charge", None)], charge, places=9)
+        self.assertAlmostEqual(derived(fx_case(200.0))[("fx_charge", None)], 16.0, places=9)
+
+    def test_the_crr_needs_total_own_funds_for_the_de_minimis(self) -> None:
+        for own_funds in (None, 0):
+            with self.subTest(own_funds=own_funds), self.assertRaises(AssertionError):
+                ssa.derive(under_crr(fx_case(200.0), own_funds))
+
+    def test_the_transitional_factor_applies_under_the_crr_up_to_its_last_date(self) -> None:
+        options = [{"id": name, "inputs": {"currency_code": "EUR", "charge_amount": 0}}
+                   for name in ("IR", "EQ", "CO")]
+        for date, crr_factor in (("2029-12-31", 0.9), ("2030-01-01", 1.0), ("2026-12-31", 0.9)):
+            case = {**fx_case(1000.0, date), "calculation": "CALC-08"}
+            case["datasets"] = {**case["datasets"], "DS-10": [
+                *options, {"id": "FX", "inputs": {"currency_code": "EUR", "charge_amount": 0}}]}
+            for regime, factor in ((under_crr(case), crr_factor), (case, 1.0)):
+                outputs = derived(regime)
+                with self.subTest(date=date, parameters=regime.get("parameters")):
+                    self.assertEqual(outputs[("transitional_factor", None)], factor)
+                    # 8% of 1,000 scaled by 1.20, then the factor; the risk-weighted assets follow it.
+                    self.assertAlmostEqual(outputs[("own_funds_requirement", None)], 96.0 * factor, places=9)
+                    self.assertAlmostEqual(outputs[("risk_weighted_assets", None)], 1200.0 * factor,
+                                           places=9)
+
+
 def month_ends(count: int, year: int = 2025, month: int = 1) -> list[datetime.date]:
     """count month ends, the first in the month of year and month."""
     ends = []
@@ -408,7 +515,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 29)
+        self.assertEqual(len(self.cases), 38)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -446,6 +553,101 @@ class Registered(unittest.TestCase):
                               ("illustrative-sample-fx", "DS-09")):
             with self.subTest(case=case):
                 self.assertEqual(self.cases[case]["datasets"][dataset], datasets[dataset])
+
+    def expected(self, name: str) -> dict[tuple[str, str | None], Any]:
+        """The expected outputs of a registered case by quantity and record."""
+        data = json.loads((EXPECTED / f"{name}.json").read_text(encoding="utf-8"))
+        return {(output["quantity"], None if output["scope"] is None else output["scope"]["record"]):
+                output.get("value", output.get("text")) for output in data["outputs"]}
+
+    def assert_same_positions(self, crr: str, basel: str) -> None:
+        """The CRR case holds the records of its Basel case, but the category and the risk weight
+        of Article 336 that a debt security has in place of its Basel category and grade."""
+        crr_case, basel_case = self.cases[crr], self.cases[basel]
+        self.assertEqual(crr_case["parameters"]["regime_code"], "CRR")
+        self.assertNotIn("parameters", basel_case)
+        self.assertEqual(crr_case["datasets"].keys(), basel_case["datasets"].keys())
+        for dataset, records in basel_case["datasets"].items():
+            for mine, theirs in zip(crr_case["datasets"][dataset], records, strict=True):
+                with self.subTest(case=crr, record=theirs["id"]):
+                    self.assertEqual(mine["id"], theirs["id"])
+                    category = theirs["inputs"].get("sr_category_code")
+                    if dataset == "DS-06" and category not in (None, "NONE"):
+                        self.assertEqual(mine["inputs"]["sr_category_code"], "CRR")
+                        rates = {rate for (cat, grade, _), rate in ssa.SPECIFIC.items()
+                                 if (cat, grade) == (category.upper(), theirs["inputs"]["rating_grade_code"].upper())}
+                        weight = mine["inputs"]["rating_grade_code"].upper()
+                        self.assertEqual({rate for (cat, grade, _), rate in ssa.SPECIFIC.items()
+                                          if (cat, grade) == ("CRR", weight)}, rates)
+                        mine = {**mine, "inputs": {**mine["inputs"], "sr_category_code": category,
+                                                   "rating_grade_code": theirs["inputs"]["rating_grade_code"]}}
+                    self.assertEqual(mine, theirs)
+
+    def assert_differ_only_in(self, crr: str, basel: str, changed: dict[tuple[str, str | None], float]) -> None:
+        """The expected values of the CRR case equal those the derivation gives the Basel case, but
+        those of changed, which the CRR case has. The derivation stands for the Basel case because a
+        published value of it is the source's, rounded as the source prints it."""
+        mine, theirs = self.expected(crr), derived(self.cases[basel])
+        common = mine.keys() & theirs.keys()
+        self.assertTrue(changed.keys() <= common)
+        for key in sorted(common, key=str):
+            with self.subTest(case=crr, output=key):
+                if key in changed:
+                    self.assertNotAlmostEqual(mine[key], theirs[key], places=6)
+                    self.assertAlmostEqual(mine[key], changed[key], places=6)
+                elif isinstance(theirs[key], str):
+                    self.assertEqual(mine[key], theirs[key])
+                else:
+                    self.assertAlmostEqual(mine[key], theirs[key], places=6)
+
+    def test_the_crr_cases_hold_the_positions_of_a_basel_case_and_differ_by_a_rule_of_the_crr(self) -> None:
+        # Article 339(9)(f): example C.2 offsets 1,000,000 between zones 1 and 3, charged at 150% in
+        # place of 100%, 500,000 more between the zones and in the charge.
+        c2 = derived(self.cases["bcbs119-c2-maturity-method"])
+        self.assert_same_positions("illustrative-crr-maturity-method-c2", "bcbs119-c2-maturity-method")
+        self.assert_differ_only_in("illustrative-crr-maturity-method-c2", "bcbs119-c2-maturity-method", {
+            (quantity, scope): c2[(quantity, scope)] + 500000
+            for quantity in ("ir_horizontal_disallowance_between_zones", "ir_general_market_risk_charge")
+            for scope in ("USD", None) if (quantity, scope) in c2})
+        # Article 344: no charge on an index.
+        self.assert_same_positions("illustrative-crr-sample-equity", "illustrative-sample-equity")
+        self.assert_differ_only_in("illustrative-crr-sample-equity", "illustrative-sample-equity",
+                                   {("eq_index_charge", None): 0.0})
+        # Article 351: no requirement where the position of 335 is 2% of the total own funds; all of it
+        # where it is above.
+        for crr, waived in (("illustrative-crr-fx-de-minimis-limit", True),
+                            ("illustrative-crr-fx-above-de-minimis", False)):
+            self.assert_same_positions(crr, "mar40-61-table-9")
+            self.assertAlmostEqual(0.02 * self.cases[crr]["parameters"]["total_own_funds_amount"],
+                                   335.0 if waived else 334.999, places=9)
+            self.assert_differ_only_in(crr, "mar40-61-table-9", {("fx_charge", None): 0.0} if waived else {})
+        # Article 495s(2): the factor 0.9 up to 2029-12-31, then 1; the total own funds leave the FX
+        # requirement charged.
+        only = derived(self.cases["illustrative-requirement-fx-and-options-only"])
+        for crr, factor in (("illustrative-crr-transitional-end-date", 0.9),
+                            ("illustrative-crr-after-transitional-end-date", 1.0)):
+            self.assert_same_positions(crr, "illustrative-requirement-fx-and-options-only")
+            changes: dict[tuple[str, str | None], float] = {} if factor == 1.0 else {
+                ("transitional_factor", None): factor,
+                ("own_funds_requirement", None): factor * only[("own_funds_requirement", None)],
+                ("risk_weighted_assets", None): factor * only[("risk_weighted_assets", None)]}
+            self.assert_differ_only_in(crr, "illustrative-requirement-fx-and-options-only", changes)
+
+    def test_the_sample_under_both_regimes_differs_by_the_index_charge_and_the_transitional_factor(self) -> None:
+        crr, basel = "illustrative-crr-sample-requirement", "illustrative-sample-requirement"
+        self.assert_same_positions(crr, basel)
+        sample = derived(self.cases[basel])
+        index = derived(self.cases["illustrative-sample-equity"])[("eq_index_charge", None)]
+        equity = sample[("requirement_before_scaling", "EQ")] - index
+        scaled = sample[("own_funds_requirement", None)] - ssa.SCALING["EQ"] * index
+        # The sample offsets nothing between zones 1 and 3, and its position of 335 million is above
+        # 2% of the 10 billion of total own funds: the interest rate and FX requirements do not change.
+        self.assert_differ_only_in(crr, basel, {
+            ("requirement_before_scaling", "EQ"): equity,
+            ("requirement_after_scaling", "EQ"): ssa.SCALING["EQ"] * equity,
+            ("transitional_factor", None): 0.9,
+            ("own_funds_requirement", None): 0.9 * scaled,
+            ("risk_weighted_assets", None): 0.9 * ssa.RWA_MULTIPLIER * scaled})
 
     def test_only_the_values_printed_in_the_source_are_published(self) -> None:
         published = []
@@ -498,7 +700,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 29)
+        self.assertEqual(len(names), 38)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])
@@ -574,6 +776,7 @@ class Runner(unittest.TestCase):
         workbook = openpyxl.load_workbook(TEMPLATE)
         case = fixture("illustrative-sample-requirement")
         workbook["Results"]["K12"].value = 48267441.0
+        workbook["Results"]["J12"].value = 0.9
         workbook["Results"]["I8"].value = 2792000.0
         workbook["IRCalc"]["D6"].value = "OK"
         workbook["IR_Zones"]["C6"].value = "EUR"
@@ -585,6 +788,7 @@ class Runner(unittest.TestCase):
             return self.tool.actual(workbook, case, {"quantity": quantity, "scope": scope})
 
         self.assertEqual(read("own_funds_requirement"), 48267441.0)
+        self.assertEqual(read("transitional_factor"), 0.9)
         self.assertEqual(read("requirement_before_scaling", "DS-10", "EQ"), 2792000.0)
         self.assertEqual(read("ir_position_status", "DS-06", case["datasets"]["DS-06"][1]["id"]), "OK")
         self.assertEqual(read("ir_horizontal_disallowance_within_zones", "DS-05", "EUR"), 60.0)

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-ir-specific-risk",
+  "synthetic": true,
+  "description": "Debt positions under the CRR regime at each risk weight of table 1 of Article 336, in each range of the residual term where the table has them, two rows of one issue that net, and a swap leg without specific risk",
+  "category": "nominal",
+  "calculation": "CALC-02",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "S-01", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 5000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2036-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": null}},
+      {"id": "S-02", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 2000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 10%", "issue_id": null}},
+      {"id": "S-03", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 2000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 10%", "issue_id": null}},
+      {"id": "S-04", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 2000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 10%", "issue_id": null}},
+      {"id": "S-05", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": null}},
+      {"id": "S-06", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": null}},
+      {"id": "S-07", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": null}},
+      {"id": "S-08", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 4000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 50%", "issue_id": null}},
+      {"id": "S-09", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 4000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2028-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 50%", "issue_id": null}},
+      {"id": "S-10", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 4000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 50%", "issue_id": null}},
+      {"id": "S-11", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1500000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 75%", "issue_id": null}},
+      {"id": "S-12", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 100%", "issue_id": null}},
+      {"id": "S-13", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 500000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 150%", "issue_id": null}},
+      {"id": "S-14", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 100%", "issue_id": "XS-NET"}},
+      {"id": "S-15", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 1000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 100%", "issue_id": "xs-net"}},
+      {"id": "S-16", "inputs": {"instrument_code": "Swap leg", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 10000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2031-09-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}}
+    ]
+  }
+}

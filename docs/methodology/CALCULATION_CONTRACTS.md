@@ -242,8 +242,10 @@ the texts listed under `CALC-03`, which shares the rows.
 
 **Validation:** the test cases
 `illustrative-ir-specific-risk-maturity-limits` and
-`illustrative-sample-ir-specific-risk`. Their expected values are
-`illustrative`: derived within the project, they validate nothing. See the
+`illustrative-sample-ir-specific-risk`, and under the `CRR` regime
+`illustrative-crr-ir-specific-risk`, a row at each risk weight of step 5 and
+in each range of the residual term where it has them. Their expected values
+are `illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-02` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
@@ -354,6 +356,7 @@ its other fields need not be valid, and `Checks` warns (rule `C17`) without
 listing it.
 
 **Validation:** the test cases `bcbs119-c2-maturity-method`,
+`illustrative-crr-maturity-method-c2`, `illustrative-invalid-crr-ir-positions`,
 `illustrative-invalid-ir-positions`, `illustrative-ir-book`,
 `illustrative-ir-time-band-limits`,
 `illustrative-sample-ir-general-market-risk` and
@@ -365,12 +368,14 @@ position charge and the charge of the worked example C.2 of `SRC-03`
 (`bcbs119-c2-maturity-method`), and the weighted positions and the vertical
 disallowance of the example of MAR40.27 (`mar40-27-vertical-disallowance`).
 The expected values of the others are `illustrative`: derived within the
-project, they validate nothing. No test case has an expected value under the
-`CRR` regime, so step 10 is exercised by the VBA suite and by `verify.py`
-only. Run under the `CRR` regime, the worked example C.2 gives 1,950,000 between
-the zones and a charge of 5,080,000, which is 500,000 more than its published
-values: 50% of the 1,000,000 that it offsets between zones 1 and 3, as step 10
-says; the other components are unchanged (`tests/test_prototype.py`). See the
+project, they validate nothing. `illustrative-crr-maturity-method-c2` runs the
+positions of the worked example C.2 under the `CRR` regime, each security in
+the risk weight of Article 336 whose rates are those of its Basel category: it
+gives 500,000 more between the zones and in the charge, 50% of the 1,000,000
+that it offsets between zones 1 and 3, as step 10 says, and the other
+components are unchanged (`tests/test_cases.py`). `illustrative-invalid-crr-ir-positions`
+tests the category and the risk weight under the `CRR` regime, and a row of
+`illustrative-invalid-ir-positions` the category `CRR` under the Basel regime. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-03` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
@@ -464,14 +469,15 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 As under `CALC-03`, an excluded row is a non-trading book position, excluded
 before any test after the book, and `Checks` warns (rule `C17`).
 
-**Validation:** the test cases `illustrative-eq-book`,
-`illustrative-eq-matched-positions`, `illustrative-invalid-eq-positions` and
-`illustrative-sample-equity`. `illustrative-eq-book` and two rows of
+**Validation:** the test cases `illustrative-crr-sample-equity`,
+`illustrative-eq-book`, `illustrative-eq-matched-positions`,
+`illustrative-invalid-eq-positions` and `illustrative-sample-equity`. `illustrative-eq-book` and two rows of
 `illustrative-invalid-eq-positions` test the book: a non-trading book row is
 excluded before its other tests and offsets nothing. Their
 expected values are `illustrative`: derived within the project, they validate
-nothing. No test case has an expected value under the `CRR` regime, so step 6
-is exercised by the VBA suite and by `verify.py` only. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
+nothing. `illustrative-crr-sample-equity` runs the positions of
+`illustrative-sample-equity` under the `CRR` regime: its index charge is 0, as
+step 6 says, and its other values are unchanged. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
 and the rows of `CALC-04` in the [traceability
 table](VALIDATION_PLAN.md#traceability).
 
@@ -667,8 +673,12 @@ is an unusable parameter: the run reads `STOPPED`, and `Checks` lists it with
 
 **Validation:** the test case `mar40-61-table-9`, two of whose expected
 values are published in table 9 of MAR40.61, and the test cases
+`illustrative-crr-fx-above-de-minimis`, `illustrative-crr-fx-de-minimis-limit`,
 `illustrative-fx-book`, `illustrative-fx-one-sided-positions`,
-`illustrative-invalid-fx-positions` and `illustrative-sample-fx`.
+`illustrative-invalid-fx-positions` and `illustrative-sample-fx`. The two
+cases of the `CRR` regime run the positions of table 9 with total own funds
+whose 2% equals the overall net open position of 335, where the requirement is
+zero, and whose 2% is 334.999, where it is the whole 8% of step 3.
 `illustrative-fx-book` and two rows of `illustrative-invalid-fx-positions`
 test the book: a non-trading book row is tested and calculated as a trading
 book one. Every other expected value is `illustrative`:
@@ -809,7 +819,15 @@ sheet with more than 500 rows stops the run in the same way: `Checks` lists
 the sheet and the rows found under `C14`.
 
 **Validation:** the test cases `illustrative-requirement-fx-and-options-only`
-and `illustrative-sample-requirement`. Their expected values are
+and `illustrative-sample-requirement`, and under the `CRR` regime
+`illustrative-crr-sample-requirement`, `illustrative-crr-transitional-end-date`
+and `illustrative-crr-after-transitional-end-date`. The first of these runs the
+sample portfolio, each security in the risk weight of Article 336 whose rates
+are those of its Basel category: its requirement differs from that of
+`illustrative-sample-requirement` by the index charge of `CALC-04` and the
+factor of step 5 only. The other two run the positions of
+`illustrative-requirement-fx-and-options-only` on 2029-12-31, with the factor
+0.9, and on 2030-01-01, with the factor 1. Their expected values are
 `illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-08` in the [traceability table](VALIDATION_PLAN.md#traceability).

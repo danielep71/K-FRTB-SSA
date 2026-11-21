@@ -86,8 +86,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "cases"   'Name of the suite in its log
-    Private Const EXPECTED_CASES      As Long = 29          'Cases a complete run starts
-    Private Const EXPECTED_ASSERTIONS As Long = 684         'Assertions a complete run evaluates
+    Private Const EXPECTED_CASES      As Long = 38          'Cases a complete run starts
+    Private Const EXPECTED_ASSERTIONS As Long = 843         'Assertions a complete run evaluates
 
     'The inputs a test case replaces (InputArea)
     Private Const INPUT_AREAS   As Long = 14    'Areas kept and put back
@@ -123,7 +123,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=29; assertions=684; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=38; assertions=843; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   The documented entry point of the suite: it raises when the run does not
@@ -387,6 +387,14 @@ Private Sub RunSuite()
         CaseBcbs119C2MaturityMethod
         CaseIllustrativeCoBook
         CaseIllustrativeCoMatchedPositions
+        CaseIllustrativeCrrAfterTransitionalEndDate
+        CaseIllustrativeCrrFxAboveDeMinimis
+        CaseIllustrativeCrrFxDeMinimisLimit
+        CaseIllustrativeCrrIrSpecificRisk
+        CaseIllustrativeCrrMaturityMethodC2
+        CaseIllustrativeCrrSampleEquity
+        CaseIllustrativeCrrSampleRequirement
+        CaseIllustrativeCrrTransitionalEndDate
         CaseIllustrativeEligibilityBaselRegime
         CaseIllustrativeEligibilityEvents
         CaseIllustrativeEligibilityLimits
@@ -396,6 +404,7 @@ Private Sub RunSuite()
         CaseIllustrativeFxBook
         CaseIllustrativeFxOneSidedPositions
         CaseIllustrativeInvalidCoPositions
+        CaseIllustrativeInvalidCrrIrPositions
         CaseIllustrativeInvalidEligibilityMonths
         CaseIllustrativeInvalidEqPositions
         CaseIllustrativeInvalidFxPositions
@@ -1138,6 +1147,2305 @@ Private Sub CaseIllustrativeCoMatchedPositions()
         TEST_Harness.AssertNear "co-gross-charge", 60420, Actual, 0.000001, 0.000000001
         TEST_Harness.RecordResult "illustrative-co-matched-positions", vbNullString, _
             "co_gross_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrAfterTransitionalEndDate()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case
+'   illustrative-crr-after-transitional-end-date.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 2 row(s)
+'     - the option charges: 4 risk class(es)
+'     - the foreign exchange positions: 1 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2030, 1, 1)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 50000000
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+
+'------------------------------------------------------------------------------
+' TYPE OPTION CHARGES
+'------------------------------------------------------------------------------
+    'Type the option charge of each risk class that the test case gives
+        SetNamed NM_OPTIONS_PREFIX & "IR", 0
+        SetNamed NM_OPTIONS_PREFIX & "EQ", 10000
+        SetNamed NM_OPTIONS_PREFIX & "CO", 0
+        SetNamed NM_OPTIONS_PREFIX & "FX", 2500
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("R-1", Empty, "USD", "Long", 2000000)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrAfterTransitionalEndDate()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-after-transitional-end-date, on CALC-08: The
+'   FX position and the option charges of
+'   illustrative-requirement-fx-and-options-only under the CRR regime, with
+'   total own funds of 50 million, whose 2% is below the FX position, the
+'   day after the last date of the transitional multiplier: the factor is 1.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 11 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError);
+'   InputsIllustrativeCrrAfterTransitionalEndDate; KeepInputs;
+'   RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-after-transitional-end-date"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrAfterTransitionalEndDate
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare requirement_before_scaling of IR with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(1, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-ir", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_before_scaling", "DS-10", "IR", Actual
+    'Compare requirement_after_scaling of IR with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(1, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-ir", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_after_scaling", "DS-10", "IR", Actual
+    'Compare requirement_before_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-eq", 10000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_before_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_after_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-eq", 35000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_after_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_before_scaling of CO with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(3, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-co", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_before_scaling", "DS-10", "CO", Actual
+    'Compare requirement_after_scaling of CO with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(3, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-co", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_after_scaling", "DS-10", "CO", Actual
+    'Compare requirement_before_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-fx", 146500, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_before_scaling", "DS-10", "FX", Actual
+    'Compare requirement_after_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-fx", 175800, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "requirement_after_scaling", "DS-10", "FX", Actual
+    'Compare transitional_factor with its expected value and record it
+        Actual = NumberOf(ResultsCell(6, 7))
+        TEST_Harness.AssertNear "transitional-factor", 1, Actual, 0.000000000001, 0
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "transitional_factor", vbNullString, vbNullString, Actual
+    'Compare own_funds_requirement with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_Requirement"))
+        TEST_Harness.AssertNear "own-funds-requirement", 210800, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "own_funds_requirement", vbNullString, vbNullString, Actual
+    'Compare risk_weighted_assets with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_RWA"))
+        TEST_Harness.AssertNear "risk-weighted-assets", 2635000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-after-transitional-end-date", _
+            vbNullString, "risk_weighted_assets", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrFxAboveDeMinimis()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-fx-above-de-minimis.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 16749.95
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrFxAboveDeMinimis()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-fx-above-de-minimis, on CALC-06: The
+'   positions of the example of table 9 of MAR40.61 under the CRR regime,
+'   with total own funds whose 2% is 334.999, below the overall net open
+'   position of 335: the whole requirement of 8% applies, not only on the
+'   excess.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 14 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrFxAboveDeMinimis;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-fx-above-de-minimis"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrFxAboveDeMinimis
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare fx_position_status of T9-JPY with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-jpy", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 1, 1))
+    'Compare fx_position_status of T9-EUR with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-eur", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 2, 1))
+    'Compare fx_position_status of T9-GBP with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-gbp", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+    'Compare fx_position_status of T9-CAD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-cad", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
+    'Compare fx_position_status of T9-USD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-usd", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 5, 1))
+    'Compare fx_position_status of T9-XAU with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-xau", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 6, 1))
+    'Compare fx_net_position of CAD with its expected value and record it
+        Actual = NumberOf(FxNet("CAD"))
+        TEST_Harness.AssertNear "fx-net-position-of-cad", -20, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "CAD", Actual
+    'Compare fx_net_position of EUR with its expected value and record it
+        Actual = NumberOf(FxNet("EUR"))
+        TEST_Harness.AssertNear "fx-net-position-of-eur", 100, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "EUR", Actual
+    'Compare fx_net_position of GBP with its expected value and record it
+        Actual = NumberOf(FxNet("GBP"))
+        TEST_Harness.AssertNear "fx-net-position-of-gbp", 150, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "GBP", Actual
+    'Compare fx_net_position of JPY with its expected value and record it
+        Actual = NumberOf(FxNet("JPY"))
+        TEST_Harness.AssertNear "fx-net-position-of-jpy", 50, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "JPY", Actual
+    'Compare fx_net_position of USD with its expected value and record it
+        Actual = NumberOf(FxNet("USD"))
+        TEST_Harness.AssertNear "fx-net-position-of-usd", -180, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "USD", Actual
+    'Compare fx_net_position of XAU with its expected value and record it
+        Actual = NumberOf(FxNet("XAU"))
+        TEST_Harness.AssertNear "fx-net-position-of-xau", -35, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_net_position", "DS-05", "XAU", Actual
+    'Compare fx_overall_net_open_position with its expected value and record it
+        Actual = NumberOf(NamedCell(NM_FX_ONOP))
+        TEST_Harness.AssertNear "fx-overall-net-open-position", 335, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_overall_net_open_position", vbNullString, vbNullString, Actual
+    'Compare fx_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 3))
+        TEST_Harness.AssertNear "fx-charge", 26.8, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-above-de-minimis", vbNullString, _
+            "fx_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrFxDeMinimisLimit()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-fx-de-minimis-limit.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 16750
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrFxDeMinimisLimit()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-fx-de-minimis-limit, on CALC-06: The
+'   positions of the example of table 9 of MAR40.61 under the CRR regime,
+'   with total own funds whose 2% equals the overall net open position of
+'   335: the requirement is zero.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 14 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrFxDeMinimisLimit;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-fx-de-minimis-limit"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrFxDeMinimisLimit
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare fx_position_status of T9-JPY with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-jpy", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 1, 1))
+    'Compare fx_position_status of T9-EUR with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-eur", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 2, 1))
+    'Compare fx_position_status of T9-GBP with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-gbp", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+    'Compare fx_position_status of T9-CAD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-cad", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
+    'Compare fx_position_status of T9-USD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-usd", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 5, 1))
+    'Compare fx_position_status of T9-XAU with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-xau", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 6, 1))
+    'Compare fx_net_position of CAD with its expected value and record it
+        Actual = NumberOf(FxNet("CAD"))
+        TEST_Harness.AssertNear "fx-net-position-of-cad", -20, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "CAD", Actual
+    'Compare fx_net_position of EUR with its expected value and record it
+        Actual = NumberOf(FxNet("EUR"))
+        TEST_Harness.AssertNear "fx-net-position-of-eur", 100, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "EUR", Actual
+    'Compare fx_net_position of GBP with its expected value and record it
+        Actual = NumberOf(FxNet("GBP"))
+        TEST_Harness.AssertNear "fx-net-position-of-gbp", 150, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "GBP", Actual
+    'Compare fx_net_position of JPY with its expected value and record it
+        Actual = NumberOf(FxNet("JPY"))
+        TEST_Harness.AssertNear "fx-net-position-of-jpy", 50, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "JPY", Actual
+    'Compare fx_net_position of USD with its expected value and record it
+        Actual = NumberOf(FxNet("USD"))
+        TEST_Harness.AssertNear "fx-net-position-of-usd", -180, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "USD", Actual
+    'Compare fx_net_position of XAU with its expected value and record it
+        Actual = NumberOf(FxNet("XAU"))
+        TEST_Harness.AssertNear "fx-net-position-of-xau", -35, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_net_position", "DS-05", "XAU", Actual
+    'Compare fx_overall_net_open_position with its expected value and record it
+        Actual = NumberOf(NamedCell(NM_FX_ONOP))
+        TEST_Harness.AssertNear "fx-overall-net-open-position", 335, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_overall_net_open_position", vbNullString, vbNullString, Actual
+    'Compare fx_charge with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(4, 3))
+        TEST_Harness.AssertNear "fx-charge", 0, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-fx-de-minimis-limit", vbNullString, _
+            "fx_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrIrSpecificRisk()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-ir-specific-risk.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the interest rate positions: 16 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE INTEREST RATE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the interest rate positions of the test case, one row each
+        PutRow NM_IR_POS_HEADER, 1, Array("S-01", Empty, "Bond", "EUR", "Long", 5000000, _
+            "Fixed", 0.05, DateSerial(2036, 9, 30), Empty, "CRR", "RW 0%")
+        PutRow NM_IR_POS_HEADER, 2, Array("S-02", Empty, "Bond", "EUR", "Long", 2000000, _
+            "Fixed", 0.05, DateSerial(2027, 3, 30), Empty, "CRR", "RW 10%")
+        PutRow NM_IR_POS_HEADER, 3, Array("S-03", Empty, "Bond", "EUR", "Long", 2000000, _
+            "Fixed", 0.05, DateSerial(2028, 3, 30), Empty, "CRR", "RW 10%")
+        PutRow NM_IR_POS_HEADER, 4, Array("S-04", Empty, "Bond", "EUR", "Long", 2000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 10%")
+        PutRow NM_IR_POS_HEADER, 5, Array("S-05", Empty, "Bond", "EUR", "Long", 3000000, _
+            "Fixed", 0.05, DateSerial(2027, 3, 30), Empty, "CRR", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 6, Array("S-06", Empty, "Bond", "EUR", "Long", 3000000, _
+            "Fixed", 0.05, DateSerial(2028, 3, 30), Empty, "CRR", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 7, Array("S-07", Empty, "Bond", "EUR", "Long", 3000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 8, Array("S-08", Empty, "Bond", "EUR", "Long", 4000000, _
+            "Fixed", 0.05, DateSerial(2027, 3, 30), Empty, "CRR", "RW 50%")
+        PutRow NM_IR_POS_HEADER, 9, Array("S-09", Empty, "Bond", "EUR", "Long", 4000000, _
+            "Fixed", 0.05, DateSerial(2028, 3, 30), Empty, "CRR", "RW 50%")
+        PutRow NM_IR_POS_HEADER, 10, Array("S-10", Empty, "Bond", "EUR", "Long", 4000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 50%")
+        PutRow NM_IR_POS_HEADER, 11, Array("S-11", Empty, "Bond", "EUR", "Long", 1500000, _
+            "Fixed", 0.05, DateSerial(2029, 9, 30), Empty, "CRR", "RW 75%")
+        PutRow NM_IR_POS_HEADER, 12, Array("S-12", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2029, 9, 30), Empty, "CRR", "RW 100%")
+        PutRow NM_IR_POS_HEADER, 13, Array("S-13", Empty, "Bond", "EUR", "Long", 500000, _
+            "Fixed", 0.05, DateSerial(2027, 9, 30), Empty, "CRR", "RW 150%")
+        PutRow NM_IR_POS_HEADER, 14, Array("S-14", Empty, "Bond", "EUR", "Long", 3000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 100%", "XS-NET")
+        PutRow NM_IR_POS_HEADER, 15, Array("S-15", Empty, "Bond", "EUR", "Short", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 100%", "xs-net")
+        PutRow NM_IR_POS_HEADER, 16, Array("S-16", Empty, "Swap leg", "EUR", "Long", 10000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "NONE")
+
+End Sub
+
+Private Sub CaseIllustrativeCrrIrSpecificRisk()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-ir-specific-risk, on CALC-02: Debt positions
+'   under the CRR regime at each risk weight of table 1 of Article 336, in
+'   each range of the residual term where the table has them, two rows of
+'   one issue that net, and a swap leg without specific risk.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 18 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrIrSpecificRisk;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-ir-specific-risk"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrIrSpecificRisk
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare ir_position_status of S-01 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-01", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+    'Compare ir_position_status of S-02 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-02", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+    'Compare ir_position_status of S-03 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-03", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+    'Compare ir_position_status of S-04 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-04", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+    'Compare ir_position_status of S-05 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-05", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
+    'Compare ir_position_status of S-06 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-06", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
+    'Compare ir_position_status of S-07 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-07", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 7, 1))
+    'Compare ir_position_status of S-08 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-08", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 8, 1))
+    'Compare ir_position_status of S-09 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-09", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
+    'Compare ir_position_status of S-10 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-10", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 10, 1))
+    'Compare ir_position_status of S-11 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-11", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 11, 1))
+    'Compare ir_position_status of S-12 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-12", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 12, 1))
+    'Compare ir_position_status of S-13 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-13", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 13, 1))
+    'Compare ir_position_status of S-14 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-14", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 14, 1))
+    'Compare ir_position_status of S-15 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-15", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
+    'Compare ir_position_status of S-16 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-s-16", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 16, 1))
+    'Compare ir_specific_risk_charge of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(28))
+        TEST_Harness.AssertNear "ir-specific-risk-charge-of-eur", 648000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-ir-specific-risk", vbNullString, _
+            "ir_specific_risk_charge", "DS-05", "EUR", Actual
+    'Compare ir_specific_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 2))
+        TEST_Harness.AssertNear "ir-specific-risk-charge", 648000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-ir-specific-risk", vbNullString, _
+            "ir_specific_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrMaturityMethodC2()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-maturity-method-c2.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the interest rate positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "USD"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "USD", 1
+
+'------------------------------------------------------------------------------
+' TYPE INTEREST RATE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the interest rate positions of the test case, one row each
+        PutRow NM_IR_POS_HEADER, 1, Array("C2-QUAL", Empty, "Bond", "USD", "Long", 13330000, _
+            "Fixed", 0.08, DateSerial(2034, 9, 30), Empty, "CRR", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 2, Array("C2-GOV", Empty, "Bond", "USD", "Long", 75000000, _
+            "Fixed", 0.07, DateSerial(2026, 11, 30), Empty, "CRR", "RW 0%")
+        PutRow NM_IR_POS_HEADER, 3, Array("C2-SWAP-FLOAT", Empty, "Swap leg", "USD", "Long", _
+            150000000, "Floating", Empty, DateSerial(2034, 9, 30), DateSerial(2027, 6, 30), _
+            "NONE")
+        PutRow NM_IR_POS_HEADER, 4, Array("C2-SWAP-FIXED", Empty, "Swap leg", "USD", "Short", _
+            150000000, "Fixed", 0.05, DateSerial(2034, 9, 30), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 5, Array("C2-FUT-LONG", Empty, "Future leg", "USD", "Long", _
+            50000000, "Fixed", 0.05, DateSerial(2030, 3, 31), Empty, "CRR", "RW 0%")
+        PutRow NM_IR_POS_HEADER, 6, Array("C2-FUT-SHORT", Empty, "Future leg", "USD", "Short", _
+            50000000, "Fixed", 0.05, DateSerial(2027, 3, 30), Empty, "CRR", "RW 0%")
+
+End Sub
+
+Private Sub CaseIllustrativeCrrMaturityMethodC2()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-maturity-method-c2, on CALC-03: The positions
+'   of the worked example C.2 of SRC-03 under the CRR regime, each debt
+'   security in the category of Article 336 whose rates are those of its
+'   Basel category: the offset between zones 1 and 3 is charged at 150%.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 24 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrMaturityMethodC2;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-maturity-method-c2"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrMaturityMethodC2
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare ir_position_status of C2-QUAL with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-qual", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+    'Compare ir_time_band of C2-QUAL with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-qual", 10, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-QUAL", Actual
+    'Compare ir_weighted_position of C2-QUAL with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-qual", 499875, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-QUAL", Actual
+    'Compare ir_position_status of C2-GOV with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-gov", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+    'Compare ir_time_band of C2-GOV with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-gov", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-GOV", Actual
+    'Compare ir_weighted_position of C2-GOV with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-gov", 150000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-GOV", Actual
+    'Compare ir_position_status of C2-SWAP-FLOAT with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-swap-float", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+    'Compare ir_time_band of C2-SWAP-FLOAT with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 3, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-swap-float", 4, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-SWAP-FLOAT", Actual
+    'Compare ir_weighted_position of C2-SWAP-FLOAT with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 3, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-swap-float", 1050000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-SWAP-FLOAT", Actual
+    'Compare ir_position_status of C2-SWAP-FIXED with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-swap-fixed", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+    'Compare ir_time_band of C2-SWAP-FIXED with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 4, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-swap-fixed", 10, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-SWAP-FIXED", Actual
+    'Compare ir_weighted_position of C2-SWAP-FIXED with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 4, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-swap-fixed", -5625000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-SWAP-FIXED", Actual
+    'Compare ir_position_status of C2-FUT-LONG with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-fut-long", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
+    'Compare ir_time_band of C2-FUT-LONG with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 5, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-fut-long", 7, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-FUT-LONG", Actual
+    'Compare ir_weighted_position of C2-FUT-LONG with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 5, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-fut-long", 1125000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-FUT-LONG", Actual
+    'Compare ir_position_status of C2-FUT-SHORT with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-c2-fut-short", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
+    'Compare ir_time_band of C2-FUT-SHORT with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 6, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-c2-fut-short", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_time_band", "DS-06", "C2-FUT-SHORT", Actual
+    'Compare ir_weighted_position of C2-FUT-SHORT with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 6, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-c2-fut-short", -200000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_weighted_position", "DS-06", "C2-FUT-SHORT", Actual
+    'Compare ir_vertical_disallowance of USD with its expected value and record it
+        Actual = ZonesTotal("USD", Array(2))
+        TEST_Harness.AssertNear "ir-vertical-disallowance-of-usd", 49987.5, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_vertical_disallowance", "DS-05", "USD", Actual
+    'Compare ir_horizontal_disallowance_within_zones of USD with its expected value and record it
+        Actual = ZonesTotal("USD", Array(6, 11, 16))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-within-zones-of-usd", 80000, _
+            Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_horizontal_disallowance_within_zones", "DS-05", "USD", Actual
+    'Compare ir_horizontal_disallowance_between_zones of USD with its expected value and record it
+        Actual = ZonesTotal("USD", Array(25))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-between-zones-of-usd", 1950000, _
+            Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_horizontal_disallowance_between_zones", "DS-05", "USD", Actual
+    'Compare ir_net_position_charge of USD with its expected value and record it
+        Actual = ZonesTotal("USD", Array(26))
+        TEST_Harness.AssertNear "ir-net-position-charge-of-usd", 3000125, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_net_position_charge", "DS-05", "USD", Actual
+    'Compare ir_general_market_risk_charge of USD with its expected value and record it
+        Actual = ZonesTotal("USD", Array(27))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge-of-usd", 5080112.5, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_general_market_risk_charge", "DS-05", "USD", Actual
+    'Compare ir_general_market_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 3))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge", 5080112.5, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-maturity-method-c2", vbNullString, _
+            "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrSampleEquity()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-sample-equity.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 13 row(s)
+'     - the equity positions: 11 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+        PutRate 3, "GBP", 1.2
+        PutRate 4, "CHF", 1.07
+        PutRate 5, "JPY", 0.0058
+        PutRate 6, "CAD", 0.625
+        PutRate 7, "SEK", 0.1
+        PutRate 8, "NOK", 0.08
+        PutRate 9, "DKK", 0.134
+        PutRate 10, "AUD", 0.56
+        PutRate 11, "PLN", 0.235
+        PutRate 12, "CZK", 0.041
+        PutRate 13, "XAU", 3500
+
+'------------------------------------------------------------------------------
+' TYPE EQUITY POSITIONS
+'------------------------------------------------------------------------------
+    'Type the equity positions of the test case, one row each
+        PutRow NM_EQ_POS_HEADER, 1, Array("EQ-001", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Long", 4000000)
+        PutRow NM_EQ_POS_HEADER, 2, Array("EQ-002", Empty, "IT", "Single name", "ISP", "EUR", _
+            "Long", 6000000)
+        PutRow NM_EQ_POS_HEADER, 3, Array("EQ-003", Empty, "IT", "Single name", "UCG", "EUR", _
+            "Short", 2000000)
+        PutRow NM_EQ_POS_HEADER, 4, Array("EQ-004", Empty, "IT", "Index", "FTSE MIB", "EUR", _
+            "Short", 5000000)
+        PutRow NM_EQ_POS_HEADER, 5, Array("EQ-005", Empty, "DE", "Single name", "SAP", "EUR", _
+            "Long", 5000000)
+        PutRow NM_EQ_POS_HEADER, 6, Array("EQ-006", Empty, "DE", "Single name", "SIE", "EUR", _
+            "Long", 3000000)
+        PutRow NM_EQ_POS_HEADER, 7, Array("EQ-007", Empty, "DE", "Index", "DAX", "EUR", _
+            "Short", 4000000)
+        PutRow NM_EQ_POS_HEADER, 8, Array("EQ-008", Empty, "US", "Single name", "AAPL", "USD", _
+            "Long", 3000000)
+        PutRow NM_EQ_POS_HEADER, 9, Array("EQ-009", Empty, "US", "Single name", "MSFT", "USD", _
+            "Short", 1500000)
+        PutRow NM_EQ_POS_HEADER, 10, Array("EQ-010", Empty, "US", "Index", "S&P 500", "USD", _
+            "Long", 2000000)
+        PutRow NM_EQ_POS_HEADER, 11, Array("EQ-011", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Short", 1000000)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrSampleEquity()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-sample-equity, on CALC-04: The equity
+'   positions of the template's sample under the CRR regime: a stock-index
+'   position carries no charge of its own, and its general risk stays in the
+'   net position of its market.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 25 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrSampleEquity;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-sample-equity"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrSampleEquity
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eq_position_status of EQ-001 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-001", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 1, 1))
+    'Compare eq_position_status of EQ-002 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-002", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 2, 1))
+    'Compare eq_position_status of EQ-003 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-003", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 3, 1))
+    'Compare eq_position_status of EQ-004 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-004", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 4, 1))
+    'Compare eq_position_status of EQ-005 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-005", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 5, 1))
+    'Compare eq_position_status of EQ-006 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-006", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 6, 1))
+    'Compare eq_position_status of EQ-007 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-007", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 7, 1))
+    'Compare eq_position_status of EQ-008 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-008", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 8, 1))
+    'Compare eq_position_status of EQ-009 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-009", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 9, 1))
+    'Compare eq_position_status of EQ-010 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-010", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 10, 1))
+    'Compare eq_position_status of EQ-011 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-eq-011", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 11, 1))
+    'Compare eq_net_position of EQ-001 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-001", 3000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-001", Actual
+    'Compare eq_net_position of EQ-002 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-002", 6000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-002", Actual
+    'Compare eq_net_position of EQ-003 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 3, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-003", -2000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-003", Actual
+    'Compare eq_net_position of EQ-004 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 4, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-004", -5000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-004", Actual
+    'Compare eq_net_position of EQ-005 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 5, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-005", 5000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-005", Actual
+    'Compare eq_net_position of EQ-006 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 6, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-006", 3000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-006", Actual
+    'Compare eq_net_position of EQ-007 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 7, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-007", -4000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-007", Actual
+    'Compare eq_net_position of EQ-008 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 8, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-008", 2700000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-008", Actual
+    'Compare eq_net_position of EQ-009 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 9, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-009", -1350000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-009", Actual
+    'Compare eq_net_position of EQ-010 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 10, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-010", 1800000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-010", Actual
+    'Compare eq_net_position of EQ-011 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 11, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-eq-011", 3000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_net_position", "DS-07", "EQ-011", Actual
+    'Compare eq_specific_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 2))
+        TEST_Harness.AssertNear "eq-specific-risk-charge", 1844000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_specific_risk_charge", vbNullString, vbNullString, Actual
+    'Compare eq_index_charge with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(2, 4))
+        TEST_Harness.AssertNear "eq-index-charge", 0, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_index_charge", vbNullString, vbNullString, Actual
+    'Compare eq_general_market_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 3))
+        TEST_Harness.AssertNear "eq-general-market-risk-charge", 732000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-equity", vbNullString, _
+            "eq_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrSampleRequirement()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-sample-requirement.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 13 row(s)
+'     - the option charges: 4 risk class(es)
+'     - the interest rate positions: 12 row(s)
+'     - the equity positions: 11 row(s)
+'     - the commodity positions: 6 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+        PutRate 3, "GBP", 1.2
+        PutRate 4, "CHF", 1.07
+        PutRate 5, "JPY", 0.0058
+        PutRate 6, "CAD", 0.625
+        PutRate 7, "SEK", 0.1
+        PutRate 8, "NOK", 0.08
+        PutRate 9, "DKK", 0.134
+        PutRate 10, "AUD", 0.56
+        PutRate 11, "PLN", 0.235
+        PutRate 12, "CZK", 0.041
+        PutRate 13, "XAU", 3500
+
+'------------------------------------------------------------------------------
+' TYPE OPTION CHARGES
+'------------------------------------------------------------------------------
+    'Type the option charge of each risk class that the test case gives
+        SetNamed NM_OPTIONS_PREFIX & "IR", 0
+        SetNamed NM_OPTIONS_PREFIX & "EQ", 0
+        SetNamed NM_OPTIONS_PREFIX & "CO", 0
+        SetNamed NM_OPTIONS_PREFIX & "FX", 0
+
+'------------------------------------------------------------------------------
+' TYPE INTEREST RATE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the interest rate positions of the test case, one row each
+        PutRow NM_IR_POS_HEADER, 1, Array("IR-001", Empty, "Bond", "EUR", "Long", 25000000, _
+            "Fixed", 0.04, DateSerial(2034, 3, 1), Empty, "CRR", "RW 20%", "BTP 4.00% 03/34")
+        PutRow NM_IR_POS_HEADER, 2, Array("IR-002", Empty, "Forward leg", "EUR", "Short", _
+            5000000, "Fixed", 0.04, DateSerial(2034, 3, 1), Empty, "CRR", "RW 20%", _
+            "BTP 4.00% 03/34")
+        PutRow NM_IR_POS_HEADER, 3, Array("IR-003", Empty, "Bond", "EUR", "Long", 15000000, _
+            "Fixed", 0.025, DateSerial(2030, 2, 15), Empty, "CRR", "RW 0%", "DBR 2.50% 02/30")
+        PutRow NM_IR_POS_HEADER, 4, Array("IR-004", Empty, "Swap leg", "EUR", "Short", _
+            20000000, "Fixed", 0.028, DateSerial(2036, 9, 30), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 5, Array("IR-005", Empty, "Swap leg", "EUR", "Long", _
+            20000000, "Floating", Empty, DateSerial(2036, 9, 30), DateSerial(2027, 3, 31), _
+            "NONE")
+        PutRow NM_IR_POS_HEADER, 6, Array("IR-006", Empty, "Bond", "EUR", "Long", 8000000, _
+            "Fixed", 0.045, DateSerial(2029, 6, 15), Empty, "CRR", "RW 20%", _
+            "XS-CORP-A 4.50% 06/29")
+        PutRow NM_IR_POS_HEADER, 7, Array("IR-007", Empty, "Bond", "EUR", "Long", 3000000, _
+            "Fixed", 0.0625, DateSerial(2031, 5, 15), Empty, "CRR", "RW 100%", _
+            "XS-CORP-HY 6.25% 05/31")
+        PutRow NM_IR_POS_HEADER, 8, Array("IR-008", Empty, "FRN", "EUR", "Long", 5000000, _
+            "Floating", Empty, DateSerial(2028, 12, 15), DateSerial(2026, 12, 15), "CRR", _
+            "RW 20%", "XS-SSA-FRN 12/28")
+        PutRow NM_IR_POS_HEADER, 9, Array("IR-009", Empty, "Bond", "USD", "Long", 12000000, _
+            "Fixed", 0.0475, DateSerial(2055, 5, 15), Empty, "CRR", "RW 0%", "UST 4.75% 05/55")
+        PutRow NM_IR_POS_HEADER, 10, Array("IR-010", Empty, "Bond", "USD", "Short", 18000000, _
+            "Fixed", 0.03875, DateSerial(2028, 9, 30), Empty, "CRR", "RW 0%", _
+            "UST 3.875% 09/28")
+        PutRow NM_IR_POS_HEADER, 11, Array("IR-011", Empty, "Bond", "USD", "Long", 2000000, _
+            "Fixed", 0.075, DateSerial(2030, 4, 1), Empty, "CRR", "RW 150%", _
+            "US-CORP-B 7.50% 04/30")
+        PutRow NM_IR_POS_HEADER, 12, Array("IR-012", Empty, "Bond", "GBP", "Long", 6000000, _
+            "Fixed", 0.0125, DateSerial(2041, 10, 22), Empty, "CRR", "RW 0%", "UKT 1.25% 10/41")
+
+'------------------------------------------------------------------------------
+' TYPE EQUITY POSITIONS
+'------------------------------------------------------------------------------
+    'Type the equity positions of the test case, one row each
+        PutRow NM_EQ_POS_HEADER, 1, Array("EQ-001", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Long", 4000000)
+        PutRow NM_EQ_POS_HEADER, 2, Array("EQ-002", Empty, "IT", "Single name", "ISP", "EUR", _
+            "Long", 6000000)
+        PutRow NM_EQ_POS_HEADER, 3, Array("EQ-003", Empty, "IT", "Single name", "UCG", "EUR", _
+            "Short", 2000000)
+        PutRow NM_EQ_POS_HEADER, 4, Array("EQ-004", Empty, "IT", "Index", "FTSE MIB", "EUR", _
+            "Short", 5000000)
+        PutRow NM_EQ_POS_HEADER, 5, Array("EQ-005", Empty, "DE", "Single name", "SAP", "EUR", _
+            "Long", 5000000)
+        PutRow NM_EQ_POS_HEADER, 6, Array("EQ-006", Empty, "DE", "Single name", "SIE", "EUR", _
+            "Long", 3000000)
+        PutRow NM_EQ_POS_HEADER, 7, Array("EQ-007", Empty, "DE", "Index", "DAX", "EUR", _
+            "Short", 4000000)
+        PutRow NM_EQ_POS_HEADER, 8, Array("EQ-008", Empty, "US", "Single name", "AAPL", "USD", _
+            "Long", 3000000)
+        PutRow NM_EQ_POS_HEADER, 9, Array("EQ-009", Empty, "US", "Single name", "MSFT", "USD", _
+            "Short", 1500000)
+        PutRow NM_EQ_POS_HEADER, 10, Array("EQ-010", Empty, "US", "Index", "S&P 500", "USD", _
+            "Long", 2000000)
+        PutRow NM_EQ_POS_HEADER, 11, Array("EQ-011", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Short", 1000000)
+
+'------------------------------------------------------------------------------
+' TYPE COMMODITY POSITIONS
+'------------------------------------------------------------------------------
+    'Type the commodity positions of the test case, one row each
+        PutRow NM_CO_POS_HEADER, 1, Array("CO-001", Empty, "Brent crude", "Long", 50000, _
+            Empty, 72, "USD")
+        PutRow NM_CO_POS_HEADER, 2, Array("CO-002", Empty, "Brent crude", "Short", 20000, _
+            Empty, 72, "USD")
+        PutRow NM_CO_POS_HEADER, 3, Array("CO-003", Empty, "WTI crude", "Long", 10000, Empty, _
+            68, "USD")
+        PutRow NM_CO_POS_HEADER, 4, Array("CO-004", Empty, "Copper", "Long", 200, Empty, 9800, _
+            "USD")
+        PutRow NM_CO_POS_HEADER, 5, Array("CO-005", Empty, "Copper", "Short", 50, Empty, 9800, _
+            "USD")
+        PutRow NM_CO_POS_HEADER, 6, Array("CO-006", Empty, "TTF natural gas", "Short", 100000, _
+            Empty, 35, "EUR")
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("FX-001", Empty, "CAD", "Long", 80000000)
+        PutRow NM_FX_POS_HEADER, 2, Array("FX-002", Empty, "SEK", "Long", 1000000000)
+        PutRow NM_FX_POS_HEADER, 3, Array("FX-003", Empty, "GBP", "Long", 125000000)
+        PutRow NM_FX_POS_HEADER, 4, Array("FX-004", Empty, "NOK", "Short", 250000000)
+        PutRow NM_FX_POS_HEADER, 5, Array("FX-005", Empty, "USD", "Short", 200000000)
+        PutRow NM_FX_POS_HEADER, 6, Array("FX-006", Empty, "XAU", "Short", 10000)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrSampleRequirement()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-sample-requirement, on CALC-08: The positions
+'   and option charges of the template's sample under the CRR regime, each
+'   debt security in the category of Article 336 whose rates are those of
+'   its Basel category: the requirement differs from that of
+'   illustrative-sample-requirement by the charge on the indices and the
+'   transitional multiplier only, since the sample has no offset between
+'   zones 1 and 3 and its overall net open position is above 2% of the total
+'   own funds.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 11 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrSampleRequirement;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-sample-requirement"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrSampleRequirement
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare requirement_before_scaling of IR with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-ir", 2779850, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_before_scaling", "DS-10", "IR", Actual
+    'Compare requirement_after_scaling of IR with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-ir", 3613805, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_after_scaling", "DS-10", "IR", Actual
+    'Compare requirement_before_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-eq", 2576000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_before_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_after_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-eq", 9016000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_after_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_before_scaling of CO with its expected value and record it
+        Actual = NumberOf(ResultsCell(3, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-co", 1432440, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_before_scaling", "DS-10", "CO", Actual
+    'Compare requirement_after_scaling of CO with its expected value and record it
+        Actual = NumberOf(ResultsCell(3, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-co", 2721636, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_after_scaling", "DS-10", "CO", Actual
+    'Compare requirement_before_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-fx", 26800000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_before_scaling", "DS-10", "FX", Actual
+    'Compare requirement_after_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-fx", 32160000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "requirement_after_scaling", "DS-10", "FX", Actual
+    'Compare transitional_factor with its expected value and record it
+        Actual = NumberOf(ResultsCell(6, 7))
+        TEST_Harness.AssertNear "transitional-factor", 0.9, Actual, 0.000000000001, 0
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "transitional_factor", vbNullString, vbNullString, Actual
+    'Compare own_funds_requirement with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_Requirement"))
+        TEST_Harness.AssertNear "own-funds-requirement", 42760296.9, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "own_funds_requirement", vbNullString, vbNullString, Actual
+    'Compare risk_weighted_assets with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_RWA"))
+        TEST_Harness.AssertNear "risk-weighted-assets", 534503711.25, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-sample-requirement", vbNullString, _
+            "risk_weighted_assets", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrTransitionalEndDate()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-transitional-end-date.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 2 row(s)
+'     - the option charges: 4 risk class(es)
+'     - the foreign exchange positions: 1 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2029, 12, 31)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 50000000
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+
+'------------------------------------------------------------------------------
+' TYPE OPTION CHARGES
+'------------------------------------------------------------------------------
+    'Type the option charge of each risk class that the test case gives
+        SetNamed NM_OPTIONS_PREFIX & "IR", 0
+        SetNamed NM_OPTIONS_PREFIX & "EQ", 10000
+        SetNamed NM_OPTIONS_PREFIX & "CO", 0
+        SetNamed NM_OPTIONS_PREFIX & "FX", 2500
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("R-1", Empty, "USD", "Long", 2000000)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrTransitionalEndDate()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-transitional-end-date, on CALC-08: The FX
+'   position and the option charges of
+'   illustrative-requirement-fx-and-options-only under the CRR regime, with
+'   total own funds of 50 million, whose 2% is below the FX position, on the
+'   last date of the transitional multiplier, 2029-12-31: the factor is 0.9.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 11 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrTransitionalEndDate;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-transitional-end-date"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrTransitionalEndDate
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare requirement_before_scaling of IR with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(1, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-ir", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_before_scaling", "DS-10", "IR", Actual
+    'Compare requirement_after_scaling of IR with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(1, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-ir", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_after_scaling", "DS-10", "IR", Actual
+    'Compare requirement_before_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-eq", 10000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_before_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_after_scaling of EQ with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-eq", 35000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_after_scaling", "DS-10", "EQ", Actual
+    'Compare requirement_before_scaling of CO with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(3, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-co", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_before_scaling", "DS-10", "CO", Actual
+    'Compare requirement_after_scaling of CO with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(3, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-co", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_after_scaling", "DS-10", "CO", Actual
+    'Compare requirement_before_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 6))
+        TEST_Harness.AssertNear "requirement-before-scaling-of-fx", 146500, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_before_scaling", "DS-10", "FX", Actual
+    'Compare requirement_after_scaling of FX with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 8))
+        TEST_Harness.AssertNear "requirement-after-scaling-of-fx", 175800, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "requirement_after_scaling", "DS-10", "FX", Actual
+    'Compare transitional_factor with its expected value and record it
+        Actual = NumberOf(ResultsCell(6, 7))
+        TEST_Harness.AssertNear "transitional-factor", 0.9, Actual, 0.000000000001, 0
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "transitional_factor", vbNullString, vbNullString, Actual
+    'Compare own_funds_requirement with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_Requirement"))
+        TEST_Harness.AssertNear "own-funds-requirement", 189720, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "own_funds_requirement", vbNullString, vbNullString, Actual
+    'Compare risk_weighted_assets with its expected value and record it
+        Actual = NumberOf(NamedCell("SSA_RWA"))
+        TEST_Harness.AssertNear "risk-weighted-assets", 2371500, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
+            "risk_weighted_assets", vbNullString, vbNullString, Actual
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -4074,6 +6382,296 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeInvalidCrrIrPositions()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-invalid-crr-ir-positions.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the interest rate positions: 9 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE INTEREST RATE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the interest rate positions of the test case, one row each
+        PutRow NM_IR_POS_HEADER, 1, Array("X-GOV", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "GOV", "AAA to AA-")
+        PutRow NM_IR_POS_HEADER, 2, Array("X-QUAL", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "QUAL", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 3, Array("X-NOCAT", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, Empty, "RW 20%")
+        PutRow NM_IR_POS_HEADER, 4, Array("X-RW", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "RW 35%")
+        PutRow NM_IR_POS_HEADER, 5, Array("X-BASELGRADE", Empty, "Bond", "EUR", "Long", _
+            1000000, "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR", "A+ to BBB-")
+        PutRow NM_IR_POS_HEADER, 6, Array("X-NOGRADE", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "CRR")
+        PutRow NM_IR_POS_HEADER, 7, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "GOV", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 8, Array("X-OK", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "crr", "rw 20%")
+        PutRow NM_IR_POS_HEADER, 9, Array("X-OKNONE", Empty, "Bond", "EUR", "Long", 1000000, _
+            "Fixed", 0.05, DateSerial(2031, 9, 30), Empty, "NONE")
+
+End Sub
+
+Private Sub CaseIllustrativeInvalidCrrIrPositions()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-invalid-crr-ir-positions, on CALC-03: Interest
+'   rate rows under the CRR regime that break its tests of the category and
+'   the risk weight, in the order of the contract's list, a row that breaks
+'   an earlier test as well, and valid rows.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 19 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeInvalidCrrIrPositions;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-invalid-crr-ir-positions"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeInvalidCrrIrPositions
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare ir_position_status of X-GOV with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-gov", _
+            "INVALID: SR category must be CRR or NONE under the CRR", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+    'Compare ir_position_status of X-QUAL with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-qual", _
+            "INVALID: SR category must be CRR or NONE under the CRR", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+    'Compare ir_position_status of X-NOCAT with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-nocat", _
+            "INVALID: SR category must be CRR or NONE under the CRR", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+    'Compare ir_position_status of X-RW with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-rw", _
+            "INVALID: no Article 336 charge for this risk weight", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+    'Compare ir_position_status of X-BASELGRADE with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-baselgrade", _
+            "INVALID: no Article 336 charge for this risk weight", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
+    'Compare ir_position_status of X-NOGRADE with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-nograde", _
+            "INVALID: no Article 336 charge for this risk weight", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
+    'Compare ir_position_status of X-CCY with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-ccy", _
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 7, 1))
+    'Compare ir_position_status of X-OK with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 8, 1))
+    'Compare ir_time_band of X-OK with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 8, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-x-ok", 9, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_time_band", "DS-06", "X-OK", Actual
+    'Compare ir_weighted_position of X-OK with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 8, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-x-ok", 32500, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_weighted_position", "DS-06", "X-OK", Actual
+    'Compare ir_position_status of X-OKNONE with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-oknone", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
+    'Compare ir_time_band of X-OKNONE with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 9, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-x-oknone", 9, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_time_band", "DS-06", "X-OKNONE", Actual
+    'Compare ir_weighted_position of X-OKNONE with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 9, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-x-oknone", 32500, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_weighted_position", "DS-06", "X-OKNONE", Actual
+    'Compare ir_vertical_disallowance of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(2))
+        TEST_Harness.AssertNear "ir-vertical-disallowance-of-eur", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_vertical_disallowance", "DS-05", "EUR", Actual
+    'Compare ir_horizontal_disallowance_within_zones of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(6, 11, 16))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-within-zones-of-eur", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_horizontal_disallowance_within_zones", "DS-05", "EUR", Actual
+    'Compare ir_horizontal_disallowance_between_zones of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(25))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-between-zones-of-eur", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_horizontal_disallowance_between_zones", "DS-05", "EUR", Actual
+    'Compare ir_net_position_charge of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(26))
+        TEST_Harness.AssertNear "ir-net-position-charge-of-eur", 65000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_net_position_charge", "DS-05", "EUR", Actual
+    'Compare ir_general_market_risk_charge of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(27))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge-of-eur", 65000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_general_market_risk_charge", "DS-05", "EUR", Actual
+    'Compare ir_general_market_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 3))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge", 65000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-crr-ir-positions", vbNullString, _
+            "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeInvalidEligibilityMonths()
 
 '
@@ -4889,7 +7487,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 '     - the reporting date and the reporting currency
 '     - the regime
 '     - the FX table: 13 row(s)
-'     - the interest rate positions: 22 row(s)
+'     - the interest rate positions: 23 row(s)
 '
 ' ERROR POLICY
 '   An error of a procedure it calls propagates to the case.
@@ -4982,9 +7580,11 @@ Private Sub InputsIllustrativeInvalidIrPositions()
             "Floating", Empty, DateSerial(2029, 6, 26), DateSerial(2029, 6, 27), "NONE")
         PutRow NM_IR_POS_HEADER, 20, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "CORP", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 21, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 21, Array("X-CRRCAT", Empty, "Bond", "EUR", "Long", 1, _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "CRR", "RW 20%")
+        PutRow NM_IR_POS_HEADER, 22, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "OTHER", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 22, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 23, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
 
 End Sub
@@ -5015,7 +7615,7 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 22 expected outputs with the cell
+'   the calculation. Compares each of the 23 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -5146,13 +7746,17 @@ Private Sub CaseIllustrativeInvalidIrPositions()
         TEST_Harness.AssertEqualText "ir-position-status-of-x-cat", _
             "INVALID: SR category must be GOV, QUAL, OTHER or NONE", _
             PlainText(RowCell(NM_IR_CALC_HEADER, 20, 1))
+    'Compare ir_position_status of X-CRRCAT with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-crrcat", _
+            "INVALID: SR category must be GOV, QUAL, OTHER or NONE", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 21, 1))
     'Compare ir_position_status of X-GRADE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-grade", _
             "INVALID: no MAR40.6 charge for this category and rating grade", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 21, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 22, 1))
     'Compare ir_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 22, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 23, 1))
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -6329,7 +8933,7 @@ Private Sub InputsIllustrativeRequirementFxAndOptionsOnly()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -6397,7 +9001,7 @@ Private Sub CaseIllustrativeRequirementFxAndOptionsOnly()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 10 expected outputs with the cell
+'   the calculation. Compares each of the 11 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -6417,7 +9021,7 @@ Private Sub CaseIllustrativeRequirementFxAndOptionsOnly()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -6502,6 +9106,11 @@ Private Sub CaseIllustrativeRequirementFxAndOptionsOnly()
             0.000000001
         TEST_Harness.RecordResult "illustrative-requirement-fx-and-options-only", _
             vbNullString, "requirement_after_scaling", "DS-10", "FX", Actual
+    'Compare transitional_factor with its expected value and record it
+        Actual = NumberOf(ResultsCell(6, 7))
+        TEST_Harness.AssertNear "transitional-factor", 1, Actual, 0.000000000001, 0
+        TEST_Harness.RecordResult "illustrative-requirement-fx-and-options-only", _
+            vbNullString, "transitional_factor", vbNullString, vbNullString, Actual
     'Compare own_funds_requirement with its expected value and record it
         Actual = NumberOf(NamedCell("SSA_Requirement"))
         TEST_Harness.AssertNear "own-funds-requirement", 210800, Actual, 0.000001, 0.000000001
@@ -8470,7 +11079,7 @@ Private Sub InputsIllustrativeSampleRequirement()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -8639,7 +11248,7 @@ Private Sub CaseIllustrativeSampleRequirement()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 10 expected outputs with the cell
+'   the calculation. Compares each of the 11 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -8658,7 +11267,7 @@ Private Sub CaseIllustrativeSampleRequirement()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -8743,6 +11352,11 @@ Private Sub CaseIllustrativeSampleRequirement()
             0.000000001
         TEST_Harness.RecordResult "illustrative-sample-requirement", vbNullString, _
             "requirement_after_scaling", "DS-10", "FX", Actual
+    'Compare transitional_factor with its expected value and record it
+        Actual = NumberOf(ResultsCell(6, 7))
+        TEST_Harness.AssertNear "transitional-factor", 1, Actual, 0.000000000001, 0
+        TEST_Harness.RecordResult "illustrative-sample-requirement", vbNullString, _
+            "transitional_factor", vbNullString, vbNullString, Actual
     'Compare own_funds_requirement with its expected value and record it
         Actual = NumberOf(NamedCell("SSA_Requirement"))
         TEST_Harness.AssertNear "own-funds-requirement", 48267441, Actual, 0.000001, 0.000000001
