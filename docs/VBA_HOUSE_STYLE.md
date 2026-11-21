@@ -93,14 +93,7 @@ any other export.
 
 ## Layout of a component
 
-This is the layout of every VBA component. A component is in this layout when
-its component header has a `WHY THIS EXISTS` field. The components that are
-not yet converted keep the earlier layout, whose differences are stated under
-[Source representation](#source-representation), until the last one is
-converted ([#101](https://github.com/danielep71/K-FRTB-SSA/issues/101)); the
-formatter tells the two apart by that field. A change to a component in the
-earlier layout does not mix the two: convert the component, or keep its
-layout.
+This is the layout of every VBA component.
 
 Formatting is behaviour-neutral. Do not change a public name, a signature, an
 `Attribute` line, a string literal or the logic of a procedure to fit the
@@ -238,10 +231,7 @@ Each procedure's header has the nine fields of
 meaning, type, unit, currency or date basis, valid range and ownership.
 `DEPENDENCIES` cites the
 [calculation contract](methodology/CALCULATION_CONTRACTS.md) and the source it
-implements, and `NOTES` says what state the procedure owns. In a component of
-the earlier layout, the header states, where they apply: `PURPOSE`, `INPUTS`,
-`RETURNS`, `ERROR POLICY`, `DEPENDENCIES`, `STATE OWNERSHIP` and `REFERENCE`,
-with an `UPDATED` date. Comments explain invariants and reasons, not obvious
+implements, and `NOTES` says what state the procedure owns. Comments explain invariants and reasons, not obvious
 assignments.
 
 - Use `Double` for amounts and proportions, `Long` for counts, `Boolean` for
@@ -335,16 +325,14 @@ each failed restoration, and a primary and cleanup failure together.
   that the VBE writes.
 - Indent with four spaces; no tabs and no trailing white space. Keep
   procedure declarations, `End` statements and labels at their outer level.
-  Separate procedures with one blank line in a component in the
-  [layout](#layout-of-a-component) above, and with two in a component of the
-  earlier layout.
+  Separate procedures with one blank line, as the
+  [layout](#layout-of-a-component) above shows.
 - A form's header, which the VBE writes, is exempt: it keeps its bytes, such
   as the blank at the end of its `Begin` line, because the next export writes
   them again. **Repository integrity** checks the code after it.
 - Structure a procedure body in the sections of
-  [Layout of a component](#layout-of-a-component). A component of the earlier
-  layout uses `MODULE SETTINGS`, `DECLARE`, `INITIALIZE` and `FAIL` sections
-  where they make a routine easier to follow, not as empty ceremony.
+  [Layout of a component](#layout-of-a-component), each one where it makes the
+  routine easier to follow, not as empty ceremony.
 - A generated component names its generator and is regenerated, never edited
   by hand.
 
@@ -356,9 +344,8 @@ rules to the `.bas`, `.cls` and `.frm` files under `src/`, `tests/modules/` and
 - no trailing white space, and four spaces for each indentation tab;
 - procedure declarations, their `End` statements and labels at the outer
   level;
-- one blank line after each procedure's `End` statement in a component in the
-  [layout](#layout-of-a-component) above, and two in a component of the earlier
-  layout.
+- one blank line after each procedure's `End` statement, as the
+  [layout](#layout-of-a-component) above shows.
 
 It never changes a string literal, and it keeps the `VERSION`, `BEGIN`, `END`,
 `Object` and `Attribute` lines that the VBE writes. **Repository integrity**

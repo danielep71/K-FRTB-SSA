@@ -1114,7 +1114,7 @@ class SuiteTest(unittest.TestCase):
         self.assertIn(f'EndCertification Folder & "\\{POLICY.certification}"', source)
         # The results are those of the normal run, saved before the next run resets them.
         normal = re.search(r'CertifyMode "NORMAL".*\n\s+TEST_Harness\.SaveResults Folder & '
-                           r'"\\([\w.]+)"\n\s+CertifyMode', source)
+                           r'"\\([\w.]+)"\n(?:\s+\'[^\n]*\n)*\s+CertifyMode', source)
         self.assertIsNotNone(normal)
         assert normal is not None
         self.assertEqual(normal.group(1), POLICY.results)

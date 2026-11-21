@@ -79,39 +79,20 @@ class RuleTest(unittest.TestCase):
                            ["Private Sub Run()", "    Debug.Print _",
                             "        Done:", "End Sub"])
 
-    def test_two_blank_lines_between_procedures(self) -> None:
+    def test_one_blank_line_between_procedures(self) -> None:
         self.assertFormats(["Private Sub One()", "End Sub", "'Header of Two",
                             "Private Sub Two()", "End Sub"],
-                           ["Private Sub One()", "End Sub", "", "", "'Header of Two",
+                           ["Private Sub One()", "End Sub", "", "'Header of Two",
                             "Private Sub Two()", "End Sub"])
         self.assertFormats(["Private Sub One()", "End Sub", "", "", "", "",
                             "Private Sub Two()", "End Sub"],
-                           ["Private Sub One()", "End Sub", "", "",
+                           ["Private Sub One()", "End Sub", "",
                             "Private Sub Two()", "End Sub"])
-
-    def test_one_blank_line_between_procedures_in_the_nine_field_layout(self) -> None:
-        field = ["'", "' WHY THIS EXISTS", "'   A probe for the formatter", ""]
-        before = [*field, "Private Sub One()", "End Sub", "", "", "", "Private Sub Two()",
-                  "End Sub"]
-        formatted = format_vba.format_text(module(*before))
-        self.assertEqual(body_of(formatted),
-                         [*field, "Private Sub One()", "End Sub", "", "Private Sub Two()",
-                          "End Sub"])
-        self.assertEqual(format_vba.format_text(formatted), formatted, "not idempotent")
-        # No blank line is added where there is none, and a group banner follows one.
-        text = module(*field, "Private Sub One()", "End Sub", "'", "Private Sub Two()",
-                      "End Sub")
-        self.assertEqual(body_of(format_vba.format_text(text)),
-                         [*field, "Private Sub One()", "End Sub", "", "'",
-                          "Private Sub Two()", "End Sub"])
-
-    def test_the_field_is_read_only_as_a_comment_line(self) -> None:
-        # A literal or a code line that holds the words does not change the layout.
-        before = ['Private Sub One()', '    Text = "\' WHY THIS EXISTS"', "End Sub",
-                  "Private Sub Two()", "End Sub"]
-        self.assertEqual(format_vba.blank_lines_after_end(module(*before)), 2)
-        self.assertEqual(format_vba.blank_lines_after_end(
-            module("' WHY THIS EXISTS", "Private Sub One()", "End Sub")), 1)
+        # No blank line is added where a group banner follows one already.
+        self.assertFormats(["Private Sub One()", "End Sub", "", "'",
+                            "Private Sub Two()", "End Sub"],
+                           ["Private Sub One()", "End Sub", "", "'",
+                            "Private Sub Two()", "End Sub"])
 
     def test_other_lines_are_not_moved(self) -> None:
         lines = ["Private Sub Run()", "    If Ready Then Exit Sub", "    Select Case Mode",
