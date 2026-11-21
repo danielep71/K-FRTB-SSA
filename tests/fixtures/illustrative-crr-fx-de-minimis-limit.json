@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-fx-de-minimis-limit",
+  "synthetic": true,
+  "description": "The positions of the example of table 9 of MAR40.61 under the CRR regime, with total own funds whose 2% equals the overall net open position of 335: the requirement is zero",
+  "category": "boundary",
+  "calculation": "CALC-06",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "CHF",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 16750},
+  "datasets": {
+    "DS-05": [
+      {"id": "CHF", "inputs": {"fx_rate": 1.0}},
+      {"id": "JPY", "inputs": {"fx_rate": 1.0}},
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.0}},
+      {"id": "CAD", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 1.0}},
+      {"id": "XAU", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-09": [
+      {"id": "T9-JPY", "inputs": {"currency_code": "JPY", "direction_code": "Long", "net_position_amount": 50}},
+      {"id": "T9-EUR", "inputs": {"currency_code": "EUR", "direction_code": "Long", "net_position_amount": 100}},
+      {"id": "T9-GBP", "inputs": {"currency_code": "GBP", "direction_code": "Long", "net_position_amount": 150}},
+      {"id": "T9-CAD", "inputs": {"currency_code": "CAD", "direction_code": "Short", "net_position_amount": 20}},
+      {"id": "T9-USD", "inputs": {"currency_code": "USD", "direction_code": "Short", "net_position_amount": 180}},
+      {"id": "T9-XAU", "inputs": {"currency_code": "XAU", "direction_code": "Short", "net_position_amount": 35}}
+    ]
+  }
+}

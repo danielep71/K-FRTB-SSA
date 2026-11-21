@@ -9,8 +9,13 @@ position row, and the quantities of the rows that are used. A fixture gives
 the reporting date and currency, the FX rates (DS-05), the positions (DS-06
 to DS-09), the option charges (DS-10) and the months of the size of the
 business (DS-11). Every parameter has its reference value, which the
-Parameters table of the contracts traces to SRC-02, but those a fixture sets
-under "parameters": the regime and the total own funds.
+Parameters table of the contracts traces to SRC-02, or to SRC-04 and SRC-06
+for those of the CRR regime, but those a fixture sets under "parameters": the
+regime and the total own funds. Under the CRR regime it applies the rules of
+the contracts that name it: the categories of Article 336 (CALC-02), 150%
+between zones 1 and 3 (CALC-03), no charge on an index (CALC-04), the de
+minimis of Article 351 (CALC-06) and the transitional multiplier of Article
+495s(2) (CALC-08).
 
 eligibility() derives CALC-09, the eligibility under the CRR, from the rows of
 the Eligibility sheet and the regime; derive() calls it for a fixture of
@@ -42,6 +47,12 @@ EQ_SPECIFIC, EQ_INDEX, EQ_GENERAL = 0.08, 0.02, 0.08
 FX_RATE = 0.08
 CO_DIRECTIONAL, CO_GROSS = 0.15, 0.03
 GOLD = "XAU"
+# The parameters of the CRR regime: SRC-04, Articles 339(9)(f), 344 and 351, and SRC-06,
+# Article 495s(2), whose multiplier applies on and before its last date.
+ZONES_1_AND_3_CRR = 1.50
+EQ_INDEX_CRR = 0.0
+FX_DE_MINIMIS = 0.02
+TRANSITIONAL_MULTIPLIER, TRANSITIONAL_END = 0.9, "2029-12-31"
 # The instruments of an interest rate row that DS-06 allows, as codes.
 INSTRUMENTS = frozenset(("BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"))
 # Table 4 of MAR40.26: zone, upper limit in years for a coupon of 3% or more,
@@ -66,6 +77,13 @@ SPECIFIC: dict[tuple[str, str, str], float] = {
     **{("QUAL", "A+ TO BBB-", band): rate for band, rate in BY_MATURITY.items()},
     ("OTHER", "BB+ TO BB-", ANY): 0.08, ("OTHER", "B+ TO B-", ANY): 0.12,
     ("OTHER", "BELOW B-", ANY): 0.12, ("OTHER", "UNRATED", ANY): 0.08,
+    # Table 1 of Article 336(1) of the CRR, by the risk weight of the standardised approach
+    # for credit risk, and half of the 20% and 50% rates for the covered bonds of Article 336(3).
+    ("CRR", "RW 0%", ANY): 0.0,
+    **{("CRR", "RW 10%", band): rate / 2 for band, rate in BY_MATURITY.items()},
+    **{("CRR", "RW 20%", band): rate for band, rate in BY_MATURITY.items()},
+    **{("CRR", "RW 50%", band): rate for band, rate in BY_MATURITY.items()},
+    ("CRR", "RW 75%", ANY): 0.08, ("CRR", "RW 100%", ANY): 0.08, ("CRR", "RW 150%", ANY): 0.12,
 }
 # The serials Excel holds as dates: 1 January 1900 to 31 December 9999.
 SERIAL_EPOCH = datetime.date(1899, 12, 30)
@@ -161,7 +179,10 @@ class Case:
         assert as_of is not None
         self.as_of = as_of
         self.datasets: dict[str, list[Record]] = fixture["datasets"]
-        self.regime = fixture.get("parameters", {}).get("regime_code", "Basel")
+        parameters = fixture.get("parameters", {})
+        self.regime = parameters.get("regime_code", "Basel")
+        self.crr = code(self.regime) == "CRR"
+        self.own_funds = parameters.get("total_own_funds_amount")
         self.rates = {code(record["id"]): record["inputs"].get("fx_rate")
                       for record in self.records("DS-05")}
 
@@ -242,12 +263,16 @@ def ir_date_reason(case: Case, inputs: Record) -> str | None:
 
 
 def ir_category_reason(case: Case, inputs: Record) -> str | None:
-    """Why the category or the rating grade of a row rejects it."""
+    """Why the category or the rating grade of a row rejects it: under the CRR regime the
+    category is CRR or NONE, under the Basel regime one of MAR40.6."""
     category = code(inputs.get("sr_category_code"))
-    if category not in ("GOV", "QUAL", "OTHER", "NONE"):
+    if case.crr and category not in ("CRR", "NONE"):
+        return "SR category must be CRR or NONE under the CRR"
+    if not case.crr and category not in ("GOV", "QUAL", "OTHER", "NONE"):
         return "SR category must be GOV, QUAL, OTHER or NONE"
     if category != "NONE" and specific_key(case, inputs) is None:
-        return "no MAR40.6 charge for this category and rating grade"
+        return ("no Article 336 charge for this risk weight" if case.crr
+                else "no MAR40.6 charge for this category and rating grade")
     return None
 
 
@@ -269,8 +294,9 @@ def offset(first: float, second: float) -> tuple[float, float, float]:
             second - (matched if second > 0 else -matched))
 
 
-def ladder_charges(weighted: dict[int, list[float]]) -> dict[str, float]:
-    """The charges of one currency's ladder, from its weighted longs and shorts per band."""
+def ladder_charges(weighted: dict[int, list[float]], zones_1_and_3: float) -> dict[str, float]:
+    """The charges of one currency's ladder, from its weighted longs and shorts per band, with
+    the disallowance between zones 1 and 3 of the regime."""
     vertical = 0.0
     longs = {1: 0.0, 2: 0.0, 3: 0.0}
     shorts = {1: 0.0, 2: 0.0, 3: 0.0}
@@ -286,7 +312,7 @@ def ladder_charges(weighted: dict[int, list[float]]) -> dict[str, float]:
     matched_12, first, second = offset(first, second)
     matched_23, second, third = offset(second, third)
     matched_13, first, third = offset(first, third)
-    between = ADJACENT_ZONES * (matched_12 + matched_23) + ZONES_1_AND_3 * matched_13
+    between = ADJACENT_ZONES * (matched_12 + matched_23) + zones_1_and_3 * matched_13
     net = abs(first + second + third)
     return {"ir_vertical_disallowance": vertical,
             "ir_horizontal_disallowance_within_zones": within,
@@ -332,7 +358,7 @@ def interest_rate(case: Case, outputs: list[Output]) -> tuple[float, float]:
     for currency in sorted(case.rates):
         specific = sum(abs(net) * rate for net, rate, issue_currency in issues.values()
                        if issue_currency == currency)
-        charges = ladder_charges(ladders.get(currency, {}))
+        charges = ladder_charges(ladders.get(currency, {}), ZONES_1_AND_3_CRR if case.crr else ZONES_1_AND_3)
         specific_total += specific
         general_total += charges["ir_general_market_risk_charge"]
         if currency == GOLD:
@@ -394,7 +420,8 @@ def equity(case: Case, outputs: list[Output]) -> tuple[float, float, float]:
         used.append((record, key))
     outputs.extend(row("eq_net_position", "DS-07", record, value=nets[key]) for record, key in used)
     specific = sum(EQ_SPECIFIC * abs(net) for (_, kind, _), net in nets.items() if kind == "SINGLE NAME")
-    index = sum(EQ_INDEX * abs(net) for (_, kind, _), net in nets.items() if kind == "INDEX")
+    rate = EQ_INDEX_CRR if case.crr else EQ_INDEX
+    index = sum(rate * abs(net) for (_, kind, _), net in nets.items() if kind == "INDEX")
     general = sum(EQ_GENERAL * abs(net) for net in markets.values())
     outputs.append(total("eq_specific_risk_charge", specific))
     outputs.append(total("eq_index_charge", index))
@@ -500,9 +527,15 @@ def foreign_exchange(case: Case, outputs: list[Output]) -> float:
     longs = sum(value for currency, value in net.items() if currency != GOLD and value > 0)
     shorts = sum(-value for currency, value in net.items() if currency != GOLD and value < 0)
     position = max(longs, shorts) + abs(net.get(GOLD, 0.0))
+    charge = FX_RATE * position
+    if case.crr:
+        # Article 351: no requirement while the position does not exceed 2% of the total own funds.
+        assert is_number(case.own_funds) and case.own_funds > 0, "the CRR regime needs total own funds"
+        if position <= FX_DE_MINIMIS * case.own_funds:
+            charge = 0.0
     outputs.append(total("fx_overall_net_open_position", position))
-    outputs.append(total("fx_charge", FX_RATE * position))
-    return FX_RATE * position
+    outputs.append(total("fx_charge", charge))
+    return charge
 
 
 # ------------------------------------------------- options and requirement
@@ -532,8 +565,13 @@ def requirement(case: Case, outputs: list[Output]) -> None:
         scope = {"dataset": "DS-10", "record": record["id"]}
         outputs.append({"quantity": "requirement_before_scaling", "scope": scope, "value": before[name]})
         outputs.append({"quantity": "requirement_after_scaling", "scope": scope, "value": after[name]})
-    outputs.append(total("own_funds_requirement", sum(after.values())))
-    outputs.append(total("risk_weighted_assets", RWA_MULTIPLIER * sum(after.values())))
+    end = serial(TRANSITIONAL_END)
+    assert end is not None
+    factor = TRANSITIONAL_MULTIPLIER if case.crr and case.as_of <= end else 1.0
+    result = factor * sum(after.values())
+    outputs.append(total("transitional_factor", factor))
+    outputs.append(total("own_funds_requirement", result))
+    outputs.append(total("risk_weighted_assets", RWA_MULTIPLIER * result))
 
 
 # ------------------------------------------------------------ eligibility

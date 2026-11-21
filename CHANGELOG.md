@@ -65,6 +65,21 @@ Use only the categories an entry needs.
 
 ### Added
 
+- Registered test cases of the `CRR` regime, with `illustrative` values:
+  `illustrative-crr-ir-specific-risk`, a row at each risk weight of
+  Article 336; `illustrative-crr-maturity-method-c2`,
+  `illustrative-crr-sample-equity` and `illustrative-crr-sample-requirement`,
+  the positions of a Basel case run under the CRR, so that each value that
+  differs is the effect of a rule of the CRR (150% between zones 1 and 3, no
+  charge on an index, the transitional multiplier); the de minimis of
+  Article 351 at and just below the overall net open position; the
+  transitional multiplier on its last date and the day after; and an
+  `invalid` case on the category and the risk weight. The invalid interest
+  rate case has a row with the category `CRR` under the Basel regime, and the
+  requirement cases a new output, `transitional_factor`. No existing expected
+  value changed. `tests/derivations/ssa.py` now applies the rules of the CRR
+  regime, and the `cases` suite has 38 cases and 843 assertions. Nothing was
+  run in Excel ([#86](https://github.com/danielep71/K-FRTB-SSA/issues/86)).
 - The book of a position: a new input column *Book*, `Trading` or
   `Non-trading`, before *Comment* on `IRPositions`, `EQPositions`,
   `COPositions` and `FXPositions`; blank is `Trading`, so existing sheets and

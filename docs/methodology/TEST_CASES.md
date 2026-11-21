@@ -45,7 +45,7 @@ the example suite of the test harness reads them, and I keep that suite as
 the test of the harness itself
 ([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
-The project's cases are 29 JSON fixtures, on the calculations `CALC-02` to
+The project's cases are 38 JSON fixtures, on the calculations `CALC-02` to
 `CALC-09`:
 
 | Cases | Category | Expected values |
@@ -56,7 +56,10 @@ The project's cases are 29 JSON fixtures, on the calculations `CALC-02` to
 | `illustrative-sample-…`, six cases, and `illustrative-option-charges` | `nominal` | `illustrative`: the template's sample portfolio, one case per calculation |
 | `illustrative-ir-time-band-limits`, `illustrative-ir-specific-risk-maturity-limits`, `illustrative-eq-matched-positions`, `illustrative-co-matched-positions`, `illustrative-fx-one-sided-positions`, `illustrative-requirement-fx-and-options-only` | `boundary` | `illustrative`: the limits of the bands, positions that offset in full, a zero amount, a risk class without positions |
 | `illustrative-ir-book`, `illustrative-eq-book`, `illustrative-co-book` and `illustrative-fx-book` | `boundary` | `illustrative`: a trading book row, a row with no book and non-trading book rows in each risk class: excluded for interest rate and equity, calculated for commodities and FX |
-| `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break, a book that is neither value among them, and of a non-trading book row that breaks a later rule |
+| `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break, a book that is neither value and the category `CRR` under the Basel regime among them, and of a non-trading book row that breaks a later rule |
+| `illustrative-crr-ir-specific-risk`, `illustrative-crr-maturity-method-c2`, `illustrative-crr-sample-equity` and `illustrative-crr-sample-requirement` | `nominal` | `illustrative`: under the `CRR` regime, a row at each risk weight of Article 336, `CALC-02`; and the positions of `bcbs119-c2-maturity-method`, `illustrative-sample-equity` and `illustrative-sample-requirement`, each debt security in the risk weight whose rates are those of its Basel category, so that each value that differs from that of the Basel case is the effect of a rule of the CRR: 150% between zones 1 and 3, no charge on an index, the transitional multiplier |
+| `illustrative-crr-fx-de-minimis-limit`, `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-transitional-end-date` and `illustrative-crr-after-transitional-end-date` | `boundary` | `illustrative`: under the `CRR` regime, the positions of `mar40-61-table-9` with total own funds whose 2% equals the overall net open position and is just below it; and the positions of `illustrative-requirement-fx-and-options-only` on the last date of the transitional multiplier and the day after it |
+| `illustrative-invalid-crr-ir-positions` | `invalid` | `illustrative`: under the `CRR` regime, the status of a row for each test of the category and the risk weight, and of a row that fails an earlier test |
 | `illustrative-eligibility-sample-months` and `illustrative-eligibility-basel-regime` | `nominal` | `illustrative`: under the `CRR` regime, the template's 24 sample months, `CALC-09`, with the status of every month, the figures of the last and the status and restart condition of each approach; under the Basel regime, the status that assesses nothing |
 | `illustrative-eligibility-limits` and `illustrative-eligibility-events` | `boundary` | `illustrative`: a size of the business equal to the share of the total assets or to the amount, and one euro above it; a run of two and of three months, and a count of six and of seven |
 | `illustrative-invalid-eligibility-months` | `invalid` | `illustrative`: the status of a month for each test of a row of `DS-11` a JSON value can break, and the status of each approach while a row is invalid |

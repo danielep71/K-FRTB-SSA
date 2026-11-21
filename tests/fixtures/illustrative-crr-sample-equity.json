@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-sample-equity",
+  "synthetic": true,
+  "description": "The equity positions of the template's sample under the CRR regime: a stock-index position carries no charge of its own, and its general risk stays in the net position of its market",
+  "category": "nominal",
+  "calculation": "CALC-04",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}},
+      {"id": "GBP", "inputs": {"fx_rate": 1.2}},
+      {"id": "CHF", "inputs": {"fx_rate": 1.07}},
+      {"id": "JPY", "inputs": {"fx_rate": 0.0058}},
+      {"id": "CAD", "inputs": {"fx_rate": 0.625}},
+      {"id": "SEK", "inputs": {"fx_rate": 0.1}},
+      {"id": "NOK", "inputs": {"fx_rate": 0.08}},
+      {"id": "DKK", "inputs": {"fx_rate": 0.134}},
+      {"id": "AUD", "inputs": {"fx_rate": 0.56}},
+      {"id": "PLN", "inputs": {"fx_rate": 0.235}},
+      {"id": "CZK", "inputs": {"fx_rate": 0.041}},
+      {"id": "XAU", "inputs": {"fx_rate": 3500.0}}
+    ],
+    "DS-07": [
+      {"id": "EQ-001", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 4000000}},
+      {"id": "EQ-002", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ISP", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 6000000}},
+      {"id": "EQ-003", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "UCG", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 2000000}},
+      {"id": "EQ-004", "inputs": {"market_code": "IT", "type_code": "Index", "identifier_code": "FTSE MIB", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 5000000}},
+      {"id": "EQ-005", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "SAP", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 5000000}},
+      {"id": "EQ-006", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "SIE", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 3000000}},
+      {"id": "EQ-007", "inputs": {"market_code": "DE", "type_code": "Index", "identifier_code": "DAX", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 4000000}},
+      {"id": "EQ-008", "inputs": {"market_code": "US", "type_code": "Single name", "identifier_code": "AAPL", "currency_code": "USD", "direction_code": "Long", "market_value_amount": 3000000}},
+      {"id": "EQ-009", "inputs": {"market_code": "US", "type_code": "Single name", "identifier_code": "MSFT", "currency_code": "USD", "direction_code": "Short", "market_value_amount": 1500000}},
+      {"id": "EQ-010", "inputs": {"market_code": "US", "type_code": "Index", "identifier_code": "S&P 500", "currency_code": "USD", "direction_code": "Long", "market_value_amount": 2000000}},
+      {"id": "EQ-011", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 1000000}}
+    ]
+  }
+}
