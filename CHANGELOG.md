@@ -372,6 +372,19 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The source register completes the verification of the CRR texts. It records
+  the terms under which EUR-Lex allows its content to be reused, and keeps no
+  local copy of `SRC-04` to `SRC-10` all the same; the Parliament's record
+  that it did not object to Delegated Regulation (EU) 2026/1221 (`SRC-06`),
+  which is in force; that Delegated Regulation (EU) No 525/2014 (`SRC-07`) is
+  not amended; that Delegated Regulation (EU) 2016/861 replaced Article 2 of
+  Delegated Regulation (EU) No 528/2014 (`SRC-08`), which a corrigendum of
+  2014 also corrects, giving the gamma impact of its Annex I as
+  ½ × Gamma × VU²; and that the corrigendum of 2025 to Regulation (EU)
+  2024/1623 changes nothing in Articles 325 to 361. The contracts already
+  state the replaced Article 2; no rule and no expected value
+  changes ([#91](https://github.com/danielep71/K-FRTB-SSA/issues/91)).
+
 - The VBA house style has a new layout, described under *Layout of a component*
   in `docs/VBA_HOUSE_STYLE.md`: a nine-field header on every component and
   procedure, section banners in each procedure body, an intent comment before
