@@ -392,7 +392,7 @@ locally:
 
 ```sh
 python -m pip install --require-hashes -r .github/requirements.txt
-python -m unittest discover -s tests -v
+python tools/run_tests.py -v
 ```
 
 After that one-time installation, the tests require neither credentials nor network access.

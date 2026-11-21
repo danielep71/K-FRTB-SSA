@@ -136,4 +136,4 @@ jobs:
             --require-hashes \
             -r .github/requirements.txt
       - name: Run repository tests
-        run: python -m unittest discover -s tests
+        run: python tools/run_tests.py

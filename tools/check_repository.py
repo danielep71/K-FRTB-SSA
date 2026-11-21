@@ -315,7 +315,7 @@ def checks(context: Context) -> list[Check]:
         (importlib.util.find_spec("yaml"), "PyYAML is not installed (.github/requirements.txt)"),
     ) if not found) or None
     listed: list[Check] = [
-        Check("tests", [python, "-m", "unittest", "discover", "-s", "tests", "-v"]),
+        Check("tests", [python, "tools/run_tests.py", "-v"]),
         Check("ruff", ruff, missing=ruff_missing),
         Check("mypy", mypy, missing=mypy_missing),
         Check("actionlint", actionlint, missing=actionlint_missing, probe=actionlint_probe),

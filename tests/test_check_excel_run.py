@@ -1597,6 +1597,38 @@ class SourceIdentityTest(unittest.TestCase):
         self.assertEqual(check_excel_run.source_difference(b"x = 1\n", b"x = 1\ny = 2\n",
                                                            False)[0], 2)
 
+    def test_equal_sources_and_repeated_reads_give_the_same_results(self) -> None:
+        # Equal bytes return at once; the cached reads return what a fresh read does.
+        for document in (False, True):
+            self.assertEqual(check_excel_run.source_difference(
+                PROJECT_SOURCE, PROJECT_SOURCE, document), (0, [], []))
+        first = check_excel_run.source_lines(PROJECT_SOURCE, False)
+        self.assertIs(check_excel_run.source_lines(PROJECT_SOURCE, False), first)
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            first[0].key = "changed"  # type: ignore[misc]
+        suite = read_suite(PROJECT_SOURCE, "64-bit")
+        again = read_suite(PROJECT_SOURCE, "64-bit")
+        self.assertEqual(suite, again)
+        self.assertIsNot(suite.cases, again.cases)
+        suite.cases.append("changed")
+        self.assertNotIn("changed", read_suite(PROJECT_SOURCE, "64-bit").cases)
+
+    def test_the_files_of_a_commit_are_those_git_show_gives(self) -> None:
+        if not COMMIT:
+            self.skipTest("git or the VBA modules are unavailable")
+        files = dict(check_excel_run.tree_files(ROOT, COMMIT))
+        self.assertTrue(files)
+        for path, data in files.items():
+            self.assertEqual(data, check_excel_run.git(ROOT, "show", f"{COMMIT}:{path}"), path)
+        # A name that is not a full SHA is read again, and gives the same files.
+        self.assertEqual(dict(check_excel_run.tree_files(ROOT, "HEAD")), files)
+        self.assertEqual(check_excel_run.components(ROOT, COMMIT),
+                         {Path(path).name: data for path, data in files.items()
+                          if path.lower().endswith(check_excel_run.VBA_SUFFIXES
+                                                   + check_excel_run.RESOURCE_SUFFIXES)})
+        with self.assertRaises(RuntimeError):
+            check_excel_run.blobs(ROOT, [b"0" * 40])
+
     def test_the_tolerated_attributes_are_those_excel_writes_for_a_document(self) -> None:
         # The build writes the same attributes for a document module without a source file.
         written = re.findall(r"^Attribute (\w+) =", DOCUMENT_ATTRIBUTE_LINES, re.M)
