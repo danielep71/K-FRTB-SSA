@@ -85,6 +85,8 @@ that differs from its reference makes the run a what-if, and `Checks` warns
 | `TransitionalEndDate` | 2029-12-31 | `SRC-06`, Article 495s(2) | Equal, on 2026-11-20 |
 | `TotalOwnFunds` | None: the user's value, in the reporting currency | None: an input of the CRR regime | Not applicable |
 | `FXDeMinimisRate` | 0.02 | `SRC-04`, Article 351 | Equal, on 2026-11-20 |
+| `EligibilityShare325a`, `EligibilityCap325a` | 0.10, EUR 500,000,000 | `SRC-04`, Article 325a(1) | Equal, on 2026-11-20 |
+| `EligibilityShare94`, `EligibilityCap94` | 0.05, EUR 50,000,000 | `SRC-04`, Article 94(1) | Equal, on 2026-11-20 |
 | `Regime` | `Basel` | None: the regime the user chooses, `Basel` or `CRR` | Not applicable |
 | `DaysPerYear` | 365 | None: an assumption of the workbook | Not applicable |
 | `GoldCode` | `XAU` | None: the code under which gold is entered, a convention of the workbook. MAR40.53 treats gold as a currency | Not applicable |
@@ -751,6 +753,98 @@ and `illustrative-sample-requirement`. Their expected values are
 `illustrative`: derived within the project, they validate nothing. See the
 [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of
 `CALC-08` in the [traceability table](VALIDATION_PLAN.md#traceability).
+
+### `CALC-09` Eligibility for the simplified standardised approach and the small trading book derogation
+
+**Purpose:** under the `CRR` regime, whether the size of the institution's business
+allows the simplified standardised approach, Article 325a, and the derogation for
+small trading book business, Article 94, and the months that give the finding. The
+result is a finding on the `Eligibility` sheet and on `Checks`; it does not change
+any requirement.
+
+**Inputs:**
+
+| Input | Dataset and field | Unit |
+| --- | --- | --- |
+| Regime | `DS-02.regime` | Text: `Basel` or `CRR` |
+| Month, total assets and the aggregated long and short positions of each approach | `DS-11.month_end`, `DS-11.total_assets`, `DS-11.long_325a`, `DS-11.short_325a`, `DS-11.long_94` and `DS-11.short_94` | Date; euro |
+| Share of total assets and amount, for each approach | `DS-02.eligibility_share_325a`, `DS-02.eligibility_cap_325a`, `DS-02.eligibility_share_94` and `DS-02.eligibility_cap_94` | Fraction; euro |
+
+**Rules:**
+
+| Step | Rule | Source |
+| --- | --- | --- |
+| 1 | The size of the business of a month is the absolute value of the aggregated long position plus the absolute value of the aggregated short position, for each approach. The user enters the two aggregates, valued as the Article says | `SRC-04`, Article 325a(2), point (f); Article 94(3), point (c) |
+| 2 | The conditions are met in a month where the size is equal to or less than both the share of the total assets and the amount: 10% and EUR 500 million for the simplified standardised approach, 5% and EUR 50 million for the derogation | `SRC-04`, Article 325a(1); Article 94(1) |
+| 3 | The run of a month is the number of consecutive months, that month included, in which the conditions are not met | `SRC-04`, Article 325a(5), point (a); Article 94(7), point (a) |
+| 4 | The count of a month is the number of months, among the last 12 up to and including that month, in which the conditions are not met. Before the twelfth month entered, the months entered are counted | `SRC-04`, Article 325a(5), point (b); Article 94(7), point (b) |
+| 5 | A month is an event where its run is 3 or more, or its count is more than 6 | `SRC-04`, Article 325a(5); Article 94(7) |
+| 6 | The status is that of the last month entered: `CEASE` where that month is an event, otherwise `NOT MET` where the conditions are not met in it, otherwise `MET` | `SRC-04`, Article 325a(5); Article 94(7) |
+| 7 | The restart condition is `YES` where 12 months are entered and the conditions are met in each of the last 12, otherwise `NO` | `SRC-04`, Article 325a(6); Article 94(8) |
+| 8 | The assessment is made under the `CRR` regime only. Under the Basel regime the sheet is not read and the status is `NOT ASSESSED: Basel regime` | `SRC-04`, Article 325a |
+
+**Outputs:**
+
+| Output | Quantity | Unit | Scope | Rounding |
+| --- | --- | --- | --- | --- |
+| Size of the business | `eligibility_size` | Euro | Month, and approach | None |
+| Share of total assets | `eligibility_share` | Fraction | Month, and approach | None |
+| Conditions of the month | `eligibility_month_result` | `MET` or `NOT MET` | Month, and approach | None |
+| Run | `eligibility_run` | Number of months | Month, and approach | None |
+| Count of the last 12 months | `eligibility_count` | Number of months | Month, and approach | None |
+| Event | `eligibility_event` | `YES` or `NO` | Month, and approach | None |
+| Status | `eligibility_status` | Text | Approach | None |
+| Restart condition | `eligibility_restart` | `YES` or `NO` | Approach | None |
+
+An approach is `325a`, the simplified standardised approach, or `94`, the
+derogation. The quantity of the expected files gives it after the name:
+`eligibility_status_325a`.
+
+**Limits and non-goals:**
+
+- The user enters the aggregated long and short positions of each month. The
+  workbook does not value positions, does not decide which positions Article
+  325a(2) or Article 94(3) includes, and does not decide whether a position is
+  long or short: the side is the side as entered, until the regulatory technical
+  standard of Article 94(10) is registered ([sources](SOURCES.md)). The positions of
+  Article 94(3) exclude foreign exchange and commodity positions, which those of
+  Article 325a(2) include: the user enters two sets of totals.
+- The amounts are in euro, as the Articles give them, and the workbook converts
+  none: the share of the total assets does not depend on the currency, and the
+  amounts are compared with the euro thresholds as entered. This is an assumption of the workbook.
+- A month is the last day of a calendar month. The months entered follow one
+  another without a gap; a month that is not entered is not assumed to meet or to
+  miss the conditions.
+- Only the last month entered is judged. A month earlier in the series that is an
+  event stays visible in its row, and no status of an approach already
+  ceased or restarted is kept: the user decides which approach is in use.
+- The notifications of Article 325a(3) and (4) and of Article 94(5) and (6), the
+  obligation to cease within three months, the permission to restart of Article
+  325a(6) and the prohibition of Article 325a(7) and Article 94(9) are the
+  institution's obligations. The workbook documents them and calculates none.
+- The status changes no requirement and stops no run: an institution that
+  must cease the approach reads the finding and acts outside the workbook.
+- The derogation of Article 94(2), its simpler requirement and its relief,
+  is not calculated; nor is Article 495u of Delegated Regulation (EU) 2026/1221.
+
+**Failure behaviour:** `eligibility_month_status`, on `Eligibility`, is `OK` or:
+
+- `INVALID: MonthEnd must be a date`
+- `INVALID: MonthEnd must be the last day of a month`
+- `INVALID: MonthEnd must be one month after the previous row`
+- `INVALID: TotalAssets must be a number greater than 0`
+- `INVALID: a long or short total must be a number`
+
+A row that fails a test contributes nothing, `Checks` lists it (rule `C15`)
+and the status line reads `INCOMPLETE`. While a row is invalid, both statuses read
+`NOT ASSESSED: a row is invalid`. With no month entered, they read
+`NOT ASSESSED: no month entered`. A status `NOT MET` or `CEASE` is a
+warning of `Checks` (rule `C16`), and the requirement is unchanged.
+
+**Validation:** the VBA test suites check the engine against the derivation of
+`tests/derivations/ssa.py`; no registered test case or `published` value covers it
+yet. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the
+rows of `CALC-09` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
 ## Decisions
 
