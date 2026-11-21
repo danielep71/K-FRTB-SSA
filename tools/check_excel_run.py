@@ -408,13 +408,62 @@ def git(root: Path, *args: str) -> bytes:
     return completed.stdout
 
 
+def blobs(root: Path, objects: Sequence[bytes]) -> list[bytes]:
+    """The contents of the Git blobs ``objects``, in order, read by one process."""
+    if not objects:
+        return []
+    completed = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"],
+                               input=b"".join(item + b"\n" for item in objects),
+                               capture_output=True, check=False)
+    if completed.returncode:
+        raise RuntimeError(completed.stderr.decode("utf-8", errors="replace").strip())
+    output, position, contents = completed.stdout, 0, []
+    for item in objects:
+        end = output.index(b"\n", position)
+        header = output[position:end].split(b" ")
+        if len(header) != 3:
+            raise RuntimeError(f"git cat-file: {item.decode('ascii', errors='replace')} missing")
+        start = end + 1
+        size = int(header[2])
+        contents.append(output[start:start + size])
+        position = start + size + 1
+    return contents
+
+
+def tree_files(root: Path, commit: str, *paths: str) -> tuple[tuple[str, bytes], ...]:
+    """The files of the commit (below ``paths``, if any), in Git's order, with their
+    bytes as ``git show <commit>:<path>`` gives them, read by two processes. The
+    files of a full commit SHA never change, so they are read once per process."""
+    if check_accuracy.SHA.fullmatch(commit):
+        return commit_files(root, commit, paths)
+    return read_tree(root, commit, paths)
+
+
+@lru_cache(maxsize=32)
+def commit_files(root: Path, commit: str, paths: tuple[str, ...]
+                 ) -> tuple[tuple[str, bytes], ...]:
+    """``read_tree`` for a full commit SHA, cached: the result is a tuple of bytes."""
+    return read_tree(root, commit, paths)
+
+
+def read_tree(root: Path, commit: str, paths: tuple[str, ...]) -> tuple[tuple[str, bytes], ...]:
+    listed = git(root, "ls-tree", "-r", "-z", commit, *(("--", *paths) if paths else ()))
+    entries = []
+    for item in filter(None, listed.split(b"\0")):
+        meta, _, name = item.partition(b"\t")
+        kind, object_id = meta.split(b" ")[1:3]
+        if kind == b"blob":
+            entries.append((name.decode("utf-8"), object_id))
+    return tuple(zip((name for name, _ in entries), blobs(root, [item for _, item in entries]),
+                     strict=True))
+
+
 def components(root: Path, commit: str) -> dict[str, bytes]:
     """The commit's VBA components and form resources, by file name, as Git stores
     them: text components with LF line ends, resources byte for byte."""
-    listed = git(root, "ls-tree", "-r", "-z", "--name-only", commit).split(b"\0")
-    paths = [item.decode("utf-8") for item in listed
-             if item.decode("utf-8").lower().endswith(VBA_SUFFIXES + RESOURCE_SUFFIXES)]
-    return {Path(path).name: git(root, "show", f"{commit}:{path}") for path in paths}
+    suffixes = VBA_SUFFIXES + RESOURCE_SUFFIXES
+    return {Path(path).name: data for path, data in tree_files(root, commit)
+            if path.lower().endswith(suffixes)}
 
 
 def source_at(root: Path, commit: str, path: str, evidence: Evidence) -> bytes:
@@ -1174,14 +1223,13 @@ def workbook_findings(root: Path, commit: str, workbook: Path, digest: str,
 
 def copy_cases(root: Path, commit: str, target: Path) -> None:
     """The commit's files under CASE_PATHS, written below ``target``."""
-    listed = git(root, "ls-tree", "-r", "-z", "--name-only", commit, "--", *CASE_PATHS)
-    for name in filter(None, listed.decode("utf-8").split("\0")):
+    for name, data in tree_files(root, commit, *CASE_PATHS):
         path = PurePosixPath(name)
         if path.is_absolute() or ".." in path.parts:
             continue
         destination = target.joinpath(*path.parts)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(git(root, "show", f"{commit}:{name}"))
+        destination.write_bytes(data)
 
 
 def results_files(policy: Policy) -> list[str]:

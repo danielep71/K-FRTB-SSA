@@ -402,7 +402,9 @@ Use only the categories an entry needs.
   job call it instead of `python -m unittest discover -s tests`, which still
   runs the same tests one module after the other. `check_excel_run.py` reads
   each exported module and suite once per process instead of on every
-  comparison. The tests themselves are unchanged
+  comparison, and reads the files of a commit with two Git processes instead
+  of one per file; the development build compresses each module source once
+  per process. The tests themselves are unchanged
   ([#107](https://github.com/danielep71/K-FRTB-SSA/issues/107)).
 - The source register completes the verification of the CRR texts. It records
   the terms under which EUR-Lex allows its content to be reused, and keeps no
