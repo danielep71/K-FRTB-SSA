@@ -3,7 +3,7 @@
   "kind": "test-fixture",
   "id": "illustrative-invalid-fx-positions",
   "synthetic": true,
-  "description": "FX rows that each break one input rule of DS-09, in the order of the contract's list, and a row in the reporting currency, which is excluded and not rejected",
+  "description": "FX rows that each break one input rule of DS-09, in the order of the contract's list, and a row in the reporting currency, which is excluded and not rejected. A non-trading book row is tested as a trading book one",
   "category": "invalid",
   "calculation": "CALC-06",
   "reporting_date": "2026-09-30",
@@ -27,6 +27,8 @@
     "DS-09": [
       {"id": "X-DUP", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 1}},
       {"id": "x-dup", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 1}},
+      {"id": "X-BOOK", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 1, "book_code": "Banking"}},
+      {"id": "X-NTBOOK", "inputs": {"currency_code": "ZAR", "direction_code": "Long", "net_position_amount": 1, "book_code": "Non-trading"}},
       {"id": "X-CCY", "inputs": {"currency_code": "ZAR", "direction_code": "Long", "net_position_amount": 1}},
       {"id": "X-BLANK", "inputs": {"currency_code": null, "direction_code": "Long", "net_position_amount": 1}},
       {"id": "X-DIR", "inputs": {"currency_code": "USD", "direction_code": "Flat", "net_position_amount": 1}},

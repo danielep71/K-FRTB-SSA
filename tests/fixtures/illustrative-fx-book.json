@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-fx-book",
+  "synthetic": true,
+  "description": "Foreign exchange positions in each book: a trading book position, one with no book, and non-trading book positions, which are calculated as trading book ones: one offsets the others in the same currency",
+  "category": "boundary",
+  "calculation": "CALC-06",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}}
+    ],
+    "DS-09": [
+      {"id": "B-1", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 1000000, "book_code": "Trading"}},
+      {"id": "B-2", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 500000, "book_code": null}},
+      {"id": "B-3", "inputs": {"currency_code": "USD", "direction_code": "Short", "net_position_amount": 400000, "book_code": "Non-trading"}},
+      {"id": "B-4", "inputs": {"currency_code": "EUR", "direction_code": "Long", "net_position_amount": 2000000, "book_code": "Non-trading"}}
+    ]
+  }
+}

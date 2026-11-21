@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-ir-book",
+  "synthetic": true,
+  "description": "Interest rate positions in each book: a trading book position, one with no book, which is in the trading book, and a non-trading book position that would offset them in the same time band, which is excluded and offsets nothing",
+  "category": "boundary",
+  "calculation": "CALC-03",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "B-1", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 6000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null, "book_code": "Trading"}},
+      {"id": "B-2", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Long", "position_value_amount": 4000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null, "book_code": null}},
+      {"id": "B-3", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 10000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null, "book_code": "Non-trading"}},
+      {"id": "B-4", "inputs": {"instrument_code": "Bond", "currency_code": "EUR", "direction_code": "Short", "position_value_amount": 3000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2029-06-26", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null, "book_code": "NON-TRADING"}}
+    ]
+  }
+}

@@ -3,7 +3,7 @@
   "kind": "test-fixture",
   "id": "illustrative-invalid-eq-positions",
   "synthetic": true,
-  "description": "Equity rows that each break one input rule of DS-07, in the order of the contract's list",
+  "description": "Equity rows that each break one input rule of DS-07, in the order of the contract's list. A non-trading book row is excluded before the tests that follow the book",
   "category": "invalid",
   "calculation": "CALC-04",
   "reporting_date": "2026-09-30",
@@ -27,6 +27,8 @@
     "DS-07": [
       {"id": "X-DUP", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
       {"id": "x-dup", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
+      {"id": "X-BOOK", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1, "book_code": "Banking"}},
+      {"id": "X-NTBOOK", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "ZAR", "direction_code": "Long", "market_value_amount": 1, "book_code": "Non-trading"}},
       {"id": "X-MKT", "inputs": {"market_code": "", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
       {"id": "X-TYPE", "inputs": {"market_code": "IT", "type_code": "Basket", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},
       {"id": "X-ID", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "  ", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1}},

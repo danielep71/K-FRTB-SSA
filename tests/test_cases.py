@@ -408,7 +408,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 25)
+        self.assertEqual(len(self.cases), 29)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -498,7 +498,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 25)
+        self.assertEqual(len(names), 29)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])
@@ -548,6 +548,21 @@ class Runner(unittest.TestCase):
         self.assertIsNone(sheet["C5"].value)
         with self.assertRaises(ValueError):
             self.tool.write_inputs(workbook, {**case, "parameters": {"scaling_ir_factor": 1.0}})
+
+    def test_the_book_of_a_record_is_typed_in_the_book_column(self) -> None:
+        assert openpyxl is not None
+        workbook = openpyxl.load_workbook(TEMPLATE)
+        # The Book column is the one before Comment: P, K, L and H.
+        for case, sheet, column in (("illustrative-ir-book", "IRPositions", 16),
+                                    ("illustrative-eq-book", "EQPositions", 11),
+                                    ("illustrative-co-book", "COPositions", 12),
+                                    ("illustrative-fx-book", "FXPositions", 8)):
+            with self.subTest(case=case):
+                self.tool.write_inputs(workbook, fixture(case))
+                positions = workbook[sheet]
+                self.assertEqual(positions.cell(4, column).value, "Book")
+                self.assertEqual([positions.cell(row, column).value for row in (5, 6, 7)],
+                                 ["Trading", None, "Non-trading"])
 
     def test_a_value_that_is_not_what_a_cell_can_hold_is_written_as_it_is(self) -> None:
         self.assertEqual(self.tool.cell_value("final_maturity_date", 20311231), 20311231)

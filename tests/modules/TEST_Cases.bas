@@ -86,8 +86,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "cases"   'Name of the suite in its log
-    Private Const EXPECTED_CASES      As Long = 25          'Cases a complete run starts
-    Private Const EXPECTED_ASSERTIONS As Long = 637         'Assertions a complete run evaluates
+    Private Const EXPECTED_CASES      As Long = 29          'Cases a complete run starts
+    Private Const EXPECTED_ASSERTIONS As Long = 684         'Assertions a complete run evaluates
 
     'The inputs a test case replaces (InputArea)
     Private Const INPUT_AREAS   As Long = 14    'Areas kept and put back
@@ -123,7 +123,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=25; assertions=637; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=29; assertions=684; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   The documented entry point of the suite: it raises when the run does not
@@ -385,18 +385,22 @@ Private Sub RunSuite()
         AllowWritingToSheets
     'Run every case, in a fixed order
         CaseBcbs119C2MaturityMethod
+        CaseIllustrativeCoBook
         CaseIllustrativeCoMatchedPositions
         CaseIllustrativeEligibilityBaselRegime
         CaseIllustrativeEligibilityEvents
         CaseIllustrativeEligibilityLimits
         CaseIllustrativeEligibilitySampleMonths
+        CaseIllustrativeEqBook
         CaseIllustrativeEqMatchedPositions
+        CaseIllustrativeFxBook
         CaseIllustrativeFxOneSidedPositions
         CaseIllustrativeInvalidCoPositions
         CaseIllustrativeInvalidEligibilityMonths
         CaseIllustrativeInvalidEqPositions
         CaseIllustrativeInvalidFxPositions
         CaseIllustrativeInvalidIrPositions
+        CaseIllustrativeIrBook
         CaseIllustrativeIrSpecificRiskMaturityLimits
         CaseIllustrativeIrTimeBandLimits
         CaseIllustrativeOptionCharges
@@ -721,6 +725,210 @@ Private Sub CaseBcbs119C2MaturityMethod()
         TEST_Harness.AssertNear "ir-general-market-risk-charge", 4580000, Actual, 500, 0
         TEST_Harness.RecordResult "bcbs119-c2-maturity-method", vbNullString, _
             "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCoBook()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-co-book.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 2 row(s)
+'     - the commodity positions: 3 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+
+'------------------------------------------------------------------------------
+' TYPE COMMODITY POSITIONS
+'------------------------------------------------------------------------------
+    'Type the commodity positions of the test case, one row each
+        PutRow NM_CO_POS_HEADER, 1, Array("B-1", Empty, "Copper", "Long", 100, Empty, 9800, _
+            "USD", Empty, "Trading")
+        PutRow NM_CO_POS_HEADER, 2, Array("B-2", Empty, "Copper", "Long", 50, Empty, 9800, _
+            "USD")
+        PutRow NM_CO_POS_HEADER, 3, Array("B-3", Empty, "Copper", "Short", 120, Empty, 9800, _
+            "USD", Empty, "Non-trading")
+
+End Sub
+
+Private Sub CaseIllustrativeCoBook()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-co-book, on CALC-05: Commodity positions in each
+'   book: a trading book position, one with no book, and a non-trading book
+'   position, which is calculated as a trading book one and offsets them.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 5 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCoBook; KeepInputs;
+'   RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-co-book"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCoBook
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare co_position_status of B-1 with its expected text
+        TEST_Harness.AssertEqualText "co-position-status-of-b-1", "OK", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 1, 1))
+    'Compare co_position_status of B-2 with its expected text
+        TEST_Harness.AssertEqualText "co-position-status-of-b-2", "OK", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 2, 1))
+    'Compare co_position_status of B-3 with its expected text
+        TEST_Harness.AssertEqualText "co-position-status-of-b-3", "OK", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 3, 1))
+    'Compare co_directional_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(3, 3))
+        TEST_Harness.AssertNear "co-directional-charge", 39690, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-co-book", vbNullString, _
+            "co_directional_charge", vbNullString, vbNullString, Actual
+    'Compare co_gross_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(3, 4))
+        TEST_Harness.AssertNear "co-gross-charge", 71442, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-co-book", vbNullString, "co_gross_charge", _
+            vbNullString, vbNullString, Actual
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -2677,6 +2885,232 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeEqBook()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-eq-book.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 1 row(s)
+'     - the equity positions: 4 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE EQUITY POSITIONS
+'------------------------------------------------------------------------------
+    'Type the equity positions of the test case, one row each
+        PutRow NM_EQ_POS_HEADER, 1, Array("B-1", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Long", 1000000, "Trading")
+        PutRow NM_EQ_POS_HEADER, 2, Array("B-2", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Long", 500000)
+        PutRow NM_EQ_POS_HEADER, 3, Array("B-3", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Short", 1500000, "Non-trading")
+        PutRow NM_EQ_POS_HEADER, 4, Array("B-4", Empty, "DE", "Single name", "SAP", "EUR", _
+            "Long", 2000000, "non-trading")
+
+End Sub
+
+Private Sub CaseIllustrativeEqBook()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-eq-book, on CALC-04: Equity positions in each
+'   book: a trading book position, one with no book, and non-trading book
+'   positions in the same stock, which are excluded and offset nothing.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 9 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeEqBook; KeepInputs;
+'   RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-eq-book"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeEqBook
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eq_position_status of B-1 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-b-1", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 1, 1))
+    'Compare eq_position_status of B-2 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-b-2", "OK", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 2, 1))
+    'Compare eq_position_status of B-3 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-b-3", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 3, 1))
+    'Compare eq_position_status of B-4 with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-b-4", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 4, 1))
+    'Compare eq_net_position of B-1 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-b-1", 1500000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eq-book", vbNullString, "eq_net_position", _
+            "DS-07", "B-1", Actual
+    'Compare eq_net_position of B-2 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EQ_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "eq-net-position-of-b-2", 1500000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eq-book", vbNullString, "eq_net_position", _
+            "DS-07", "B-2", Actual
+    'Compare eq_specific_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 2))
+        TEST_Harness.AssertNear "eq-specific-risk-charge", 120000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eq-book", vbNullString, _
+            "eq_specific_risk_charge", vbNullString, vbNullString, Actual
+    'Compare eq_index_charge with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(2, 4))
+        TEST_Harness.AssertNear "eq-index-charge", 0, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eq-book", vbNullString, "eq_index_charge", _
+            vbNullString, vbNullString, Actual
+    'Compare eq_general_market_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(2, 3))
+        TEST_Harness.AssertNear "eq-general-market-risk-charge", 120000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eq-book", vbNullString, _
+            "eq_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeEqMatchedPositions()
 
 '
@@ -2903,6 +3337,219 @@ Private Sub CaseIllustrativeEqMatchedPositions()
             0.000000001
         TEST_Harness.RecordResult "illustrative-eq-matched-positions", vbNullString, _
             "eq_general_market_risk_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeFxBook()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-fx-book.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 2 row(s)
+'     - the foreign exchange positions: 4 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+        PutRate 2, "USD", 0.9
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("B-1", Empty, "USD", "Long", 1000000, "Trading")
+        PutRow NM_FX_POS_HEADER, 2, Array("B-2", Empty, "USD", "Long", 500000)
+        PutRow NM_FX_POS_HEADER, 3, Array("B-3", Empty, "USD", "Short", 400000, "Non-trading")
+        PutRow NM_FX_POS_HEADER, 4, Array("B-4", Empty, "EUR", "Long", 2000000, "Non-trading")
+
+End Sub
+
+Private Sub CaseIllustrativeFxBook()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-fx-book, on CALC-06: Foreign exchange positions
+'   in each book: a trading book position, one with no book, and non-trading
+'   book positions, which are calculated as trading book ones: one offsets
+'   the others in the same currency.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 7 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeFxBook; KeepInputs;
+'   RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-fx-book"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeFxBook
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare fx_position_status of B-1 with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-b-1", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 1, 1))
+    'Compare fx_position_status of B-2 with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-b-2", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 2, 1))
+    'Compare fx_position_status of B-3 with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-b-3", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+    'Compare fx_position_status of B-4 with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-b-4", _
+            "EXCLUDED: reporting currency carries no FX risk", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
+    'Compare fx_net_position of USD with its expected value and record it
+        Actual = NumberOf(FxNet("USD"))
+        TEST_Harness.AssertNear "fx-net-position-of-usd", 990000, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-fx-book", vbNullString, "fx_net_position", _
+            "DS-05", "USD", Actual
+    'Compare fx_overall_net_open_position with its expected value and record it
+        Actual = NumberOf(NamedCell(NM_FX_ONOP))
+        TEST_Harness.AssertNear "fx-overall-net-open-position", 990000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-fx-book", vbNullString, _
+            "fx_overall_net_open_position", vbNullString, vbNullString, Actual
+    'Compare fx_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(4, 3))
+        TEST_Harness.AssertNear "fx-charge", 79200, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-fx-book", vbNullString, "fx_charge", _
+            vbNullString, vbNullString, Actual
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -3200,7 +3847,7 @@ Private Sub InputsIllustrativeInvalidCoPositions()
 '     - the reporting date and the reporting currency
 '     - the regime
 '     - the FX table: 13 row(s)
-'     - the commodity positions: 11 row(s)
+'     - the commodity positions: 13 row(s)
 '
 ' ERROR POLICY
 '   An error of a procedure it calls propagates to the case.
@@ -3212,7 +3859,7 @@ Private Sub InputsIllustrativeInvalidCoPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -3255,19 +3902,23 @@ Private Sub InputsIllustrativeInvalidCoPositions()
     'Type the commodity positions of the test case, one row each
         PutRow NM_CO_POS_HEADER, 1, Array("X-DUP", Empty, "Copper", "Long", 1, Empty, 1, "USD")
         PutRow NM_CO_POS_HEADER, 2, Array("x-dup", Empty, "Copper", "Long", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 3, Array("X-NAME", Empty, Empty, "Long", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 4, Array("X-GOLDNAME", Empty, "XAU", "Long", 1, Empty, 1, _
+        PutRow NM_CO_POS_HEADER, 3, Array("X-BOOK", Empty, "Copper", "Long", 1, Empty, 1, _
+            "USD", Empty, "Banking")
+        PutRow NM_CO_POS_HEADER, 4, Array("X-NTBOOK", Empty, "Copper", "Long", 1, Empty, 1, _
+            "ZAR", Empty, "Non-trading")
+        PutRow NM_CO_POS_HEADER, 5, Array("X-NAME", Empty, Empty, "Long", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 6, Array("X-GOLDNAME", Empty, "XAU", "Long", 1, Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 5, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 6, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
+        PutRow NM_CO_POS_HEADER, 7, Array("X-DIR", Empty, "Copper", "Sell", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 8, Array("X-QTY", Empty, "Copper", "Long", "ten", Empty, 1, _
             "USD")
-        PutRow NM_CO_POS_HEADER, 7, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
-        PutRow NM_CO_POS_HEADER, 8, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, Empty, _
-            "USD")
-        PutRow NM_CO_POS_HEADER, 9, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
-        PutRow NM_CO_POS_HEADER, 10, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, _
+        PutRow NM_CO_POS_HEADER, 9, Array("X-NEG", Empty, "Copper", "Long", -1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 10, Array("X-PRICE", Empty, "Copper", "Long", 1, Empty, _
+            Empty, "USD")
+        PutRow NM_CO_POS_HEADER, 11, Array("X-CCY", Empty, "Copper", "Long", 1, Empty, 1, "ZAR")
+        PutRow NM_CO_POS_HEADER, 12, Array("X-GOLD", Empty, "Copper", "Long", 1, Empty, 1, _
             "XAU")
-        PutRow NM_CO_POS_HEADER, 11, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
+        PutRow NM_CO_POS_HEADER, 13, Array("X-OK", Empty, "Copper", "Long", 1, Empty, 1, "USD")
 
 End Sub
 
@@ -3280,7 +3931,7 @@ Private Sub CaseIllustrativeInvalidCoPositions()
 ' PURPOSE
 '   Test case illustrative-invalid-co-positions, on CALC-05: Commodity rows
 '   that each break one input rule of DS-08, in the order of the contract's
-'   list.
+'   list. A non-trading book row is tested as a trading book one.
 '
 ' WHY THIS EXISTS
 '   A registered test case is one case of the suite: the workbook calculates
@@ -3295,7 +3946,7 @@ Private Sub CaseIllustrativeInvalidCoPositions()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 11 expected outputs with the cell
+'   the calculation. Compares each of the 13 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -3314,7 +3965,7 @@ Private Sub CaseIllustrativeInvalidCoPositions()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -3356,36 +4007,43 @@ Private Sub CaseIllustrativeInvalidCoPositions()
     'Compare co_position_status of x-dup with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_CO_CALC_HEADER, 2, 1))
+    'Compare co_position_status of X-BOOK with its expected text
+        TEST_Harness.AssertEqualText "co-position-status-of-x-book", _
+            "INVALID: Book must be Trading or Non-trading", _
+            PlainText(RowCell(NM_CO_CALC_HEADER, 3, 1))
+    'Compare co_position_status of X-NTBOOK with its expected text
+        TEST_Harness.AssertEqualText "co-position-status-of-x-ntbook", _
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 4, 1))
     'Compare co_position_status of X-NAME with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-name", _
-            "INVALID: Commodity missing", PlainText(RowCell(NM_CO_CALC_HEADER, 3, 1))
+            "INVALID: Commodity missing", PlainText(RowCell(NM_CO_CALC_HEADER, 5, 1))
     'Compare co_position_status of X-GOLDNAME with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-goldname", _
             "INVALID: gold is FX risk; enter it on FXPositions", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 4, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
     'Compare co_position_status of X-DIR with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_CO_CALC_HEADER, _
-            5, 1))
+            7, 1))
     'Compare co_position_status of X-QTY with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-qty", _
-            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 6, 1))
+            "INVALID: Quantity must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
     'Compare co_position_status of X-NEG with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-neg", _
             "INVALID: Quantity must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 7, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 9, 1))
     'Compare co_position_status of X-PRICE with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-price", _
-            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 8, 1))
+            "INVALID: Spot price must be a number", PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
     'Compare co_position_status of X-CCY with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 9, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 11, 1))
     'Compare co_position_status of X-GOLD with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-gold", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 10, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_CO_CALC_HEADER, 12, 1))
     'Compare co_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "co-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_CO_CALC_HEADER, 11, 1))
+            PlainText(RowCell(NM_CO_CALC_HEADER, 13, 1))
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -3731,7 +4389,7 @@ Private Sub InputsIllustrativeInvalidEqPositions()
 '     - the reporting date and the reporting currency
 '     - the regime
 '     - the FX table: 13 row(s)
-'     - the equity positions: 11 row(s)
+'     - the equity positions: 13 row(s)
 '
 ' ERROR POLICY
 '   An error of a procedure it calls propagates to the case.
@@ -3743,7 +4401,7 @@ Private Sub InputsIllustrativeInvalidEqPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -3788,23 +4446,27 @@ Private Sub InputsIllustrativeInvalidEqPositions()
             "Long", 1)
         PutRow NM_EQ_POS_HEADER, 2, Array("x-dup", Empty, "IT", "Single name", "ENI", "EUR", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 3, Array("X-MKT", Empty, "", "Single name", "ENI", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 3, Array("X-BOOK", Empty, "IT", "Single name", "ENI", "EUR", _
+            "Long", 1, "Banking")
+        PutRow NM_EQ_POS_HEADER, 4, Array("X-NTBOOK", Empty, "IT", "Single name", "ENI", _
+            "ZAR", "Long", 1, "Non-trading")
+        PutRow NM_EQ_POS_HEADER, 5, Array("X-MKT", Empty, "", "Single name", "ENI", "EUR", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 4, Array("X-TYPE", Empty, "IT", "Basket", "ENI", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 6, Array("X-TYPE", Empty, "IT", "Basket", "ENI", "EUR", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 5, Array("X-ID", Empty, "IT", "Single name", "  ", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 7, Array("X-ID", Empty, "IT", "Single name", "  ", "EUR", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 6, Array("X-CCY", Empty, "IT", "Single name", "ENI", "ZAR", _
+        PutRow NM_EQ_POS_HEADER, 8, Array("X-CCY", Empty, "IT", "Single name", "ENI", "ZAR", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 7, Array("X-GOLD", Empty, "IT", "Single name", "ENI", "XAU", _
+        PutRow NM_EQ_POS_HEADER, 9, Array("X-GOLD", Empty, "IT", "Single name", "ENI", "XAU", _
             "Long", 1)
-        PutRow NM_EQ_POS_HEADER, 8, Array("X-DIR", Empty, "IT", "Single name", "ENI", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 10, Array("X-DIR", Empty, "IT", "Single name", "ENI", "EUR", _
             "", 1)
-        PutRow NM_EQ_POS_HEADER, 9, Array("X-TEXT", Empty, "IT", "Single name", "ENI", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 11, Array("X-TEXT", Empty, "IT", "Single name", "ENI", "EUR", _
             "Long", "1")
-        PutRow NM_EQ_POS_HEADER, 10, Array("X-NEG", Empty, "IT", "Single name", "ENI", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 12, Array("X-NEG", Empty, "IT", "Single name", "ENI", "EUR", _
             "Short", -5)
-        PutRow NM_EQ_POS_HEADER, 11, Array("X-OK", Empty, "IT", "Index", "FTSE MIB", "EUR", _
+        PutRow NM_EQ_POS_HEADER, 13, Array("X-OK", Empty, "IT", "Index", "FTSE MIB", "EUR", _
             "Short", 1)
 
 End Sub
@@ -3818,7 +4480,8 @@ Private Sub CaseIllustrativeInvalidEqPositions()
 ' PURPOSE
 '   Test case illustrative-invalid-eq-positions, on CALC-04: Equity rows
 '   that each break one input rule of DS-07, in the order of the contract's
-'   list.
+'   list. A non-trading book row is excluded before the tests that follow
+'   the book.
 '
 ' WHY THIS EXISTS
 '   A registered test case is one case of the suite: the workbook calculates
@@ -3833,7 +4496,7 @@ Private Sub CaseIllustrativeInvalidEqPositions()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 11 expected outputs with the cell
+'   the calculation. Compares each of the 13 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -3852,7 +4515,7 @@ Private Sub CaseIllustrativeInvalidEqPositions()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -3894,38 +4557,46 @@ Private Sub CaseIllustrativeInvalidEqPositions()
     'Compare eq_position_status of x-dup with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_EQ_CALC_HEADER, 2, 1))
+    'Compare eq_position_status of X-BOOK with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-x-book", _
+            "INVALID: Book must be Trading or Non-trading", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 3, 1))
+    'Compare eq_position_status of X-NTBOOK with its expected text
+        TEST_Harness.AssertEqualText "eq-position-status-of-x-ntbook", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 4, 1))
     'Compare eq_position_status of X-MKT with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-mkt", "INVALID: Market missing", _
-            PlainText(RowCell(NM_EQ_CALC_HEADER, 3, 1))
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 5, 1))
     'Compare eq_position_status of X-TYPE with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-type", _
             "INVALID: Type must be Single name or Index", PlainText(RowCell(NM_EQ_CALC_HEADER, _
-            4, 1))
+            6, 1))
     'Compare eq_position_status of X-ID with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-id", _
             "INVALID: stock or index identifier missing", PlainText(RowCell(NM_EQ_CALC_HEADER, _
-            5, 1))
+            7, 1))
     'Compare eq_position_status of X-CCY with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_EQ_CALC_HEADER, 6, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_EQ_CALC_HEADER, 8, 1))
     'Compare eq_position_status of X-GOLD with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-gold", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_EQ_CALC_HEADER, 7, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_EQ_CALC_HEADER, 9, 1))
     'Compare eq_position_status of X-DIR with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_EQ_CALC_HEADER, _
-            8, 1))
+            10, 1))
     'Compare eq_position_status of X-TEXT with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-text", _
-            "INVALID: Market value must be a number", PlainText(RowCell(NM_EQ_CALC_HEADER, 9, _
+            "INVALID: Market value must be a number", PlainText(RowCell(NM_EQ_CALC_HEADER, 11, _
             1))
     'Compare eq_position_status of X-NEG with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-neg", _
             "INVALID: Market value must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_EQ_CALC_HEADER, 10, 1))
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 12, 1))
     'Compare eq_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "eq-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_EQ_CALC_HEADER, 11, 1))
+            PlainText(RowCell(NM_EQ_CALC_HEADER, 13, 1))
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -3980,7 +4651,7 @@ Private Sub InputsIllustrativeInvalidFxPositions()
 '     - the reporting date and the reporting currency
 '     - the regime
 '     - the FX table: 13 row(s)
-'     - the foreign exchange positions: 9 row(s)
+'     - the foreign exchange positions: 11 row(s)
 '
 ' ERROR POLICY
 '   An error of a procedure it calls propagates to the case.
@@ -3992,7 +4663,7 @@ Private Sub InputsIllustrativeInvalidFxPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -4035,13 +4706,15 @@ Private Sub InputsIllustrativeInvalidFxPositions()
     'Type the foreign exchange positions of the test case, one row each
         PutRow NM_FX_POS_HEADER, 1, Array("X-DUP", Empty, "USD", "Long", 1)
         PutRow NM_FX_POS_HEADER, 2, Array("x-dup", Empty, "USD", "Long", 1)
-        PutRow NM_FX_POS_HEADER, 3, Array("X-CCY", Empty, "ZAR", "Long", 1)
-        PutRow NM_FX_POS_HEADER, 4, Array("X-BLANK", Empty, Empty, "Long", 1)
-        PutRow NM_FX_POS_HEADER, 5, Array("X-DIR", Empty, "USD", "Flat", 1)
-        PutRow NM_FX_POS_HEADER, 6, Array("X-TEXT", Empty, "USD", "Long", "1")
-        PutRow NM_FX_POS_HEADER, 7, Array("X-NEG", Empty, "USD", "Long", -1)
-        PutRow NM_FX_POS_HEADER, 8, Array("X-REP", Empty, "EUR", "Long", 1)
-        PutRow NM_FX_POS_HEADER, 9, Array("X-OK", Empty, "XAU", "Short", 1)
+        PutRow NM_FX_POS_HEADER, 3, Array("X-BOOK", Empty, "USD", "Long", 1, "Banking")
+        PutRow NM_FX_POS_HEADER, 4, Array("X-NTBOOK", Empty, "ZAR", "Long", 1, "Non-trading")
+        PutRow NM_FX_POS_HEADER, 5, Array("X-CCY", Empty, "ZAR", "Long", 1)
+        PutRow NM_FX_POS_HEADER, 6, Array("X-BLANK", Empty, Empty, "Long", 1)
+        PutRow NM_FX_POS_HEADER, 7, Array("X-DIR", Empty, "USD", "Flat", 1)
+        PutRow NM_FX_POS_HEADER, 8, Array("X-TEXT", Empty, "USD", "Long", "1")
+        PutRow NM_FX_POS_HEADER, 9, Array("X-NEG", Empty, "USD", "Long", -1)
+        PutRow NM_FX_POS_HEADER, 10, Array("X-REP", Empty, "EUR", "Long", 1)
+        PutRow NM_FX_POS_HEADER, 11, Array("X-OK", Empty, "XAU", "Short", 1)
 
 End Sub
 
@@ -4055,6 +4728,7 @@ Private Sub CaseIllustrativeInvalidFxPositions()
 '   Test case illustrative-invalid-fx-positions, on CALC-06: FX rows that
 '   each break one input rule of DS-09, in the order of the contract's list,
 '   and a row in the reporting currency, which is excluded and not rejected.
+'   A non-trading book row is tested as a trading book one.
 '
 ' WHY THIS EXISTS
 '   A registered test case is one case of the suite: the workbook calculates
@@ -4069,7 +4743,7 @@ Private Sub CaseIllustrativeInvalidFxPositions()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 9 expected outputs with the cell
+'   the calculation. Compares each of the 11 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -4088,7 +4762,7 @@ Private Sub CaseIllustrativeInvalidFxPositions()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-16
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -4130,30 +4804,37 @@ Private Sub CaseIllustrativeInvalidFxPositions()
     'Compare fx_position_status of x-dup with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_FX_CALC_HEADER, 2, 1))
+    'Compare fx_position_status of X-BOOK with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-x-book", _
+            "INVALID: Book must be Trading or Non-trading", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+    'Compare fx_position_status of X-NTBOOK with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-x-ntbook", _
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
     'Compare fx_position_status of X-CCY with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_FX_CALC_HEADER, 5, 1))
     'Compare fx_position_status of X-BLANK with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-blank", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_FX_CALC_HEADER, 6, 1))
     'Compare fx_position_status of X-DIR with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_FX_CALC_HEADER, _
-            5, 1))
+            7, 1))
     'Compare fx_position_status of X-TEXT with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-text", _
-            "INVALID: Amount must be a number", PlainText(RowCell(NM_FX_CALC_HEADER, 6, 1))
+            "INVALID: Amount must be a number", PlainText(RowCell(NM_FX_CALC_HEADER, 8, 1))
     'Compare fx_position_status of X-NEG with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-neg", _
             "INVALID: Amount must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_FX_CALC_HEADER, 7, 1))
+            PlainText(RowCell(NM_FX_CALC_HEADER, 9, 1))
     'Compare fx_position_status of X-REP with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-rep", _
             "EXCLUDED: reporting currency carries no FX risk", _
-            PlainText(RowCell(NM_FX_CALC_HEADER, 8, 1))
+            PlainText(RowCell(NM_FX_CALC_HEADER, 10, 1))
     'Compare fx_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "fx-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_FX_CALC_HEADER, 9, 1))
+            PlainText(RowCell(NM_FX_CALC_HEADER, 11, 1))
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -4208,7 +4889,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 '     - the reporting date and the reporting currency
 '     - the regime
 '     - the FX table: 13 row(s)
-'     - the interest rate positions: 20 row(s)
+'     - the interest rate positions: 22 row(s)
 '
 ' ERROR POLICY
 '   An error of a procedure it calls propagates to the case.
@@ -4220,7 +4901,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 '   Replaces the inputs of the workbook.
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -4265,41 +4946,45 @@ Private Sub InputsIllustrativeInvalidIrPositions()
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
         PutRow NM_IR_POS_HEADER, 2, Array("x-dup", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 3, Array("X-INSTR", Empty, "Securitisation", "EUR", "Long", _
+        PutRow NM_IR_POS_HEADER, 3, Array("X-BOOK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+            0.05, DateSerial(2029, 6, 26), Empty, "NONE", Empty, Empty, "Banking")
+        PutRow NM_IR_POS_HEADER, 4, Array("X-NTBOOK", Empty, "Bond", "ZAR", "Long", "ten", _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE", Empty, Empty, "Non-trading")
+        PutRow NM_IR_POS_HEADER, 5, Array("X-INSTR", Empty, "Securitisation", "EUR", "Long", _
             1, "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 4, Array("X-NOINSTR", Empty, Empty, "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 6, Array("X-NOINSTR", Empty, Empty, "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 5, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 7, Array("X-CCY", Empty, "Bond", "ZAR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 6, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 8, Array("X-GOLD", Empty, "Bond", "XAU", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 7, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 9, Array("X-DIR", Empty, "Bond", "EUR", "Buy", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 8, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
+        PutRow NM_IR_POS_HEADER, 10, Array("X-TEXT", Empty, "Bond", "EUR", "Long", "ten", _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 9, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 11, Array("X-NEG", Empty, "Bond", "EUR", "Long", -1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 10, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 12, Array("X-TYPE", Empty, "Bond", "EUR", "Long", 1, _
             "Variable", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 11, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 13, Array("X-NOMAT", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, Empty, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 12, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 14, Array("X-NOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, 20311231, Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 13, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 15, Array("X-PAST", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2026, 9, 29), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 14, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 16, Array("X-NOCPN", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 15, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 17, Array("X-NOREP", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), Empty, "NONE")
-        PutRow NM_IR_POS_HEADER, 16, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 18, Array("X-REPNOTDATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), 20270101, "NONE")
-        PutRow NM_IR_POS_HEADER, 17, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 19, Array("X-REPLATE", Empty, "Bond", "EUR", "Long", 1, _
             "Floating", Empty, DateSerial(2029, 6, 26), DateSerial(2029, 6, 27), "NONE")
-        PutRow NM_IR_POS_HEADER, 18, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 20, Array("X-CAT", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "CORP", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 19, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
+        PutRow NM_IR_POS_HEADER, 21, Array("X-GRADE", Empty, "Bond", "EUR", "Long", 1, _
             "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "OTHER", "A+ to BBB-")
-        PutRow NM_IR_POS_HEADER, 20, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
+        PutRow NM_IR_POS_HEADER, 22, Array("X-OK", Empty, "Bond", "EUR", "Long", 1, "Fixed", _
             0.05, DateSerial(2029, 6, 26), Empty, "NONE")
 
 End Sub
@@ -4314,7 +4999,8 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '   Test case illustrative-invalid-ir-positions, on CALC-03: Interest rate
 '   rows that each break one input rule of DS-06, in the order of the
 '   contract's list: the status names the first test the row fails, and no
-'   row is corrected.
+'   row is corrected. A non-trading book row is excluded before the tests
+'   that follow the book.
 '
 ' WHY THIS EXISTS
 '   A registered test case is one case of the suite: the workbook calculates
@@ -4329,7 +5015,7 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '
 ' BEHAVIOR
 '   Keeps the inputs of the workbook, types those of the test case and runs
-'   the calculation. Compares each of the 20 expected outputs with the cell
+'   the calculation. Compares each of the 22 expected outputs with the cell
 '   that holds it, a number within its tolerance and a text exactly, and
 '   records every number as a result. Then puts the inputs back and asserts
 '   it.
@@ -4348,7 +5034,7 @@ Private Sub CaseIllustrativeInvalidIrPositions()
 '   the inputs back and clears the output sheets.
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -4390,75 +5076,342 @@ Private Sub CaseIllustrativeInvalidIrPositions()
     'Compare ir_position_status of x-dup with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dup-output-2", _
             "INVALID: duplicate PositionID", PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+    'Compare ir_position_status of X-BOOK with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-book", _
+            "INVALID: Book must be Trading or Non-trading", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+    'Compare ir_position_status of X-NTBOOK with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-x-ntbook", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
     'Compare ir_position_status of X-INSTR with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-instr", _
             "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
-            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
     'Compare ir_position_status of X-NOINSTR with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-noinstr", _
             "INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward " & _
-            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+            "leg or Other", PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
     'Compare ir_position_status of X-CCY with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ccy", _
-            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 5, 1))
+            "INVALID: currency not in FX_Table", PlainText(RowCell(NM_IR_CALC_HEADER, 7, 1))
     'Compare ir_position_status of X-GOLD with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-gold", _
             "INVALID: gold is FX risk; enter it on FXPositions", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 6, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 8, 1))
     'Compare ir_position_status of X-DIR with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-dir", _
             "INVALID: Direction must be Long or Short", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            7, 1))
+            9, 1))
     'Compare ir_position_status of X-TEXT with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-text", _
             "INVALID: Position value must be a number", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            8, 1))
+            10, 1))
     'Compare ir_position_status of X-NEG with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-neg", _
             "INVALID: Position value must be >= 0 (Direction gives the sign)", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 9, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 11, 1))
     'Compare ir_position_status of X-TYPE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-type", _
             "INVALID: Rate type must be Fixed or Floating", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 10, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 12, 1))
     'Compare ir_position_status of X-NOMAT with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nomat", _
-            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 11, 1))
+            "INVALID: Final maturity date missing", PlainText(RowCell(NM_IR_CALC_HEADER, 13, 1))
     'Compare ir_position_status of X-NOTDATE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-notdate", _
             "INVALID: Final maturity date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            12, 1))
+            14, 1))
     'Compare ir_position_status of X-PAST with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-past", _
             "INVALID: final maturity before AsOfDate", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            13, 1))
+            15, 1))
     'Compare ir_position_status of X-NOCPN with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-nocpn", _
             "INVALID: Coupon required for a fixed-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 14, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 16, 1))
     'Compare ir_position_status of X-NOREP with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-norep", _
             "INVALID: Next repricing date required for a floating-rate position", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 15, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
     'Compare ir_position_status of X-REPNOTDATE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-repnotdate", _
             "INVALID: Next repricing date is not a date", PlainText(RowCell(NM_IR_CALC_HEADER, _
-            16, 1))
+            18, 1))
     'Compare ir_position_status of X-REPLATE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-replate", _
             "INVALID: repricing date outside AsOfDate to final maturity", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 17, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 19, 1))
     'Compare ir_position_status of X-CAT with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-cat", _
             "INVALID: SR category must be GOV, QUAL, OTHER or NONE", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 18, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 20, 1))
     'Compare ir_position_status of X-GRADE with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-grade", _
             "INVALID: no MAR40.6 charge for this category and rating grade", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 19, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 21, 1))
     'Compare ir_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
-            PlainText(RowCell(NM_IR_CALC_HEADER, 20, 1))
+            PlainText(RowCell(NM_IR_CALC_HEADER, 22, 1))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeIrBook()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-ir-book.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 1 row(s)
+'     - the interest rate positions: 4 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE INTEREST RATE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the interest rate positions of the test case, one row each
+        PutRow NM_IR_POS_HEADER, 1, Array("B-1", Empty, "Bond", "EUR", "Long", 6000000, _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE", Empty, Empty, "Trading")
+        PutRow NM_IR_POS_HEADER, 2, Array("B-2", Empty, "Bond", "EUR", "Long", 4000000, _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE")
+        PutRow NM_IR_POS_HEADER, 3, Array("B-3", Empty, "Bond", "EUR", "Short", 10000000, _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE", Empty, Empty, "Non-trading")
+        PutRow NM_IR_POS_HEADER, 4, Array("B-4", Empty, "Bond", "EUR", "Short", 3000000, _
+            "Fixed", 0.05, DateSerial(2029, 6, 26), Empty, "NONE", Empty, Empty, "NON-TRADING")
+
+End Sub
+
+Private Sub CaseIllustrativeIrBook()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-ir-book, on CALC-03: Interest rate positions in
+'   each book: a trading book position, one with no book, which is in the
+'   trading book, and a non-trading book position that would offset them in
+'   the same time band, which is excluded and offsets nothing.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 14 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeIrBook; KeepInputs;
+'   RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-ir-book"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeIrBook
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare ir_position_status of B-1 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-b-1", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 1, 1))
+    'Compare ir_time_band of B-1 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-b-1", 6, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, "ir_time_band", _
+            "DS-06", "B-1", Actual
+    'Compare ir_weighted_position of B-1 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 1, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-b-1", 105000.0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_weighted_position", "DS-06", "B-1", Actual
+    'Compare ir_position_status of B-2 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-b-2", "OK", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 2, 1))
+    'Compare ir_time_band of B-2 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 8))
+        TEST_Harness.AssertNear "ir-time-band-of-b-2", 6, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, "ir_time_band", _
+            "DS-06", "B-2", Actual
+    'Compare ir_weighted_position of B-2 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_IR_CALC_HEADER, 2, 11))
+        TEST_Harness.AssertNear "ir-weighted-position-of-b-2", 70000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_weighted_position", "DS-06", "B-2", Actual
+    'Compare ir_position_status of B-3 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-b-3", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 3, 1))
+    'Compare ir_position_status of B-4 with its expected text
+        TEST_Harness.AssertEqualText "ir-position-status-of-b-4", _
+            "EXCLUDED: non-trading book position outside the market risk scope", _
+            PlainText(RowCell(NM_IR_CALC_HEADER, 4, 1))
+    'Compare ir_vertical_disallowance of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(2))
+        TEST_Harness.AssertNear "ir-vertical-disallowance-of-eur", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_vertical_disallowance", "DS-05", "EUR", Actual
+    'Compare ir_horizontal_disallowance_within_zones of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(6, 11, 16))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-within-zones-of-eur", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_horizontal_disallowance_within_zones", "DS-05", "EUR", Actual
+    'Compare ir_horizontal_disallowance_between_zones of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(25))
+        TEST_Harness.AssertNear "ir-horizontal-disallowance-between-zones-of-eur", 0, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_horizontal_disallowance_between_zones", "DS-05", "EUR", Actual
+    'Compare ir_net_position_charge of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(26))
+        TEST_Harness.AssertNear "ir-net-position-charge-of-eur", 175000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_net_position_charge", "DS-05", "EUR", Actual
+    'Compare ir_general_market_risk_charge of EUR with its expected value and record it
+        Actual = ZonesTotal("EUR", Array(27))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge-of-eur", 175000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_general_market_risk_charge", "DS-05", "EUR", Actual
+    'Compare ir_general_market_risk_charge with its expected value and record it
+        Actual = NumberOf(ResultsCell(1, 3))
+        TEST_Harness.AssertNear "ir-general-market-risk-charge", 175000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-ir-book", vbNullString, _
+            "ir_general_market_risk_charge", vbNullString, vbNullString, Actual
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
