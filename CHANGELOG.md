@@ -82,6 +82,17 @@ Use only the categories an entry needs.
   parameter. The input columns right of the book, *Comment*, moved one column
   right, and the `core` suite now has 17 cases and 230 assertions. Nothing was
   run in Excel ([#85](https://github.com/danielep71/K-FRTB-SSA/issues/85)).
+- Four registered test cases of the book, `illustrative-ir-book`,
+  `illustrative-eq-book`, `illustrative-co-book` and `illustrative-fx-book`:
+  in each risk class a trading book row, a row with no book and non-trading
+  book rows, which are excluded and offset nothing for interest rate and
+  equity, and are calculated and offset the others for commodities and FX.
+  The four `invalid` cases of the position sheets have two more rows: a book
+  that is neither value, and a non-trading book row that breaks a later rule,
+  which interest rate and equity exclude and commodities and FX reject. Their
+  values are `illustrative`, and the `cases` suite now has 29 cases and 684
+  assertions. Nothing was run in Excel
+  ([#85](https://github.com/danielep71/K-FRTB-SSA/issues/85)).
 - The eligibility for the simplified standardised approach, Article 325a of
   Regulation (EU) No 575/2013, and for the derogation for small trading book
   business, Article 94, under the `CRR` regime (`CALC-09`). On the new sheet

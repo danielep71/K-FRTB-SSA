@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-eq-book",
+  "synthetic": true,
+  "description": "Equity positions in each book: a trading book position, one with no book, and non-trading book positions in the same stock, which are excluded and offset nothing",
+  "category": "boundary",
+  "calculation": "CALC-04",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-07": [
+      {"id": "B-1", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 1000000, "book_code": "Trading"}},
+      {"id": "B-2", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 500000, "book_code": null}},
+      {"id": "B-3", "inputs": {"market_code": "IT", "type_code": "Single name", "identifier_code": "ENI", "currency_code": "EUR", "direction_code": "Short", "market_value_amount": 1500000, "book_code": "Non-trading"}},
+      {"id": "B-4", "inputs": {"market_code": "DE", "type_code": "Single name", "identifier_code": "SAP", "currency_code": "EUR", "direction_code": "Long", "market_value_amount": 2000000, "book_code": "non-trading"}}
+    ]
+  }
+}

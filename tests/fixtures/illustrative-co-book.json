@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-co-book",
+  "synthetic": true,
+  "description": "Commodity positions in each book: a trading book position, one with no book, and a non-trading book position, which is calculated as a trading book one and offsets them",
+  "category": "boundary",
+  "calculation": "CALC-05",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}}
+    ],
+    "DS-08": [
+      {"id": "B-1", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 100, "spot_price_amount": 9800, "currency_code": "USD", "book_code": "Trading"}},
+      {"id": "B-2", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 50, "spot_price_amount": 9800, "currency_code": "USD", "book_code": null}},
+      {"id": "B-3", "inputs": {"commodity_code": "Copper", "direction_code": "Short", "quantity_count": 120, "spot_price_amount": 9800, "currency_code": "USD", "book_code": "Non-trading"}}
+    ]
+  }
+}

@@ -354,9 +354,12 @@ its other fields need not be valid, and `Checks` warns (rule `C17`) without
 listing it.
 
 **Validation:** the test cases `bcbs119-c2-maturity-method`,
-`illustrative-invalid-ir-positions`, `illustrative-ir-time-band-limits`,
+`illustrative-invalid-ir-positions`, `illustrative-ir-book`,
+`illustrative-ir-time-band-limits`,
 `illustrative-sample-ir-general-market-risk` and
-`mar40-27-vertical-disallowance`. Two of them hold `published` values: the
+`mar40-27-vertical-disallowance`. `illustrative-ir-book` and two rows of
+`illustrative-invalid-ir-positions` test the book: a non-trading book row is
+excluded before its other tests and offsets nothing. Two of them hold `published` values: the
 weighted positions, the vertical and within-zone disallowances, the net
 position charge and the charge of the worked example C.2 of `SRC-03`
 (`bcbs119-c2-maturity-method`), and the weighted positions and the vertical
@@ -461,8 +464,11 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 As under `CALC-03`, an excluded row is a non-trading book position, excluded
 before any test after the book, and `Checks` warns (rule `C17`).
 
-**Validation:** the test cases `illustrative-eq-matched-positions`,
-`illustrative-invalid-eq-positions` and `illustrative-sample-equity`. Their
+**Validation:** the test cases `illustrative-eq-book`,
+`illustrative-eq-matched-positions`, `illustrative-invalid-eq-positions` and
+`illustrative-sample-equity`. `illustrative-eq-book` and two rows of
+`illustrative-invalid-eq-positions` test the book: a non-trading book row is
+excluded before its other tests and offsets nothing. Their
 expected values are `illustrative`: derived within the project, they validate
 nothing. No test case has an expected value under the `CRR` regime, so step 6
 is exercised by the VBA suite and by `verify.py` only. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix)
@@ -561,8 +567,11 @@ commodity on `Buckets`.
 - `INVALID: Spot price must be a number`
 - `INVALID: currency not in FX_Table`
 
-**Validation:** the test cases `illustrative-co-matched-positions`,
-`illustrative-invalid-co-positions` and `illustrative-sample-commodities`.
+**Validation:** the test cases `illustrative-co-book`,
+`illustrative-co-matched-positions`, `illustrative-invalid-co-positions` and
+`illustrative-sample-commodities`. `illustrative-co-book` and two rows of
+`illustrative-invalid-co-positions` test the book: a non-trading book row is
+tested and calculated as a trading book one.
 Their expected values are `illustrative`: derived within the project, they
 validate nothing. See the [validation
 matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of `CALC-05` in
@@ -658,8 +667,11 @@ is an unusable parameter: the run reads `STOPPED`, and `Checks` lists it with
 
 **Validation:** the test case `mar40-61-table-9`, two of whose expected
 values are published in table 9 of MAR40.61, and the test cases
-`illustrative-fx-one-sided-positions`, `illustrative-invalid-fx-positions`
-and `illustrative-sample-fx`. Every other expected value is `illustrative`:
+`illustrative-fx-book`, `illustrative-fx-one-sided-positions`,
+`illustrative-invalid-fx-positions` and `illustrative-sample-fx`.
+`illustrative-fx-book` and two rows of `illustrative-invalid-fx-positions`
+test the book: a non-trading book row is tested and calculated as a trading
+book one. Every other expected value is `illustrative`:
 derived within the project, it validates nothing. See the [validation
 matrix](VALIDATION_PLAN.md#validation-matrix) and the rows of `CALC-06` in
 the [traceability table](VALIDATION_PLAN.md#traceability).

@@ -3,7 +3,7 @@
   "kind": "test-fixture",
   "id": "illustrative-invalid-co-positions",
   "synthetic": true,
-  "description": "Commodity rows that each break one input rule of DS-08, in the order of the contract's list",
+  "description": "Commodity rows that each break one input rule of DS-08, in the order of the contract's list. A non-trading book row is tested as a trading book one",
   "category": "invalid",
   "calculation": "CALC-05",
   "reporting_date": "2026-09-30",
@@ -27,6 +27,8 @@
     "DS-08": [
       {"id": "X-DUP", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "x-dup", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
+      {"id": "X-BOOK", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD", "book_code": "Banking"}},
+      {"id": "X-NTBOOK", "inputs": {"commodity_code": "Copper", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "ZAR", "book_code": "Non-trading"}},
       {"id": "X-NAME", "inputs": {"commodity_code": null, "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-GOLDNAME", "inputs": {"commodity_code": "XAU", "direction_code": "Long", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},
       {"id": "X-DIR", "inputs": {"commodity_code": "Copper", "direction_code": "Sell", "quantity_count": 1, "spot_price_amount": 1, "currency_code": "USD"}},

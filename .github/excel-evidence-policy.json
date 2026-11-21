@@ -41,8 +41,8 @@
       "name": "cases",
       "source": "tests/modules/TEST_Cases.bas",
       "certification_entry_point": "CertifyCases",
-      "expected_cases": 25,
-      "expected_assertions": 637,
+      "expected_cases": 29,
+      "expected_assertions": 684,
       "log": "cases.log",
       "certification_log": "cases-certification.log",
       "results": "cases-results.json"
