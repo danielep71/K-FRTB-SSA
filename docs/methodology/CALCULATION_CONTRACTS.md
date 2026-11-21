@@ -37,6 +37,17 @@ These hold for every calculation:
   listed with rate 1. Every position is converted before any other step.
   Because each charge is a sum of fixed rates applied to amounts, converting
   first gives the same result as converting each currency's charge.
+- **Book:** a position row of `DS-06` to `DS-09` is in the trading book
+  unless its `book` is `Non-trading`. A non-trading book position subject to
+  foreign exchange or commodity risk is calculated as a trading book one by
+  `CALC-05` and `CALC-06`, under both regimes; a non-trading book interest
+  rate or equity position is outside the scope, is excluded by `CALC-03` and
+  `CALC-04`, and `Checks` warns (rule `C17`). The run is not `INCOMPLETE` for
+  it (`SRC-04`, Article 325(1); `SRC-11`, RBC25.28; `SRC-12`, MAR12.6). The
+  technical standards of Article 325(9), `SRC-09` and `SRC-10`, value those
+  positions for the alternative approaches only: under the simplified
+  standardised approach the calculation at the value entered is an
+  assumption.
 - **Rejected rows:** a row that fails a test of its sheet contributes
   nothing. Its status gives the reason, `Checks` lists it, and the status
   line of the run reads `INCOMPLETE`. No value is corrected.
@@ -253,6 +264,7 @@ interest rate row of `Results`, with its components per currency on
 | Dates | `DS-06.final_maturity_date` and `DS-06.next_repricing_date`; `DS-02.as_of_date` and `DS-02.days_per_year` | Date; days |
 | Time bands | `DS-04.zone`, `DS-04.upper_bound_high_coupon`, `DS-04.upper_bound_low_coupon` and `DS-04.risk_weight`; `DS-02.coupon_threshold` | Years; fraction |
 | Disallowances | `DS-02.vertical_disallowance` and the six `DS-02.horizontal_` fields; `DS-02.regime` | Fraction; text |
+| Book | `DS-06.book` | Text |
 
 **Rules:**
 
@@ -308,6 +320,8 @@ interest rate row of `Results`, with its components per currency on
 **Failure behaviour:** `ir_position_status`, on `IRCalc`, is `OK` or:
 
 - `INVALID: duplicate PositionID`
+- `INVALID: Book must be Trading or Non-trading`
+- `EXCLUDED: non-trading book position outside the market risk scope`
 - `INVALID: Instrument must be Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg or Other`
 - `INVALID: currency not in FX_Table`
 - `INVALID: gold is FX risk; enter it on FXPositions`
@@ -334,7 +348,10 @@ Basel regime the category `CRR` is rejected with the text that lists `GOV`,
 `QUAL`, `OTHER` and `NONE`.
 
 The first test that fails gives the text. A rejected row enters neither
-`CALC-02` nor this calculation.
+`CALC-02` nor this calculation. Nor does an excluded row, which is a
+non-trading book position: it is excluded before any test after the book, so
+its other fields need not be valid, and `Checks` warns (rule `C17`) without
+listing it.
 
 **Validation:** the test cases `bcbs119-c2-maturity-method`,
 `illustrative-invalid-ir-positions`, `illustrative-ir-time-band-limits`,
@@ -368,6 +385,7 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 | Market | `DS-07.market` | Text: the national market |
 | Type and identifier | `DS-07.type` and `DS-07.identifier` | Text |
 | Rates | `DS-02.eq_specific_rate`, `DS-02.eq_index_rate`, `DS-02.eq_index_rate_crr` and `DS-02.eq_general_rate`; `DS-02.regime` | Fraction; text |
+| Book | `DS-07.book` | Text |
 
 **Rules:**
 
@@ -422,10 +440,16 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
   14 of MAR40.44) is entered on `IRPositions` or `FXPositions`.
 - `Buckets` lists up to 30 markets. The totals include every market, and
   `Checks` warns (rule `C10`).
+- A non-trading book equity row is excluded. Not supported: a short equity
+  position of the banking book that is not deducted or risk-weighted there,
+  which RBC25.24 of `SRC-11` puts under the market risk rules: entered as
+  `Non-trading`, it is excluded like any other.
 
 **Failure behaviour:** `eq_position_status`, on `EQCalc`, is `OK` or:
 
 - `INVALID: duplicate PositionID`
+- `INVALID: Book must be Trading or Non-trading`
+- `EXCLUDED: non-trading book position outside the market risk scope`
 - `INVALID: Market missing`
 - `INVALID: Type must be Single name or Index`
 - `INVALID: stock or index identifier missing`
@@ -433,6 +457,9 @@ says; the other components are unchanged (`tests/test_prototype.py`). See the
 - `INVALID: Direction must be Long or Short`
 - `INVALID: Market value must be a number`
 - `INVALID: Market value must be >= 0 (Direction gives the sign)`
+
+As under `CALC-03`, an excluded row is a non-trading book position, excluded
+before any test after the book, and `Checks` warns (rule `C17`).
 
 **Validation:** the test cases `illustrative-eq-matched-positions`,
 `illustrative-invalid-eq-positions` and `illustrative-sample-equity`. Their
@@ -457,6 +484,7 @@ commodity on `Buckets`.
 | Currency and its rate | `DS-08.currency`; `DS-05.currency_id` and `DS-05.fx_rate` | Reporting currency per unit |
 | Commodity | `DS-08.commodity` | Text |
 | Rates | `DS-02.com_directional_rate` and `DS-02.com_gross_rate` | Fraction |
+| Book | `DS-08.book` | Text |
 
 **Rules:**
 
@@ -513,6 +541,10 @@ commodity on `Buckets`.
   MAR40.71 describes. The workbook converts nothing.
 - Gold is FX risk (MAR40.63): enter it on `FXPositions`. A row whose
   commodity is the gold code is rejected.
+- A non-trading book position is calculated as a trading book one, at the
+  spot price entered: an assumption. Article 2 of `SRC-09` values it at the
+  latest available fair value, measured at least monthly, under the
+  alternative standardised approach only.
 - A spot price is used as entered, also when it is negative.
 - `Buckets` lists up to 30 commodities. The totals include every commodity,
   and `Checks` warns (rule `C11`).
@@ -520,6 +552,7 @@ commodity on `Buckets`.
 **Failure behaviour:** `co_position_status`, on `COCalc`, is `OK` or:
 
 - `INVALID: duplicate PositionID`
+- `INVALID: Book must be Trading or Non-trading`
 - `INVALID: Commodity missing`
 - `INVALID: gold is FX risk; enter it on FXPositions`
 - `INVALID: Direction must be Long or Short`
@@ -549,6 +582,7 @@ per currency and the overall net open position on `Buckets`.
 | Currency and its rate | `DS-09.currency`; `DS-05.currency_id` and `DS-05.fx_rate`; `DS-02.gold_code` and `DS-02.reporting_currency` | Reporting currency per unit |
 | Rate | `DS-02.fx_charge_rate` | Fraction |
 | Regime, total own funds and de minimis | `DS-02.regime`, `DS-02.total_own_funds` and `DS-02.fx_de_minimis_rate` | Text; reporting currency; fraction |
+| Book | `DS-09.book` | Text |
 
 **Rules:**
 
@@ -595,10 +629,23 @@ per currency and the overall net open position on `Buckets`.
 - The de minimis needs `TotalOwnFunds` under the `CRR` regime, and the
   requirement of step 3 is the whole requirement above the threshold, not the
   excess over it.
+- A non-trading book position is calculated as a trading book one, at the
+  net position entered: an assumption. Article 1 of `SRC-09` values it at the
+  last available accounting value, or fair value, updated at least monthly
+  for the exchange rates, under the alternative standardised approach only;
+  the valuation is the user's, as for any net position entered.
+- Article 495u of `SRC-06` lets an institution eligible for the derogation of
+  Article 94 calculate its non-trading book positions subject to foreign
+  exchange or commodity risk by Article 325(2) until 2029-12-31. The workbook
+  calculates every position so: it has no parameter for the article, does not
+  know whether the institution uses the derogation, and does not check the end
+  date. Not supported beyond that date: the alternative standardised approach
+  that `SRC-09` specifies.
 
 **Failure behaviour:** `fx_position_status`, on `FXCalc`, is `OK` or:
 
 - `INVALID: duplicate PositionID`
+- `INVALID: Book must be Trading or Non-trading`
 - `INVALID: currency not in FX_Table`
 - `INVALID: Direction must be Long or Short`
 - `INVALID: Amount must be a number`
@@ -834,7 +881,8 @@ derogation. The quantity of the expected files gives it after the name:
 - The status changes no requirement and stops no run: an institution that
   must cease the approach reads the finding and acts outside the workbook.
 - The derogation of Article 94(2), its simpler requirement and its relief,
-  is not calculated; nor is Article 495u of Delegated Regulation (EU) 2026/1221.
+  is not calculated; for Article 495u of Delegated Regulation (EU) 2026/1221,
+  see `CALC-06`.
 
 **Failure behaviour:** `eligibility_month_status`, on `Eligibility`, is `OK` or:
 
@@ -871,3 +919,4 @@ rows of `CALC-09` in the [traceability table](VALIDATION_PLAN.md#traceability).
 | 2026-11-16 | A residual term is in calendar days over 365, a month is a twelfth of a year, and a term equal to the upper limit of a time band belongs to that band | `SRC-02` gives its bands in months and years, and names neither a day count nor the band of a limit. The prototype was built so | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |
 | 2026-11-16 | The zones are offset in the order 1 and 2, 2 and 3, then 1 and 3 | MAR40.28 allows the offsetting between zones and gives its disallowances, not its order. The prototype was built so | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |
 | 2026-11-16 | The user converts derivatives into positions, classifies issuers and calculates option charges | The workbook is a calculator of the charges of MAR40 on positions already expressed as the chapter requires. What it does not decide is listed as a limit of each contract | [18](https://github.com/danielep71/K-FRTB-SSA/issues/18) |
+| 2026-11-21 | A position row has a book, and a blank book is the trading book. Under both regimes the non-trading book rows of `CALC-05` and `CALC-06` are calculated as trading book ones, at the value entered, and those of `CALC-03` and `CALC-04` are excluded, with a warning (`C17`); the book is tested after the PositionID, so an excluded row needs no other valid field. Article 495u is documented, not a parameter | Article 325(1) of the CRR, RBC25.28 and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope, and only that risk. `SRC-09` and `SRC-10` value those positions for the alternative approaches only, so the value entered is an assumption. An excluded row is out of the scope, not invalid. The workbook calculates Article 325(2) for every position, which is what Article 495u allows | [85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |

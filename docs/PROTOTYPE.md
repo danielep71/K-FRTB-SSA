@@ -88,7 +88,10 @@ unit, its allowed values and how a cell is read.
   position, up to 500 rows on each sheet. The workbook converts nothing: a
   derivative is a row for each leg, the category and rating of an issuer are
   yours to enter, and the net position of a currency is the figure you
-  derive outside the workbook.
+  derive outside the workbook. *Book* is `Trading` or `Non-trading`, and
+  blank is `Trading`: a non-trading book FX or commodity row is calculated as
+  a trading book one, and a non-trading book interest rate or equity row is
+  outside the scope, excluded, with a warning on `Checks` (`C17`).
 - **`OptionCharges`:** the non-delta charge of each risk class, calculated
   outside the workbook, one value per class, added before scaling.
 - **`Eligibility`:** under the `CRR` regime, the size of your business at each

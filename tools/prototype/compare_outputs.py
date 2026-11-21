@@ -67,7 +67,7 @@ FIXED_AREAS = (
     Area("Buckets", range(FX_FIRST, FX_FIRST + 24), columns(3, 9)),
     Area("Results", range(7, 12), columns(5, 11)),
     Area("Results", range(14, 18), (5,)),
-    Area("Checks", range(7, 23), (6, 7)),
+    Area("Checks", range(7, 24), (6, 7)),
     Area("Checks", range(4, 5), (4, 6)),
     # The calculated columns I:U of the 24 months and the result block of each approach.
     Area("Eligibility", range(5, 29), columns(9, 13)),

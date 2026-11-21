@@ -54,7 +54,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -145,8 +145,9 @@ Public Sub CalculateForeignExchange( _
 '     - checks the width of InputRows and sizes the three output arrays
 '     - counts the rows that use each PositionID
 '     - writes the code, the treatment and the rate of each FX table slot
-'     - gives each row a status: INVALID for a duplicate PositionID, a currency
-'       not in the FX table, a Direction that is not Long or Short, or an Amount
+'     - gives each row a status: INVALID for a duplicate PositionID, a Book
+'       that is not Trading, Non-trading or blank, a currency not in the FX
+'       table, a Direction that is not Long or Short, or an Amount
 '       that is not a number or is negative; EXCLUDED for the reporting
 '       currency; OK otherwise
 '     - adds the signed amount and value of each OK row to its currency slot
@@ -160,19 +161,21 @@ Public Sub CalculateForeignExchange( _
 '   contributes nothing
 '
 ' DEPENDENCIES
-'   KeyPosition, CodeText, PlainText, FindCode, DirectionSign, IsNumberValue,
-'   NumberValue and IsInvalidStatus of CORE_Util, NetOpenPositionCharge, and
-'   the constants of CORE_Config
+'   KeyPosition, CodeText, PlainText, FindCode, DirectionSign, BookStatus,
+'   IsNumberValue, NumberValue and IsInvalidStatus of CORE_Util,
+'   NetOpenPositionCharge, and the constants of CORE_Config
 '
 '   Reference: MAR40.60 (greater of the sum of net shorts and the sum of net
 '   longs, plus the net gold position regardless of sign), MAR40.61 (8%)
 '
 ' NOTES
 '   Owns no state: it writes only to its output arguments. A row whose
-'   PositionID is blank is skipped and is not counted in any total
+'   PositionID is blank is skipped and is not counted in any total. A
+'   non-trading book position is calculated as a trading book one (Article
+'   325(1) of the CRR; BCBS MAR12.6)
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -256,6 +259,8 @@ Public Sub CalculateForeignExchange( _
                 Position = FindCode(FxCodes, CurrencyCode)
                 If IdUses(KeyPosition(Ids, IdCount, CodeText(InputRows(r, FX_ID)), False)) > 1 Then
                     Status = ST_INVALID & "duplicate PositionID"
+                ElseIf Len(BookStatus(InputRows(r, FX_BOOK), True)) > 0 Then
+                    Status = BookStatus(InputRows(r, FX_BOOK), True)
                 ElseIf Position < 1 Then
                     Status = ST_INVALID & "currency not in FX_Table"
                 ElseIf DirectionSign(InputRows(r, FX_DIRECTION)) = 0 Then

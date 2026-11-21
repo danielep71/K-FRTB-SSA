@@ -96,7 +96,7 @@
     {"name": "Checks_Header", "sheet": "shChecks", "cell": "C6"},
     {"name": "Checks_Errors", "sheet": "shChecks", "cell": "D4"},
     {"name": "Checks_Warnings", "sheet": "shChecks", "cell": "F4"},
-    {"name": "Checks_Findings_Header", "sheet": "shChecks", "cell": "C26"}
+    {"name": "Checks_Findings_Header", "sheet": "shChecks", "cell": "C27"}
   ],
   "stamp": {
     "commit": "build_commit",

@@ -53,6 +53,7 @@ Option Private Module
 '       their run, count, restart condition and invalid rows
 '     - CaseEligibilityEngine: the eligibility in the whole calculation, which
 '       changes no requirement
+'     - CaseBook: the book of a position, in each class and in rule C17
 '     - CaseVolume: the largest volume of a position table the workbook
 '       supports
 '     - CaseFacade: the worksheet functions and their error values
@@ -103,8 +104,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'Name and size of a complete run, which starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "core"        'Suite name given to BeginRun and BeginCertification
-    Private Const EXPECTED_CASES      As Long = 16              'Cases of a complete run
-    Private Const EXPECTED_ASSERTIONS As Long = 210             'Assertions of a complete run
+    Private Const EXPECTED_CASES      As Long = 17              'Cases of a complete run
+    Private Const EXPECTED_ASSERTIONS As Long = 230             'Assertions of a complete run
 
     'Tolerances of a derived value (docs/methodology/CALCULATION_CONTRACTS.md, Decisions)
     Private Const TOL_ABSOLUTE        As Double = 0.000001      'Absolute tolerance
@@ -128,7 +129,7 @@ Public Sub RunCoreTests()
 ' PURPOSE
 '   Run the core suite. A passing run ends with
 '   RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE;
-'   cases=16; assertions=210; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=17; assertions=230; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   It is the documented entry point of the core suite: typed in the Immediate
@@ -347,8 +348,8 @@ Private Sub RunSuite()
 '   CaseLadderCharges, CaseForeignExchange, CaseEquity, CaseCommodity,
 '   CaseInterestRateRows, CaseSpecificRiskCrr, CaseIssueNetting,
 '   CaseDateBounds, CaseParameters, CaseRegime, CaseEligibility,
-'   CaseEligibilityEngine, CaseVolume, CaseFacade and CaseFingerprint, and
-'   ends the run with EndRun.
+'   CaseEligibilityEngine, CaseBook, CaseVolume, CaseFacade and
+'   CaseFingerprint, and ends the run with EndRun.
 '
 ' ERROR POLICY
 '   An error escaping a case handler is passed to EndRun, which reports it and
@@ -396,6 +397,7 @@ Private Sub RunSuite()
         CaseRegime
         CaseEligibility
         CaseEligibilityEngine
+        CaseBook
         CaseVolume
         CaseFacade
         CaseFingerprint
@@ -2427,6 +2429,198 @@ Private Sub CaseEligibilityEngine()
         TEST_Harness.AssertEqualDouble "unusable-share-counted-in-c14", 1, NumberOf(Rules(14, 2))
         TEST_Harness.AssertTrue "eligibility-not-run-when-stopped", _
             IsEmpty(Rules(15, 2)) And IsEmpty(Rules(16, 2)), "rules C15 and C16 are not evaluated"
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case
+CaseFailed:
+        TEST_Harness.RecordCaseError
+
+End Sub
+
+Private Sub CaseBook()
+
+'
+'------------------------------------------------------------------------------
+'                                 CHECK BOOK
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The Book column of the four position sheets: a non-trading book FX or
+'   commodity position is calculated as a trading book one, a non-trading book
+'   interest rate or equity position is excluded and counted by rule C17, and
+'   a book that is neither blank, Trading nor Non-trading is rejected.
+'
+' WHY THIS EXISTS
+'   Article 325(1) of the CRR and BCBS MAR12.6 put the non-trading book FX and
+'   commodity positions in the scope of the market risk requirement, and only
+'   them, so each class is run with each book.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Begins the case book. Calculates the FX, commodity, equity and interest
+'   rate classes on rows with each book and checks their status, counts and
+'   charges. Last it runs CORE_Engine.Calculate with a non-trading interest
+'   rate and equity row and checks the count of rule C17, the warnings, the
+'   status line and the requirement.
+'
+' ERROR POLICY
+'   An unexpected error inside the case is recorded as a failure of the case
+'   with TEST_Harness.RecordCaseError, and the run continues.
+'
+' DEPENDENCIES
+'   ReferenceParameters, ReferenceLadder, FxTable, RowsFrom, EngineInputs,
+'   MonthRows, NumberOf; CalculateForeignExchange, CalculateCommodity,
+'   CalculateEquity, CalculateInterestRate, Calculate; TEST_Harness
+'   (BeginCase, AssertNear, AssertEqualDouble, AssertEqualText,
+'   RecordCaseError)
+'
+'   Reference: hand calculation with every rate 1. FX: CAD long 50 and USD
+'   short 20 give longs of 50. Commodity: 10 units at 5 give 50, charged 15%,
+'   7.5. Equity: the trading book stock of 200 is charged 8%, 16. Engine: the
+'   FX position of EngineInputs alone, USD 1,000,000 long at 0.9, gives 86,400
+'   under the Basel regime.
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim InputRows()     As Variant  'Position cells
+    Dim FxCodes()       As String   'FX table codes
+    Dim FxRates()       As Double   'FX table rates
+    Dim Parameters()    As Double   'MAR40 parameters
+    Dim Ladder()        As Double   'MAR40 ladder
+    Dim Labels()        As String   'Ladder labels
+    Dim SrKeys()        As String   'Specific-risk keys
+    Dim SrCharges()     As Double   'Specific-risk charges
+    Dim RowOutput()     As Variant  'Calculation table
+    Dim BlockOutput()   As Variant  'Buckets block
+    Dim LadderOutput()  As Variant  'IR_Ladder
+    Dim ZoneOutput()    As Variant  'IR_Zones
+    Dim Totals()        As Double   'Totals
+    Dim Inputs()        As Variant  'Engine input vector
+    Dim Outputs()       As Variant  'Engine output vector
+    Dim Rules           As Variant  'Checks rules
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Route an error of the case to its handler and begin the case
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "book"
+
+'------------------------------------------------------------------------------
+' LOAD REFERENCE DATA
+'------------------------------------------------------------------------------
+    'Load the reference parameters and an FX table with every rate 1
+        ReferenceParameters Parameters
+        FxTable "EUR|CAD|USD|GBP|XAU", FxCodes, FxRates
+
+'------------------------------------------------------------------------------
+' CHECK FOREIGN EXCHANGE
+'------------------------------------------------------------------------------
+    'A non-trading row, a trading row in lower case, an unknown book and a non-trading row in EUR
+        InputRows = RowsFrom(FX_INPUT_WIDTH, Array( _
+            Array("B1", "", "CAD", "Long", 50, "Non-trading"), _
+            Array("B2", "", "USD", "Short", 20, "trading"), _
+            Array("B3", "", "GBP", "Long", 10, "Banking"), _
+            Array("B4", "", "EUR", "Long", 5, " non-trading ")))
+        CalculateForeignExchange InputRows, Parameters, FxCodes, FxRates, "EUR", "XAU", _
+                                 RowOutput, BlockOutput, Totals
+    'Check that the non-trading row is used, the unknown book rejected and the EUR row excluded
+        TEST_Harness.AssertEqualText "fx-non-trading-status", ST_OK, CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualText "fx-unknown-book-status", _
+            ST_INVALID & "Book must be Trading or Non-trading", CStr(RowOutput(3, 2))
+        TEST_Harness.AssertEqualText "fx-reporting-currency-status", _
+            ST_EXCLUDED & "reporting currency carries no FX risk", CStr(RowOutput(4, 2))
+        TEST_Harness.AssertEqualDouble "fx-rows-used", 2, Totals(TOT_USED)
+        TEST_Harness.AssertEqualDouble "fx-rows-rejected", 1, Totals(TOT_REJECTED)
+        TEST_Harness.AssertNear "fx-sum-of-longs", 50, Totals(TOT_LONG), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK COMMODITY
+'------------------------------------------------------------------------------
+    'A non-trading commodity row is calculated
+        InputRows = RowsFrom(CO_INPUT_WIDTH, Array( _
+            Array("C1", "", "Brent", "Long", 10, "bbl", 5, "USD", Empty, "Non-trading")))
+        CalculateCommodity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, BlockOutput, _
+                           Totals
+        TEST_Harness.AssertEqualText "co-non-trading-status", ST_OK, CStr(RowOutput(1, 2))
+        TEST_Harness.AssertNear "co-directional", 7.5, Totals(TOT_GENERAL), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK EQUITY
+'------------------------------------------------------------------------------
+    'A non-trading stock is excluded and a trading one with a blank book is charged
+        InputRows = RowsFrom(EQ_INPUT_WIDTH, Array( _
+            Array("E1", "", "IT", "Single name", "ENI", "EUR", "Long", 100, "Non-trading"), _
+            Array("E2", "", "IT", "Single name", "ISP", "EUR", "Long", 200, Empty)))
+        CalculateEquity InputRows, Parameters, FxCodes, FxRates, "XAU", RowOutput, BlockOutput, Totals
+        TEST_Harness.AssertEqualText "eq-non-trading-status", _
+            ST_EXCLUDED & "non-trading book position outside the market risk scope", CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualDouble "eq-rows-excluded", 1, Totals(TOT_EXCLUDED)
+        TEST_Harness.AssertEqualDouble "eq-rows-rejected", 0, Totals(TOT_REJECTED)
+        TEST_Harness.AssertNear "eq-specific", 16, Totals(TOT_SPECIFIC), TOL_ABSOLUTE, TOL_RELATIVE
+
+'------------------------------------------------------------------------------
+' CHECK INTEREST RATE
+'------------------------------------------------------------------------------
+    'Load the ladder and a blank specific-risk table
+        ReferenceLadder Ladder
+        ReDim Labels(1 To BAND_COUNT, 1 To 2)
+        ReDim SrKeys(1 To 1)
+        ReDim SrCharges(1 To 1)
+    'A non-trading row with no other field is excluded, and an unknown book is rejected first
+        InputRows = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R1", "", Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, _
+                  "Non-trading"), _
+            Array("R2", "", Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, _
+                  "Banking")))
+        CalculateInterestRate InputRows, CDbl(DateSerial(2026, 9, 30)), Parameters, FxCodes, FxRates, _
+                              "XAU", SrKeys, SrCharges, Ladder, Labels, RowOutput, LadderOutput, _
+                              ZoneOutput, Totals
+        TEST_Harness.AssertEqualText "ir-non-trading-status", _
+            ST_EXCLUDED & "non-trading book position outside the market risk scope", CStr(RowOutput(1, 2))
+        TEST_Harness.AssertEqualText "ir-unknown-book-status", _
+            ST_INVALID & "Book must be Trading or Non-trading", CStr(RowOutput(2, 2))
+        TEST_Harness.AssertEqualDouble "ir-rows-excluded", 1, Totals(TOT_EXCLUDED)
+        TEST_Harness.AssertEqualDouble "ir-rows-rejected", 1, Totals(TOT_REJECTED)
+
+'------------------------------------------------------------------------------
+' CHECK ENGINE
+'------------------------------------------------------------------------------
+    'Add a non-trading interest rate row and a non-trading equity row to the engine inputs
+        EngineInputs "Basel", MonthRows(vbNullString, vbNullString), Inputs
+        Inputs(IN_IR_ROWS) = RowsFrom(IR_INPUT_WIDTH, Array( _
+            Array("R1", "", Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty, _
+                  "Non-trading")))
+        Inputs(IN_EQ_ROWS) = RowsFrom(EQ_INPUT_WIDTH, Array( _
+            Array("E1", "", "IT", "Single name", "ENI", "EUR", "Long", 100, "Non-trading")))
+        CORE_Engine.Calculate Inputs, Outputs
+        Rules = Outputs(OUT_RULES)
+    'Check that rule C17 counts both rows as warnings, that the run is OK and the requirement unchanged
+        TEST_Harness.AssertEqualDouble "non-trading-counted-in-c17", 2, NumberOf(Rules(17, 2))
+        TEST_Harness.AssertEqualDouble "non-trading-rows-are-warnings", 2, NumberOf(Outputs(OUT_WARNINGS))
+        TEST_Harness.AssertEqualText "non-trading-run-is-ok", "OK: ", Left$(CStr(Outputs(OUT_STATUS)), 4)
+        TEST_Harness.AssertNear "requirement-without-non-trading-rows", 86400, _
+            NumberOf(Outputs(OUT_REQUIREMENT)), TOL_ABSOLUTE, TOL_RELATIVE
 
 '------------------------------------------------------------------------------
 ' EXIT PROCEDURE

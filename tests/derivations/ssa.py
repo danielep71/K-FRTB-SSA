@@ -129,6 +129,20 @@ def sign(direction: object) -> float:
     return {"LONG": 1.0, "SHORT": -1.0}.get(code(direction), 0.0)
 
 
+def book_status(inputs: Record, in_scope: bool) -> str | None:
+    """The status the book of a position gives it, or None when the other tests decide.
+
+    A blank book is the trading book. A non-trading book position is calculated as a
+    trading book one where its class is in the scope (foreign exchange, commodities),
+    and excluded where it is not (interest rate, equity)."""
+    book = code(inputs.get("book_code"))
+    if book not in ("", "TRADING", "NON-TRADING"):
+        return INVALID + "Book must be Trading or Non-trading"
+    if book == "NON-TRADING" and not in_scope:
+        return EXCLUDED + "non-trading book position outside the market risk scope"
+    return None
+
+
 def duplicates(records: list[Record]) -> set[str]:
     """The identifiers that more than one record holds, without regard to case."""
     seen: dict[str, int] = {}
@@ -239,6 +253,8 @@ def ir_category_reason(case: Case, inputs: Record) -> str | None:
 
 def ir_status(case: Case, record: Record, repeated: set[str]) -> str:
     """OK, or the first test of the contract's list that the row fails."""
+    if code(record["id"]) not in repeated and (book := book_status(record["inputs"], False)) is not None:
+        return book
     reason = (ir_value_reason(case, record, repeated) or ir_date_reason(case, record["inputs"])
               or ir_category_reason(case, record["inputs"]))
     return OK if reason is None else INVALID + reason
@@ -334,6 +350,8 @@ def eq_status(case: Case, record: Record, repeated: set[str]) -> str:
     value = inputs.get("market_value_amount")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, False)) is not None:
+        return book
     elif code(inputs.get("market_code")) == "":
         reason = "Market missing"
     elif code(inputs.get("type_code")) not in ("SINGLE NAME", "INDEX"):
@@ -390,6 +408,8 @@ def co_status(case: Case, record: Record, repeated: set[str]) -> str:
     quantity = inputs.get("quantity_count")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, True)) is not None:
+        return book
     elif code(inputs.get("commodity_code")) == "":
         reason = "Commodity missing"
     elif code(inputs.get("commodity_code")) == GOLD:
@@ -442,6 +462,8 @@ def fx_status(case: Case, record: Record, repeated: set[str]) -> str:
     amount = inputs.get("net_position_amount")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, True)) is not None:
+        return book
     elif case.no_currency(currency, gold_allowed=True):
         reason = "currency not in FX_Table"
     elif sign(inputs.get("direction_code")) == 0:

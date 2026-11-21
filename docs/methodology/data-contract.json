@@ -790,6 +790,19 @@
           "notes": "Column Issue ID (specific-risk netting). Rows with the same value are one issue; empty: an issue of its own"
         },
         {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement"
+        },
+        {
           "name": "comment",
           "type": "text",
           "unit": null,
@@ -888,6 +901,19 @@
             "min": 0
           },
           "notes": "Column Market value (ccy). Direction gives the sign"
+        },
+        {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement"
         },
         {
           "name": "comment",
@@ -993,6 +1019,19 @@
           "notes": "Column Maturity date. For the maturity ladder approach, which is not supported; not read"
         },
         {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement"
+        },
+        {
           "name": "comment",
           "type": "text",
           "unit": null,
@@ -1062,6 +1101,19 @@
             "min": 0
           },
           "notes": "Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign"
+        },
+        {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement"
         },
         {
           "name": "comment",

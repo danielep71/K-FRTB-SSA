@@ -50,7 +50,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ Public Sub CalculateCommodity( _
 '   commodity is the gold code is rejected: gold is FX risk
 '
 ' DEPENDENCIES
-'   CORE_Util: KeyPosition, CodeText, PlainText, DirectionSign,
+'   CORE_Util: KeyPosition, CodeText, PlainText, DirectionSign, BookStatus,
 '   IsNumberValue, NumberValue, FindCode and WriteTotalRow; CORE_Config: the
 '   column, width, index, status, label and error constants
 '
@@ -160,8 +160,10 @@ Public Sub CalculateCommodity( _
 '   calculation contract CALC-05
 '
 ' NOTES
-'   A row is rejected for the first test that fails, in this order:
-'   duplicate PositionID, missing commodity, gold code, Direction not Long or
+'   A non-trading book position is calculated as a trading book one
+'   (Article 325(1) of the CRR; BCBS MAR12.6). A row is rejected for the first
+'   test that fails, in this order: duplicate PositionID, Book not Trading,
+'   Non-trading or blank, missing commodity, gold code, Direction not Long or
 '   Short, Quantity not a number, Quantity < 0, spot price not a number,
 '   currency not in the FX table or equal to the gold code
 '
@@ -171,7 +173,7 @@ Public Sub CalculateCommodity( _
 '   10 sum of 8 and 9
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -237,6 +239,8 @@ Public Sub CalculateCommodity( _
                 'Classify the row: the first failing test gives the rejection reason
                 If IdUses(KeyPosition(Ids, IdCount, CodeText(InputRows(r, CO_ID)), False)) > 1 Then
                     Status = ST_INVALID & "duplicate PositionID"
+                ElseIf Len(BookStatus(InputRows(r, CO_BOOK), True)) > 0 Then
+                    Status = BookStatus(InputRows(r, CO_BOOK), True)
                 ElseIf Len(Commodity) = 0 Then
                     Status = ST_INVALID & "Commodity missing"
                 ElseIf Commodity = GoldCode Then

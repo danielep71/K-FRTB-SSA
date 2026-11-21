@@ -581,11 +581,15 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 24)]
+        added = [positions.cell(row, 3).value for row in range(first, first + 28)]
         self.assertEqual(added, ["IR-INST1", "IR-INST2", "IR-INST3", "IR-INST4", "IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
                                  "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
-                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2"])
-        self.assertIsNone(positions.cell(first + 24, 3).value)
+                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2",
+                                 "IR-NT1", "IR-NT2", "IR-TR", "IR-BK"])
+        self.assertIsNone(positions.cell(first + 28, 3).value)
+        # The books, in the column before the Comment.
+        self.assertEqual([positions.cell(first + offset, 16).value for offset in range(24, 28)],
+                         ["Non-trading", " non-TRADING ", "trading", "Banking"])
         # An instrument outside the list, none at all, and one typed in another case with blanks.
         self.assertEqual([positions.cell(first + offset, 5).value for offset in range(4)],
                          ["Securitisation", None, " swap LEG ", "Swap  leg"])

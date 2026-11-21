@@ -120,7 +120,9 @@ Public Sub Calculate( _
 '   remaining Checks rules and sets the status line. The eligibility changes no
 '   requirement: its invalid rows are errors of rule C15, counted and not
 '   listed as findings, and its approaches not met or to cease are warnings
-'   of rule C16
+'   of rule C16. The non-trading book rows of the interest rate and equity
+'   classes are excluded and counted as warnings of rule C17, not listed as
+'   findings
 '
 ' ERROR POLICY
 '   Cell content never raises: unusable values become findings. Arrays of the
@@ -390,6 +392,8 @@ Public Sub Calculate( _
     'Count the rejected Eligibility rows (C15) and the approaches not met or to cease (C16)
         RuleCounts(15) = RejectedMonths
         RuleCounts(16) = FlaggedApproaches
+    'Count the non-trading book rows of the interest rate and equity classes, excluded (C17)
+        RuleCounts(17) = IrTotals(TOT_EXCLUDED) + EqTotals(TOT_EXCLUDED)
 
 '------------------------------------------------------------------------------
 ' SET CHECKS OUTPUTS
@@ -851,7 +855,7 @@ Private Function RuleTable( _
 '     (1 To RULE_COUNT); Empty for a rule not evaluated
 '
 ' RETURNS
-'   Variant (1 To RULE_COUNT, 1 To 2): "C01".."C16", count or Empty
+'   Variant (1 To RULE_COUNT, 1 To 2): "C01".."C17", count or Empty
 '
 ' BEHAVIOR
 '   Writes the identifier "C" followed by the two-digit rule number in column 1
@@ -873,8 +877,8 @@ Private Function RuleTable( _
 '------------------------------------------------------------------------------
 ' DECLARE
 '------------------------------------------------------------------------------
-    Dim Table(1 To 16, 1 To 2)  As Variant  'Result (RULE_COUNT rows)
-    Dim i                       As Long     'Rule
+    Dim Table(1 To RULE_COUNT, 1 To 2)  As Variant  'Result
+    Dim i                               As Long     'Rule
 
 '------------------------------------------------------------------------------
 ' BUILD TABLE

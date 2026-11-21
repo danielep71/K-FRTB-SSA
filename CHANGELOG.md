@@ -65,6 +65,23 @@ Use only the categories an entry needs.
 
 ### Added
 
+- The book of a position: a new input column *Book*, `Trading` or
+  `Non-trading`, before *Comment* on `IRPositions`, `EQPositions`,
+  `COPositions` and `FXPositions`; blank is `Trading`, so existing sheets and
+  cases give the same results. Under both regimes a non-trading book FX or
+  commodity row is calculated as a trading book one, at the value entered, as
+  Article 325(1) of the CRR and MAR12.6 put that risk in the scope; a
+  non-trading book interest rate or equity row is excluded before its other
+  tests and counted by the new warning rule `C17` of `Checks`, and the run
+  stays `OK`. Any other book rejects the row. The technical standards of
+  Article 325(9), Delegated Regulations (EU) 2023/1577 and 2025/878, are now
+  registered (`SRC-09`, `SRC-10`), with chapters RBC25 and MAR12 of the Basel
+  Framework (`SRC-11`, `SRC-12`): the standards value those positions for the
+  alternative approaches only, so the value entered is an assumption under the
+  simplified standardised approach. Article 495u is documented, not a
+  parameter. The input columns right of the book, *Comment*, moved one column
+  right, and the `core` suite now has 17 cases and 230 assertions. Nothing was
+  run in Excel ([#85](https://github.com/danielep71/K-FRTB-SSA/issues/85)).
 - The eligibility for the simplified standardised approach, Article 325a of
   Regulation (EU) No 575/2013, and for the derogation for small trading book
   business, Article 94, under the `CRR` regime (`CALC-09`). On the new sheet

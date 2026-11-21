@@ -18,7 +18,9 @@ It needs LibreOffice and openpyxl. The steps:
    constant and an option charge. It also adds keys that a criteria function
    would read as a pattern or as a comparison: a PositionID, Issue IDs, a
    stock, a market, commodities, and a currency of FX_Table that is a
-   pattern for another one, with positions in it. And it adds error values
+   pattern for another one, with positions in it. It adds rows of each book:
+   non-trading, trading typed in lower case, and unknown, in each position
+   sheet. And it adds error values
    where a text is typed and no output shows it: the Issue ID of a rejected
    row, and a direction.
 5. Type error values where an output shows the text, on the formula workbook
@@ -199,6 +201,15 @@ def negative(source: Path, target: Path) -> None:
          "OTHER", "BB+ to BB-", NOT_AVAILABLE],
         ["IR-E2", "T", "Bond", "EUR", "#DIV/0!", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
          "NONE", "", ""],
+        # Books: a non-trading row is excluded, before any other test of the row;
+        # a trading book typed in lower case is used; an unknown book is rejected.
+        ["IR-NT1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "Non-trading"],
+        ["IR-NT2", "T", None, "ZAR", None, None, None, None, None, None, None, None, None, " non-TRADING "],
+        ["IR-TR", "T", "Bond", "EUR", "Short", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "trading"],
+        ["IR-BK", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "Banking"],
     ])
     append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
         ["EQ-BAD", "T", "IT", "Basket", "B", "EUR", "Long", 1e6],
@@ -208,6 +219,9 @@ def negative(source: Path, target: Path) -> None:
         ["EQ-W2", "T", "FR", "Single name", "ABC", "EUR", "Short", 4e5],
         ["EQ-W3", "T", "F?", "Single name", "BNP", WILD_CURRENCY, "Long", 3e6],
         ["EQ-W4", "T", "DE", "Single name", "SAP", "US*", "Long", 1e6],
+        # Books: a non-trading stock is excluded, an unknown book rejected.
+        ["EQ-NT", "T", "IT", "Single name", "ENI", "EUR", "Long", 1e6, "Non-trading"],
+        ["EQ-BK", "T", "IT", "Single name", "ISP", "EUR", "Long", 1e6, "Banking"],
     ])
     append_rows(workbook["COPositions"], FIRST_ROW + len(ssa_reference.CO), [
         ["CO-BAD", "T", "Gold bar", "Long", "ten", "oz", 3500, "EUR"],
@@ -218,6 +232,9 @@ def negative(source: Path, target: Path) -> None:
         ["CO-W1", "T", "C*", "Long", 10, "t", 9800, "USD"],
         ["CO-W2", "T", "Whea?", "Long", 500, "t", 250, WILD_CURRENCY],
         ["CO-W3", "T", "~Wheat", "Long", 100, "t", 250, "EUR"],
+        # Books: a non-trading commodity is calculated, an unknown book rejected.
+        ["CO-NT", "T", "Brent crude", "Long", 100, "bbl", 72, "USD", None, "Non-trading"],
+        ["CO-BK", "T", "Copper", "Long", 1, "t", 9800, "USD", None, "Banking"],
     ])
     append_rows(workbook["FXPositions"], FIRST_ROW + len(ssa_reference.FXPOS), [
         ["FX-007", "FX", "EUR", "Long", 5e6],
@@ -226,6 +243,9 @@ def negative(source: Path, target: Path) -> None:
         ["FX-W1", "FX", "U*", "Long", 1e6],
         ["FX-W2", "FX", WILD_CURRENCY, "Short", 6e6],
         ["FX-E1", "FX", "CHF", NOT_AVAILABLE, 1e6],
+        # Books: a non-trading position is calculated, an unknown book rejected.
+        ["FX-NT", "FX", "CHF", "Short", 1e6, "Non-trading"],
+        ["FX-BK", "FX", "CHF", "Long", 1e6, "Banking"],
     ])
     # USD, typed in FX_Table with a blank at each end and in lower case: the
     # positions in USD, and the ladders and sums of the currency, do not change.
