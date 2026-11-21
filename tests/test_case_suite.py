@@ -350,6 +350,24 @@ class CaseSuite(unittest.TestCase):
         # to the right of the risk class.
         self.assertIn("ResultsCell(4, 3)", self.bodies["CaseIllustrativeSampleFx"])
 
+    def test_the_status_of_a_stopped_run_is_read_without_its_time(self) -> None:
+        # A case that a parameter stops compares the status line alone, read as RunLine reads it:
+        # the cell the template names Results_Status, cut where the time of the run starts, as
+        # run_cases.run_line cuts it.
+        statement = re.sub(r" _\r?\n\s*", " ", self.bodies["CaseIllustrativeInvalidRegime"])
+        self.assertIn('TEST_Harness.AssertEqualText "run-status", "STOPPED: 1 unusable input(s); see '
+                      'Checks. No results were calculated.", PlainText(RunLine())', statement)
+        self.assertEqual(self.run_cases.STATUS_NAME, "Results_Status")
+        found = re.search(r"^Private Function RunLine\(\).*?^End Function$", self.text, re.M | re.S)
+        assert found is not None
+        body = found.group(0)
+        self.assertIn("ThisWorkbook.Names(NM_RESULTS_STATUS).RefersToRange.Value", body)
+        self.assertIn(f'InStrRev(Shown, "{self.run_cases.RUN_TIME}")', body)
+        config = (ROOT / "src" / "core" / "CORE_Config.bas").read_bytes().decode("cp1252")
+        self.assertIn('NM_RESULTS_STATUS  As String = "Results_Status"', config)
+        main = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode("cp1252")
+        self.assertIn('Outputs(OUT_STATUS) & " Run " & TimeText(Now)', main)
+
 
 if __name__ == "__main__":
     unittest.main()

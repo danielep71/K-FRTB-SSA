@@ -86,8 +86,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "cases"   'Name of the suite in its log
-    Private Const EXPECTED_CASES      As Long = 38          'Cases a complete run starts
-    Private Const EXPECTED_ASSERTIONS As Long = 843         'Assertions a complete run evaluates
+    Private Const EXPECTED_CASES      As Long = 42          'Cases a complete run starts
+    Private Const EXPECTED_ASSERTIONS As Long = 864         'Assertions a complete run evaluates
 
     'The inputs a test case replaces (InputArea)
     Private Const INPUT_AREAS   As Long = 14    'Areas kept and put back
@@ -123,7 +123,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=38; assertions=843; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=42; assertions=864; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   The documented entry point of the suite: it raises when the run does not
@@ -392,9 +392,11 @@ Private Sub RunSuite()
         CaseIllustrativeCrrFxDeMinimisLimit
         CaseIllustrativeCrrIrSpecificRisk
         CaseIllustrativeCrrMaturityMethodC2
+        CaseIllustrativeCrrRegimeInLowerCase
         CaseIllustrativeCrrSampleEquity
         CaseIllustrativeCrrSampleRequirement
         CaseIllustrativeCrrTransitionalEndDate
+        CaseIllustrativeCrrZeroOwnFunds
         CaseIllustrativeEligibilityBaselRegime
         CaseIllustrativeEligibilityEvents
         CaseIllustrativeEligibilityLimits
@@ -405,10 +407,12 @@ Private Sub RunSuite()
         CaseIllustrativeFxOneSidedPositions
         CaseIllustrativeInvalidCoPositions
         CaseIllustrativeInvalidCrrIrPositions
+        CaseIllustrativeInvalidCrrOwnFunds
         CaseIllustrativeInvalidEligibilityMonths
         CaseIllustrativeInvalidEqPositions
         CaseIllustrativeInvalidFxPositions
         CaseIllustrativeInvalidIrPositions
+        CaseIllustrativeInvalidRegime
         CaseIllustrativeIrBook
         CaseIllustrativeIrSpecificRiskMaturityLimits
         CaseIllustrativeIrTimeBandLimits
@@ -2527,6 +2531,258 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeCrrRegimeInLowerCase()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-regime-in-lower-case.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "crr"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 16750
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrRegimeInLowerCase()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-regime-in-lower-case, on CALC-06: The case
+'   illustrative-crr-fx-de-minimis-limit with the regime written crr: the
+'   regime is read without regard to case, so the CRR's de minimis applies
+'   and the requirement is zero.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 14 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrRegimeInLowerCase;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-regime-in-lower-case"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrRegimeInLowerCase
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare fx_position_status of T9-JPY with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-jpy", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 1, 1))
+    'Compare fx_position_status of T9-EUR with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-eur", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 2, 1))
+    'Compare fx_position_status of T9-GBP with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-gbp", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 3, 1))
+    'Compare fx_position_status of T9-CAD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-cad", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 4, 1))
+    'Compare fx_position_status of T9-USD with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-usd", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 5, 1))
+    'Compare fx_position_status of T9-XAU with its expected text
+        TEST_Harness.AssertEqualText "fx-position-status-of-t9-xau", "OK", _
+            PlainText(RowCell(NM_FX_CALC_HEADER, 6, 1))
+    'Compare fx_net_position of CAD with its expected value and record it
+        Actual = NumberOf(FxNet("CAD"))
+        TEST_Harness.AssertNear "fx-net-position-of-cad", -20, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "CAD", Actual
+    'Compare fx_net_position of EUR with its expected value and record it
+        Actual = NumberOf(FxNet("EUR"))
+        TEST_Harness.AssertNear "fx-net-position-of-eur", 100, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "EUR", Actual
+    'Compare fx_net_position of GBP with its expected value and record it
+        Actual = NumberOf(FxNet("GBP"))
+        TEST_Harness.AssertNear "fx-net-position-of-gbp", 150, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "GBP", Actual
+    'Compare fx_net_position of JPY with its expected value and record it
+        Actual = NumberOf(FxNet("JPY"))
+        TEST_Harness.AssertNear "fx-net-position-of-jpy", 50, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "JPY", Actual
+    'Compare fx_net_position of USD with its expected value and record it
+        Actual = NumberOf(FxNet("USD"))
+        TEST_Harness.AssertNear "fx-net-position-of-usd", -180, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "USD", Actual
+    'Compare fx_net_position of XAU with its expected value and record it
+        Actual = NumberOf(FxNet("XAU"))
+        TEST_Harness.AssertNear "fx-net-position-of-xau", -35, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_net_position", "DS-05", "XAU", Actual
+    'Compare fx_overall_net_open_position with its expected value and record it
+        Actual = NumberOf(NamedCell(NM_FX_ONOP))
+        TEST_Harness.AssertNear "fx-overall-net-open-position", 335, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_overall_net_open_position", vbNullString, vbNullString, Actual
+    'Compare fx_charge with its expected value and record it
+        Actual = ZeroIfEmpty(ResultsCell(4, 3))
+        TEST_Harness.AssertNear "fx-charge", 0, Actual, 0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-crr-regime-in-lower-case", vbNullString, _
+            "fx_charge", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeCrrSampleEquity()
 
 '
@@ -3446,6 +3702,202 @@ Private Sub CaseIllustrativeCrrTransitionalEndDate()
         TEST_Harness.AssertNear "risk-weighted-assets", 2371500, Actual, 0.000001, 0.000000001
         TEST_Harness.RecordResult "illustrative-crr-transitional-end-date", vbNullString, _
             "risk_weighted_assets", vbNullString, vbNullString, Actual
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeCrrZeroOwnFunds()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-crr-zero-own-funds.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 0
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeCrrZeroOwnFunds()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-crr-zero-own-funds, on CALC-06: The positions of
+'   the example of table 9 of MAR40.61 under the CRR regime with total own
+'   funds of 0, the largest value that is not greater than 0: the run stops,
+'   and no result is calculated.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 1 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeCrrZeroOwnFunds;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-crr-zero-own-funds"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeCrrZeroOwnFunds
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare run_status with its expected text
+        TEST_Harness.AssertEqualText "run-status", _
+            "STOPPED: 1 unusable input(s); see Checks. No results were calculated.", _
+            PlainText(RunLine())
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -6672,6 +7124,199 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeInvalidCrrOwnFunds()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-invalid-crr-own-funds.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeInvalidCrrOwnFunds()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-invalid-crr-own-funds, on CALC-06: The positions
+'   of the example of table 9 of MAR40.61 under the CRR regime without total
+'   own funds: the run stops, and no result is calculated.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 1 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeInvalidCrrOwnFunds;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-invalid-crr-own-funds"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeInvalidCrrOwnFunds
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare run_status with its expected text
+        TEST_Harness.AssertEqualText "run-status", _
+            "STOPPED: 1 unusable input(s); see Checks. No results were calculated.", _
+            PlainText(RunLine())
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeInvalidEligibilityMonths()
 
 '
@@ -7757,6 +8402,201 @@ Private Sub CaseIllustrativeInvalidIrPositions()
     'Compare ir_position_status of X-OK with its expected text
         TEST_Harness.AssertEqualText "ir-position-status-of-x-ok", "OK", _
             PlainText(RowCell(NM_IR_CALC_HEADER, 23, 1))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeInvalidRegime()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-invalid-regime.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 7 row(s)
+'     - the foreign exchange positions: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "EU"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 16750
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "CHF", 1
+        PutRate 2, "JPY", 1
+        PutRate 3, "EUR", 1
+        PutRate 4, "GBP", 1
+        PutRate 5, "CAD", 1
+        PutRate 6, "USD", 1
+        PutRate 7, "XAU", 1
+
+'------------------------------------------------------------------------------
+' TYPE FOREIGN EXCHANGE POSITIONS
+'------------------------------------------------------------------------------
+    'Type the foreign exchange positions of the test case, one row each
+        PutRow NM_FX_POS_HEADER, 1, Array("T9-JPY", Empty, "JPY", "Long", 50)
+        PutRow NM_FX_POS_HEADER, 2, Array("T9-EUR", Empty, "EUR", "Long", 100)
+        PutRow NM_FX_POS_HEADER, 3, Array("T9-GBP", Empty, "GBP", "Long", 150)
+        PutRow NM_FX_POS_HEADER, 4, Array("T9-CAD", Empty, "CAD", "Short", 20)
+        PutRow NM_FX_POS_HEADER, 5, Array("T9-USD", Empty, "USD", "Short", 180)
+        PutRow NM_FX_POS_HEADER, 6, Array("T9-XAU", Empty, "XAU", "Short", 35)
+
+End Sub
+
+Private Sub CaseIllustrativeInvalidRegime()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-invalid-regime, on CALC-08: The positions of the
+'   example of table 9 of MAR40.61 with a regime that is neither Basel nor
+'   CRR: the run stops, and no result is calculated.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 1 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeInvalidRegime;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-invalid-regime"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeInvalidRegime
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare run_status with its expected text
+        TEST_Harness.AssertEqualText "run-status", _
+            "STOPPED: 1 unusable input(s); see Checks. No results were calculated.", _
+            PlainText(RunLine())
 
 '------------------------------------------------------------------------------
 ' CLEAN UP
@@ -13117,6 +13957,65 @@ Private Function NamedCell( _
 '------------------------------------------------------------------------------
     'Read the cell the name refers to
         NamedCell = ThisWorkbook.Names(CellName).RefersToRange.Value
+
+End Function
+
+Private Function RunLine() _
+    As String
+'
+'------------------------------------------------------------------------------
+'                                READ RUN STATUS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The status line of Results, without the time of the run at its end.
+'
+' WHY THIS EXISTS
+'   The status line ends with the time of the run, which differs from one
+'   run to the next and no case compares.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   The status line, trimmed, without the time of the run.
+'
+' BEHAVIOR
+'   Reads the cell of the status line as text and cuts it where the last
+'   word Run between two blanks starts, as run_cases.run_line does in the
+'   Python runner; a line without that word is returned whole.
+'
+' ERROR POLICY
+'   None
+'
+' DEPENDENCIES
+'   PlainText of CORE_Util; the NM_RESULTS_STATUS name of CORE_Config
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-19
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Shown   As String   'Status line on the sheet
+    Dim Cut     As Long     'Start of the run time
+
+'------------------------------------------------------------------------------
+' READ LINE
+'------------------------------------------------------------------------------
+    'Read the status line as text
+        Shown = PlainText(ThisWorkbook.Names(NM_RESULTS_STATUS).RefersToRange.Value)
+
+'------------------------------------------------------------------------------
+' CUT RUN TIME
+'------------------------------------------------------------------------------
+    'Drop the time of the run that ends the line
+        Cut = InStrRev(Shown, " Run ")
+        If Cut > 0 Then Shown = Left$(Shown, Cut - 1)
+        RunLine = Shown
 
 End Function
 

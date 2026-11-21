@@ -41,6 +41,19 @@
       "decision": null,
       "calibration_cases": ["illustrative-sample-ir-general-market-risk"],
       "holdout_cases": ["bcbs119-c2-maturity-method", "mar40-27-vertical-disallowance"]
+    },
+    {
+      "id": "ACC-04",
+      "calculation": "CALC-08",
+      "regime": "CRR: the simplified standardised approach of Article 325(2) of Regulation (EU) No 575/2013 as amended by Regulation (EU) 2024/1623, with the transitional multiplier of Article 495s(2) of Delegated Regulation (EU) 2026/1221, and an own funds requirement of at most 1e8 in the reporting currency",
+      "quantities": ["transitional_factor", "own_funds_requirement", "risk_weighted_assets"],
+      "metric": "relative",
+      "threshold": 0.000000001,
+      "provenance": "The default relative tolerance of a derived value (calculation contracts, Decisions): the requirement is a sum of products of amounts in Double arithmetic, multiplied by the factor, and the risk-weighted assets 12.5 times it; the factor itself is 0.9 or 1. A draft: its calibration and its two holdout cases hold illustrative values only, as no published worked example or independent implementation of the CRR regime was found (SOURCES.md, Published examples of the CRR regime)",
+      "status": "draft",
+      "decision": null,
+      "calibration_cases": ["illustrative-crr-sample-requirement"],
+      "holdout_cases": ["illustrative-crr-transitional-end-date", "illustrative-crr-after-transitional-end-date"]
     }
   ]
 }

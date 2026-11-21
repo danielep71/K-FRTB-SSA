@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-crr-regime-in-lower-case",
+  "outputs": [
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-JPY"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-EUR"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-GBP"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-CAD"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-USD"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_position_status", "scope": {"dataset": "DS-09", "record": "T9-XAU"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "CAD"}, "rule": "CALC-06.1", "value": -20.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-06.1", "value": 100.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "GBP"}, "rule": "CALC-06.1", "value": 150.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "JPY"}, "rule": "CALC-06.1", "value": 50.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "USD"}, "rule": "CALC-06.1", "value": -180.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_net_position", "scope": {"dataset": "DS-05", "record": "XAU"}, "rule": "CALC-06.1", "value": -35.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_overall_net_open_position", "scope": null, "rule": "CALC-06.2", "value": 335.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "fx_charge", "scope": null, "rule": "CALC-06.4", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

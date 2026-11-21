@@ -76,10 +76,19 @@ Use only the categories an entry needs.
   transitional multiplier on its last date and the day after; and an
   `invalid` case on the category and the risk weight. The invalid interest
   rate case has a row with the category `CRR` under the Basel regime, and the
-  requirement cases a new output, `transitional_factor`. No existing expected
-  value changed. `tests/derivations/ssa.py` now applies the rules of the CRR
-  regime, and the `cases` suite has 38 cases and 843 assertions. Nothing was
-  run in Excel ([#86](https://github.com/danielep71/K-FRTB-SSA/issues/86)).
+  requirement cases a new output, `transitional_factor`. Four cases test the
+  parameters that stop the run: a regime that is neither `Basel` nor `CRR`,
+  and under the `CRR` no total own funds and total own funds of 0, each with
+  the new output `run_status`, the status line of `Results` without the time
+  of the run; and the regime written `crr`, which is read as `CRR`. No
+  existing expected value changed. `tests/derivations/ssa.py` now applies the
+  rules of the CRR regime and the stops, and the `cases` suite has 42 cases
+  and 864 assertions. The draft accuracy contract `ACC-04` covers the
+  requirement of the CRR regime; it cannot be frozen, because the search
+  recorded in `SOURCES.md` found no published worked example and no
+  independent implementation of the CRR's simplified standardised approach.
+  Nothing was run in Excel
+  ([#86](https://github.com/danielep71/K-FRTB-SSA/issues/86)).
 - The book of a position: a new input column *Book*, `Trading` or
   `Non-trading`, before *Comment* on `IRPositions`, `EQPositions`,
   `COPositions` and `FXPositions`; blank is `Trading`, so existing sheets and
