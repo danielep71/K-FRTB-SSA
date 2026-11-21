@@ -182,6 +182,26 @@ class FixtureTest(FindingTest):
         self.assertFinding(run(lambda f, e: f.pop("datasets")), "missing datasets")
         self.assertFinding(run(lambda f, e: f.update(extra=1)), "unknown extra")
 
+    def test_parameters_are_optional_inputs(self) -> None:
+        self.assertEqual(run(lambda f, e: f.update(parameters={
+            "regime_code": "CRR", "total_own_funds_amount": 1e9})), [])
+        for value, text in (({}, "parameters is not a non-empty object"),
+                            ([1], "parameters is not a non-empty object"),
+                            ({"Regime": "CRR"}, "parameter 'Regime' is not lower snake case"),
+                            ({"regime": "CRR"}, "parameter 'regime' has no unit suffix"),
+                            ({"own_funds_amount": "1"}, "invalid value for its suffix _amount")):
+            with self.subTest(value=value):
+                def edit(f: dict[str, Any], e: dict[str, Any], v: object = value) -> None:
+                    f["parameters"] = v
+                self.assertFinding(run(edit), text)
+        # An invalid case may break them, as any other calculation input.
+        def invalid(f: dict[str, Any], e: dict[str, Any]) -> None:
+            f.update(category="invalid", parameters="none")
+            output(e).update(quantity="run_status", text="REJECTED")
+            for key in ("value", "unit", "tolerance"):
+                output(e).pop(key, None)
+        self.assertEqual(run(invalid), [])
+
     def test_calculation_and_datasets_are_declared(self) -> None:
         self.assertFinding(run(lambda f, e: f.update(calculation="CALC-10")),
                            "calculation CALC-10 is not declared")

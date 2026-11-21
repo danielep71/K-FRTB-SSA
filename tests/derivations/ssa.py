@@ -3,15 +3,18 @@
 Usage: python -I tests/derivations/ssa.py tests/fixtures/<case-id>.json
 
 It reads one fixture and prints, in the derivation output format, the outputs
-of the fixture's calculation, CALC-02 to CALC-08, as
+of the fixture's calculation, CALC-02 to CALC-09, as
 docs/methodology/CALCULATION_CONTRACTS.md states them: the status of each
 position row, and the quantities of the rows that are used. A fixture gives
 the reporting date and currency, the FX rates (DS-05), the positions (DS-06
-to DS-09) and the option charges (DS-10). Every parameter has its reference
-value, which the Parameters table of the contracts traces to SRC-02.
+to DS-09), the option charges (DS-10) and the months of the size of the
+business (DS-11). Every parameter has its reference value, which the
+Parameters table of the contracts traces to SRC-02, but those a fixture sets
+under "parameters": the regime and the total own funds.
 
 eligibility() derives CALC-09, the eligibility under the CRR, from the rows of
-the Eligibility sheet and the regime; no fixture holds them, so a test calls it.
+the Eligibility sheet and the regime; derive() calls it for a fixture of
+CALC-09, and a test may call it with rows that no fixture can hold.
 
 It is written from the contracts and shares no code with the VBA engine. Its
 values are illustrative all the same, because the project derived them.
@@ -144,6 +147,7 @@ class Case:
         assert as_of is not None
         self.as_of = as_of
         self.datasets: dict[str, list[Record]] = fixture["datasets"]
+        self.regime = fixture.get("parameters", {}).get("regime_code", "Basel")
         self.rates = {code(record["id"]): record["inputs"].get("fx_rate")
                       for record in self.records("DS-05")}
 
@@ -628,6 +632,51 @@ def eligibility(rows: Sequence[Sequence[Any]], regime: object, params: Mapping[s
     return result
 
 
+# The keys of a record of DS-11, in the order of the columns of the Eligibility sheet.
+MONTH_KEYS = ("month_end_date", "total_assets_amount", "long_325a_amount", "short_325a_amount",
+              "long_94_amount", "short_94_amount")
+
+
+def month_cell(key: str, value: object) -> object:
+    """A value of a record of DS-11 as the sheet holds it: an ISO month end as a date."""
+    if key == "month_end_date" and isinstance(value, str):
+        try:
+            return datetime.date.fromisoformat(value)
+        except ValueError:
+            return value
+    return value
+
+
+def eligibility_outputs(case: Case, outputs: list[Output]) -> None:
+    """The outputs of CALC-09: the status and the figures of each month entered, and the status
+    and the restart condition of each approach."""
+    records = case.records("DS-11")
+    rows = [tuple(month_cell(key, record["inputs"].get(key)) for key in MONTH_KEYS)
+            for record in records]
+    result = eligibility(rows, case.regime, {})
+    for record, item in zip(records, result["rows"], strict=True):
+        if item is None:
+            continue
+        outputs.append(row("eligibility_month_status", "DS-11", record, text=item["status"]))
+        for approach in APPROACHES:
+            figures = item[approach]
+            if figures is None:
+                continue
+            for key in ("size", "share", "run", "count"):
+                outputs.append(row(f"eligibility_{key}_{approach}", "DS-11", record,
+                                   value=float(figures[key])))
+            outputs.append(row(f"eligibility_month_result_{approach}", "DS-11", record,
+                               text=figures["result"]))
+            outputs.append(row(f"eligibility_event_{approach}", "DS-11", record,
+                               text=figures["event"]))
+    for approach in APPROACHES:
+        outputs.append({"quantity": f"eligibility_status_{approach}", "scope": None,
+                        "text": result["status"][approach]})
+        if result["restart"][approach] is not None:
+            outputs.append({"quantity": f"eligibility_restart_{approach}", "scope": None,
+                            "text": result["restart"][approach]})
+
+
 # ---------------------------------------------------------------- outputs
 def row(quantity: str, dataset: str, record: Record, **result: object) -> Output:
     return {"quantity": quantity, "scope": {"dataset": dataset, "record": record["id"]}, **result}
@@ -657,6 +706,8 @@ def derive(fixture: dict[str, Any]) -> list[Output]:
         option_charges(case, outputs)
     elif case.calculation == "CALC-08":
         requirement(case, outputs)
+    elif case.calculation == "CALC-09":
+        eligibility_outputs(case, outputs)
     else:
         raise SystemExit(f"ssa.py: no derivation for calculation {case.calculation!r}")
     return outputs

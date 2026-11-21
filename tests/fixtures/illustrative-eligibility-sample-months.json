@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-eligibility-sample-months",
+  "synthetic": true,
+  "description": "The synthetic sample months of the template under the CRR regime, which describe no real institution: 24 month ends whose size of the business is above the amount of Article 325a in a run of three months, in a later month and in the last month, and above that of Article 94 in one month more than twelve months back",
+  "category": "nominal",
+  "calculation": "CALC-09",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-11": [
+      {"id": "2024-10", "inputs": {"month_end_date": "2024-10-31", "total_assets_amount": 8000000000, "long_325a_amount": 246000000, "short_325a_amount": -164000000, "long_94_amount": 21700000, "short_94_amount": 9300000, "currency_code": "EUR"}},
+      {"id": "2024-11", "inputs": {"month_end_date": "2024-11-30", "total_assets_amount": 8025000000, "long_325a_amount": 255000000, "short_325a_amount": -170000000, "long_94_amount": 23100000, "short_94_amount": 9900000, "currency_code": "EUR"}},
+      {"id": "2024-12", "inputs": {"month_end_date": "2024-12-31", "total_assets_amount": 8050000000, "long_325a_amount": 264000000, "short_325a_amount": -176000000, "long_94_amount": 36400000, "short_94_amount": 15600000, "currency_code": "EUR"}},
+      {"id": "2025-01", "inputs": {"month_end_date": "2025-01-31", "total_assets_amount": 8075000000, "long_325a_amount": 273000000, "short_325a_amount": -182000000, "long_94_amount": 25200000, "short_94_amount": 10800000, "currency_code": "EUR"}},
+      {"id": "2025-02", "inputs": {"month_end_date": "2025-02-28", "total_assets_amount": 8100000000, "long_325a_amount": 294000000, "short_325a_amount": -196000000, "long_94_amount": 26600000, "short_94_amount": 11400000, "currency_code": "EUR"}},
+      {"id": "2025-03", "inputs": {"month_end_date": "2025-03-31", "total_assets_amount": 8125000000, "long_325a_amount": 303000000, "short_325a_amount": -202000000, "long_94_amount": 28000000, "short_94_amount": 12000000, "currency_code": "EUR"}},
+      {"id": "2025-04", "inputs": {"month_end_date": "2025-04-30", "total_assets_amount": 8150000000, "long_325a_amount": 312000000, "short_325a_amount": -208000000, "long_94_amount": 28700000, "short_94_amount": 12300000, "currency_code": "EUR"}},
+      {"id": "2025-05", "inputs": {"month_end_date": "2025-05-31", "total_assets_amount": 8175000000, "long_325a_amount": 318000000, "short_325a_amount": -212000000, "long_94_amount": 30100000, "short_94_amount": 12900000, "currency_code": "EUR"}},
+      {"id": "2025-06", "inputs": {"month_end_date": "2025-06-30", "total_assets_amount": 8200000000, "long_325a_amount": 288000000, "short_325a_amount": -192000000, "long_94_amount": 30800000, "short_94_amount": 13200000, "currency_code": "EUR"}},
+      {"id": "2025-07", "inputs": {"month_end_date": "2025-07-31", "total_assets_amount": 8225000000, "long_325a_amount": 282000000, "short_325a_amount": -188000000, "long_94_amount": 29400000, "short_94_amount": 12600000, "currency_code": "EUR"}},
+      {"id": "2025-08", "inputs": {"month_end_date": "2025-08-31", "total_assets_amount": 8250000000, "long_325a_amount": 279000000, "short_325a_amount": -186000000, "long_94_amount": 28000000, "short_94_amount": 12000000, "currency_code": "EUR"}},
+      {"id": "2025-09", "inputs": {"month_end_date": "2025-09-30", "total_assets_amount": 8275000000, "long_325a_amount": 270000000, "short_325a_amount": -180000000, "long_94_amount": 26600000, "short_94_amount": 11400000, "currency_code": "EUR"}},
+      {"id": "2025-10", "inputs": {"month_end_date": "2025-10-31", "total_assets_amount": 8300000000, "long_325a_amount": 264000000, "short_325a_amount": -176000000, "long_94_amount": 25900000, "short_94_amount": 11100000, "currency_code": "EUR"}},
+      {"id": "2025-11", "inputs": {"month_end_date": "2025-11-30", "total_assets_amount": 8325000000, "long_325a_amount": 258000000, "short_325a_amount": -172000000, "long_94_amount": 27300000, "short_94_amount": 11700000, "currency_code": "EUR"}},
+      {"id": "2025-12", "inputs": {"month_end_date": "2025-12-31", "total_assets_amount": 8350000000, "long_325a_amount": 267000000, "short_325a_amount": -178000000, "long_94_amount": 28700000, "short_94_amount": 12300000, "currency_code": "EUR"}},
+      {"id": "2026-01", "inputs": {"month_end_date": "2026-01-31", "total_assets_amount": 8375000000, "long_325a_amount": 276000000, "short_325a_amount": -184000000, "long_94_amount": 30100000, "short_94_amount": 12900000, "currency_code": "EUR"}},
+      {"id": "2026-02", "inputs": {"month_end_date": "2026-02-28", "total_assets_amount": 8400000000, "long_325a_amount": 291000000, "short_325a_amount": -194000000, "long_94_amount": 31500000, "short_94_amount": 13500000, "currency_code": "EUR"}},
+      {"id": "2026-03", "inputs": {"month_end_date": "2026-03-31", "total_assets_amount": 8425000000, "long_325a_amount": 297000000, "short_325a_amount": -198000000, "long_94_amount": 32900000, "short_94_amount": 14100000, "currency_code": "EUR"}},
+      {"id": "2026-04", "inputs": {"month_end_date": "2026-04-30", "total_assets_amount": 8450000000, "long_325a_amount": 300000000, "short_325a_amount": -200000000, "long_94_amount": 32200000, "short_94_amount": 13800000, "currency_code": "EUR"}},
+      {"id": "2026-05", "inputs": {"month_end_date": "2026-05-31", "total_assets_amount": 8475000000, "long_325a_amount": 301200000, "short_325a_amount": -200800000, "long_94_amount": 30800000, "short_94_amount": 13200000, "currency_code": "EUR"}},
+      {"id": "2026-06", "inputs": {"month_end_date": "2026-06-30", "total_assets_amount": 8500000000, "long_325a_amount": 282000000, "short_325a_amount": -188000000, "long_94_amount": 29400000, "short_94_amount": 12600000, "currency_code": "EUR"}},
+      {"id": "2026-07", "inputs": {"month_end_date": "2026-07-31", "total_assets_amount": 8525000000, "long_325a_amount": 273000000, "short_325a_amount": -182000000, "long_94_amount": 28000000, "short_94_amount": 12000000, "currency_code": "EUR"}},
+      {"id": "2026-08", "inputs": {"month_end_date": "2026-08-31", "total_assets_amount": 8550000000, "long_325a_amount": 276000000, "short_325a_amount": -184000000, "long_94_amount": 28700000, "short_94_amount": 12300000, "currency_code": "EUR"}},
+      {"id": "2026-09", "inputs": {"month_end_date": "2026-09-30", "total_assets_amount": 8575000000, "long_325a_amount": 309000000, "short_325a_amount": -206000000, "long_94_amount": 30100000, "short_94_amount": 12900000, "currency_code": "EUR"}}
+    ]
+  }
+}

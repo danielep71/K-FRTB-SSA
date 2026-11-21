@@ -36,8 +36,9 @@ Option Private Module
 '       its certification log as evidence of an Excel run
 '
 '   Each case replaces the inputs of the workbook with those of its test
-'   case: the reporting date and currency, the FX table, the option charges
-'   and the four position sheets. It rewrites the output sheets through
+'   case: the reporting date and currency, the regime and the total own
+'   funds, the FX table, the option charges, the four position sheets and
+'   the month ends of Eligibility. It rewrites the output sheets through
 '   RunSSA_Silent, puts back the inputs the workbook had, on the success and
 '   the error path, and asserts it. It clears the output sheets when it puts
 '   the inputs back.
@@ -77,7 +78,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '==============================================================================
 
 '------------------------------------------------------------------------------
@@ -85,11 +86,11 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "cases"   'Name of the suite in its log
-    Private Const EXPECTED_CASES      As Long = 20          'Cases a complete run starts
-    Private Const EXPECTED_ASSERTIONS As Long = 386         'Assertions a complete run evaluates
+    Private Const EXPECTED_CASES      As Long = 25          'Cases a complete run starts
+    Private Const EXPECTED_ASSERTIONS As Long = 637         'Assertions a complete run evaluates
 
     'The inputs a test case replaces (InputArea)
-    Private Const INPUT_AREAS   As Long = 11    'Areas kept and put back
+    Private Const INPUT_AREAS   As Long = 14    'Areas kept and put back
     Private Const INPUT_ROWS    As Long = 500   'Fewest rows of a position sheet kept
 
     'Where a result per currency is found
@@ -101,8 +102,8 @@ Option Private Module
 ' PRIVATE STATE
 '------------------------------------------------------------------------------
     Private mRows(1 To 4)       As Long     'Rows of each position sheet kept
-    Private mKept(1 To 11)      As Variant  'What each input area held: values
-    Private mFormulas(1 To 11)  As Variant  'What each input area held: formulas
+    Private mKept(1 To 14)      As Variant  'What each input area held: values
+    Private mFormulas(1 To 14)  As Variant  'What each input area held: formulas
 
 
 '
@@ -122,7 +123,7 @@ Public Sub RunCaseTests()
 ' PURPOSE
 '   Run the cases suite. A passing run ends with
 '   RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE;
-'   cases=20; assertions=386; failures=0; cleanup=PASS; recovery=NONE.
+'   cases=25; assertions=637; failures=0; cleanup=PASS; recovery=NONE.
 '
 ' WHY THIS EXISTS
 '   The documented entry point of the suite: it raises when the run does not
@@ -385,9 +386,14 @@ Private Sub RunSuite()
     'Run every case, in a fixed order
         CaseBcbs119C2MaturityMethod
         CaseIllustrativeCoMatchedPositions
+        CaseIllustrativeEligibilityBaselRegime
+        CaseIllustrativeEligibilityEvents
+        CaseIllustrativeEligibilityLimits
+        CaseIllustrativeEligibilitySampleMonths
         CaseIllustrativeEqMatchedPositions
         CaseIllustrativeFxOneSidedPositions
         CaseIllustrativeInvalidCoPositions
+        CaseIllustrativeInvalidEligibilityMonths
         CaseIllustrativeInvalidEqPositions
         CaseIllustrativeInvalidFxPositions
         CaseIllustrativeInvalidIrPositions
@@ -462,6 +468,7 @@ Private Sub InputsBcbs119C2MaturityMethod()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the interest rate positions: 6 row(s)
 '
@@ -491,6 +498,8 @@ Private Sub InputsBcbs119C2MaturityMethod()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "USD"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -764,6 +773,7 @@ Private Sub InputsIllustrativeCoMatchedPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 2 row(s)
 '     - the commodity positions: 4 row(s)
 '
@@ -793,6 +803,8 @@ Private Sub InputsIllustrativeCoMatchedPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -948,6 +960,1723 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeEligibilityBaselRegime()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-eligibility-basel-regime.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime
+'     - the FX table: 1 row(s)
+'     - the month ends of Eligibility: 3 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE MONTHS
+'------------------------------------------------------------------------------
+    'Type the month ends of the test case, one row each from the first row
+        PutRow NM_EL_HEADER, 1, Array(DateSerial(2026, 7, 31), 8000000000#, 360000000, _
+            -240000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 2, Array(DateSerial(2026, 8, 31), 8000000000#, 360000000, _
+            -240000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 3, Array(DateSerial(2026, 9, 30), 8000000000#, 360000000, _
+            -240000000, 42000000, -18000000)
+
+End Sub
+
+Private Sub CaseIllustrativeEligibilityBaselRegime()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-eligibility-basel-regime, on CALC-09: Three
+'   synthetic month ends under the Basel regime, which assesses neither
+'   approach and reads no row.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 2 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeEligibilityBaselRegime;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-eligibility-basel-regime"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeEligibilityBaselRegime
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eligibility_status_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-325a", "NOT ASSESSED: Basel regime", _
+            PlainText(BlockCell(0, 0))
+    'Compare eligibility_status_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-94", "NOT ASSESSED: Basel regime", _
+            PlainText(BlockCell(1, 0))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeEligibilityEvents()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-eligibility-events.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the month ends of Eligibility: 12 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE MONTHS
+'------------------------------------------------------------------------------
+    'Type the month ends of the test case, one row each from the first row
+        PutRow NM_EL_HEADER, 1, Array(DateSerial(2025, 10, 31), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 2, Array(DateSerial(2025, 11, 30), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 3, Array(DateSerial(2025, 12, 31), 8000000000#, 240000000, _
+            -160000000, 28000000, -12000000)
+        PutRow NM_EL_HEADER, 4, Array(DateSerial(2026, 1, 31), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 5, Array(DateSerial(2026, 2, 28), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 6, Array(DateSerial(2026, 3, 31), 8000000000#, 240000000, _
+            -160000000, 28000000, -12000000)
+        PutRow NM_EL_HEADER, 7, Array(DateSerial(2026, 4, 30), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 8, Array(DateSerial(2026, 5, 31), 8000000000#, 240000000, _
+            -160000000, 28000000, -12000000)
+        PutRow NM_EL_HEADER, 9, Array(DateSerial(2026, 6, 30), 8000000000#, 240000000, _
+            -160000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 10, Array(DateSerial(2026, 7, 31), 8000000000#, 360000000, _
+            -240000000, 42000000, -18000000)
+        PutRow NM_EL_HEADER, 11, Array(DateSerial(2026, 8, 31), 8000000000#, 360000000, _
+            -240000000, 28000000, -12000000)
+        PutRow NM_EL_HEADER, 12, Array(DateSerial(2026, 9, 30), 8000000000#, 360000000, _
+            -240000000, 28000000, -12000000)
+
+End Sub
+
+Private Sub CaseIllustrativeEligibilityEvents()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-eligibility-events, on CALC-09: Twelve synthetic
+'   month ends under the CRR regime: Article 325a misses its conditions in
+'   the last three months, a run of two then three, and Article 94 in seven
+'   of the twelve, never three in a row, with a count of six then seven and
+'   the last month met.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 100 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeEligibilityEvents;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-eligibility-events"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeEligibilityEvents
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eligibility_run_325a of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_count_325a of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_month_result_325a of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2025-10", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 9))
+    'Compare eligibility_event_325a of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2025-10", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 12))
+    'Compare eligibility_run_94 of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2025-10", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_count_94 of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2025-10", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_month_result_94 of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2025-10", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 15))
+    'Compare eligibility_event_94 of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2025-10", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 18))
+    'Compare eligibility_run_325a of 2025-11 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 2, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2025-11", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2025-11", Actual
+    'Compare eligibility_count_325a of 2025-11 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 2, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2025-11", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2025-11", Actual
+    'Compare eligibility_month_result_325a of 2025-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2025-11", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 9))
+    'Compare eligibility_event_325a of 2025-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2025-11", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 12))
+    'Compare eligibility_run_94 of 2025-11 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2025-11", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2025-11", Actual
+    'Compare eligibility_count_94 of 2025-11 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2025-11", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2025-11", Actual
+    'Compare eligibility_month_result_94 of 2025-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2025-11", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 15))
+    'Compare eligibility_event_94 of 2025-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2025-11", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 18))
+    'Compare eligibility_run_325a of 2025-12 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2025-12", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2025-12", Actual
+    'Compare eligibility_count_325a of 2025-12 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2025-12", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2025-12", Actual
+    'Compare eligibility_month_result_325a of 2025-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2025-12", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 9))
+    'Compare eligibility_event_325a of 2025-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2025-12", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 12))
+    'Compare eligibility_run_94 of 2025-12 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2025-12", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2025-12", Actual
+    'Compare eligibility_count_94 of 2025-12 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 3, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2025-12", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2025-12", Actual
+    'Compare eligibility_month_result_94 of 2025-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2025-12", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 15))
+    'Compare eligibility_event_94 of 2025-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2025-12", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 18))
+    'Compare eligibility_run_325a of 2026-01 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 4, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-01", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-01", Actual
+    'Compare eligibility_count_325a of 2026-01 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 4, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-01", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-01", Actual
+    'Compare eligibility_month_result_325a of 2026-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-01", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 9))
+    'Compare eligibility_event_325a of 2026-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-01", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 12))
+    'Compare eligibility_run_94 of 2026-01 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-01", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-01", Actual
+    'Compare eligibility_count_94 of 2026-01 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-01", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-01", Actual
+    'Compare eligibility_month_result_94 of 2026-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-01", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 15))
+    'Compare eligibility_event_94 of 2026-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-01", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 18))
+    'Compare eligibility_run_325a of 2026-02 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 5, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-02", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-02", Actual
+    'Compare eligibility_count_325a of 2026-02 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 5, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-02", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-02", Actual
+    'Compare eligibility_month_result_325a of 2026-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-02", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 9))
+    'Compare eligibility_event_325a of 2026-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-02", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 12))
+    'Compare eligibility_run_94 of 2026-02 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-02", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-02", Actual
+    'Compare eligibility_count_94 of 2026-02 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-02", 4, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-02", Actual
+    'Compare eligibility_month_result_94 of 2026-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-02", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 15))
+    'Compare eligibility_event_94 of 2026-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-02", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 18))
+    'Compare eligibility_run_325a of 2026-03 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 6, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-03", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-03", Actual
+    'Compare eligibility_count_325a of 2026-03 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 6, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-03", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-03", Actual
+    'Compare eligibility_month_result_325a of 2026-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-03", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 9))
+    'Compare eligibility_event_325a of 2026-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-03", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 12))
+    'Compare eligibility_run_94 of 2026-03 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 6, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-03", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-03", Actual
+    'Compare eligibility_count_94 of 2026-03 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-03", 4, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-03", Actual
+    'Compare eligibility_month_result_94 of 2026-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-03", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 15))
+    'Compare eligibility_event_94 of 2026-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-03", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 18))
+    'Compare eligibility_run_325a of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 7, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_count_325a of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 7, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_month_result_325a of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-04", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 7, 9))
+    'Compare eligibility_event_325a of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-04", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 7, 12))
+    'Compare eligibility_run_94 of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 7, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-04", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_count_94 of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 7, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-04", 5, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_month_result_94 of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-04", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 7, 15))
+    'Compare eligibility_event_94 of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-04", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 7, 18))
+    'Compare eligibility_run_325a of 2026-05 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 8, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-05", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_count_325a of 2026-05 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 8, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-05", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_month_result_325a of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-05", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 8, 9))
+    'Compare eligibility_event_325a of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-05", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 8, 12))
+    'Compare eligibility_run_94 of 2026-05 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 8, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-05", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_count_94 of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 8, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-05", 5, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_month_result_94 of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-05", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 8, 15))
+    'Compare eligibility_event_94 of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-05", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 8, 18))
+    'Compare eligibility_run_325a of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 9, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-06", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_count_325a of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 9, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-06", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_month_result_325a of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-06", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 9, 9))
+    'Compare eligibility_event_325a of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-06", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 9, 12))
+    'Compare eligibility_run_94 of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 9, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-06", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_count_94 of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 9, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-06", 6, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_month_result_94 of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-06", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 9, 15))
+    'Compare eligibility_event_94 of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-06", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 9, 18))
+    'Compare eligibility_run_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 10, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-07", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_count_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 10, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-07", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_month_result_325a of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-07", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 10, 9))
+    'Compare eligibility_event_325a of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-07", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 10, 12))
+    'Compare eligibility_run_94 of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 10, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-07", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_count_94 of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 10, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-07", 7, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_month_result_94 of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-07", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 10, 15))
+    'Compare eligibility_event_94 of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-07", "YES", _
+            PlainText(RowCell(NM_EL_HEADER, 10, 18))
+    'Compare eligibility_run_325a of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 11, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-08", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_count_325a of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 11, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-08", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_month_result_325a of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-08", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 11, 9))
+    'Compare eligibility_event_325a of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-08", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 11, 12))
+    'Compare eligibility_run_94 of 2026-08 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 11, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-08", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_count_94 of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 11, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-08", 7, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_month_result_94 of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-08", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 11, 15))
+    'Compare eligibility_event_94 of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-08", "YES", _
+            PlainText(RowCell(NM_EL_HEADER, 11, 18))
+    'Compare eligibility_run_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 12, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-09", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 12, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-09", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-09", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 12, 9))
+    'Compare eligibility_event_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-09", "YES", _
+            PlainText(RowCell(NM_EL_HEADER, 12, 12))
+    'Compare eligibility_run_94 of 2026-09 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 12, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-09", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 12, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-09", 7, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-events", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-09", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 12, 15))
+    'Compare eligibility_event_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-09", "YES", _
+            PlainText(RowCell(NM_EL_HEADER, 12, 18))
+    'Compare eligibility_status_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-325a", "CEASE", _
+            PlainText(BlockCell(0, 0))
+    'Compare eligibility_restart_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-325a", "NO", PlainText(BlockCell(0, _
+            6))
+    'Compare eligibility_status_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-94", "CEASE", PlainText(BlockCell(1, _
+            0))
+    'Compare eligibility_restart_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-94", "NO", PlainText(BlockCell(1, 6))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeEligibilityLimits()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-eligibility-limits.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the month ends of Eligibility: 6 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE MONTHS
+'------------------------------------------------------------------------------
+    'Type the month ends of the test case, one row each from the first row
+        PutRow NM_EL_HEADER, 1, Array(DateSerial(2026, 4, 30), 4000000000#, 300000000, _
+            -100000000, 30000000, -20000000)
+        PutRow NM_EL_HEADER, 2, Array(DateSerial(2026, 5, 31), 4000000000#, 300000001, _
+            -100000000, -30000001, 20000000)
+        PutRow NM_EL_HEADER, 3, Array(DateSerial(2026, 6, 30), 8000000000#, 500000000, 0, 0, 0)
+        PutRow NM_EL_HEADER, 4, Array(DateSerial(2026, 7, 31), 8000000000#, -200000000, _
+            -300000001, 0, 0)
+        PutRow NM_EL_HEADER, 5, Array(DateSerial(2026, 8, 31), 600000000, 40000000, 20000000, _
+            25000000, 5000000)
+        PutRow NM_EL_HEADER, 6, Array(DateSerial(2026, 9, 30), 600000000, 40000000, 20000001, _
+            25000000, -5000001)
+
+End Sub
+
+Private Sub CaseIllustrativeEligibilityLimits()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-eligibility-limits, on CALC-09: Six synthetic
+'   month ends under the CRR regime whose size of the business is equal to
+'   the share of the total assets or to the amount of each approach, and one
+'   euro above it, with totals of either sign and an approach without
+'   positions.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 82 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeEligibilityLimits;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-eligibility-limits"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeEligibilityLimits
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eligibility_month_status of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-04", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 6))
+    'Compare eligibility_size_325a of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-04", 400000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_share_325a of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-04", 0.1, Actual, 0.000000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_run_325a of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_count_325a of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-04", Actual
+    'Compare eligibility_month_result_325a of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-04", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 9))
+    'Compare eligibility_event_325a of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-04", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 12))
+    'Compare eligibility_size_94 of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-04", 50000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_share_94 of 2026-04 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-04", 0.0125, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_run_94 of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_count_94 of 2026-04 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-04", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-04", Actual
+    'Compare eligibility_month_result_94 of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-04", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 15))
+    'Compare eligibility_event_94 of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-04", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 18))
+    'Compare eligibility_month_status of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-05", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 6))
+    'Compare eligibility_size_325a of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-05", 400000001, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_share_325a of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-05", 0.10000000025, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_run_325a of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-05", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_count_325a of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-05", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-05", Actual
+    'Compare eligibility_month_result_325a of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-05", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 9))
+    'Compare eligibility_event_325a of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-05", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 12))
+    'Compare eligibility_size_94 of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-05", 50000001, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_share_94 of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-05", 0.01250000025, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_run_94 of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-05", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_count_94 of 2026-05 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 2, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-05", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-05", Actual
+    'Compare eligibility_month_result_94 of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-05", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 15))
+    'Compare eligibility_event_94 of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-05", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 18))
+    'Compare eligibility_month_status of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-06", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 6))
+    'Compare eligibility_size_325a of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 3, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-06", 500000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_share_325a of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 3, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-06", 0.0625, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_run_325a of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-06", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_count_325a of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 3, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-06", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-06", Actual
+    'Compare eligibility_month_result_325a of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-06", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 9))
+    'Compare eligibility_event_325a of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-06", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 12))
+    'Compare eligibility_size_94 of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-06", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_share_94 of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-06", 0, Actual, 0.000000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_run_94 of 2026-06 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 3, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-06", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_count_94 of 2026-06 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 3, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-06", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-06", Actual
+    'Compare eligibility_month_result_94 of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-06", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 15))
+    'Compare eligibility_event_94 of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-06", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 18))
+    'Compare eligibility_month_status of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-07", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 6))
+    'Compare eligibility_size_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-07", 500000001, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_share_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-07", 0.062500000125, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_run_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-07", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_count_325a of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-07", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-07", Actual
+    'Compare eligibility_month_result_325a of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-07", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 9))
+    'Compare eligibility_event_325a of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-07", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 12))
+    'Compare eligibility_size_94 of 2026-07 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 4, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-07", 0, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_share_94 of 2026-07 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 4, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-07", 0, Actual, 0.000000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_run_94 of 2026-07 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 4, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-07", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_count_94 of 2026-07 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 4, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-07", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-07", Actual
+    'Compare eligibility_month_result_94 of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-07", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 15))
+    'Compare eligibility_event_94 of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-07", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 18))
+    'Compare eligibility_month_status of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-08", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 6))
+    'Compare eligibility_size_325a of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-08", 60000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_share_325a of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-08", 0.1, Actual, 0.000000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_run_325a of 2026-08 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 5, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-08", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_count_325a of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-08", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-08", Actual
+    'Compare eligibility_month_result_325a of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-08", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 9))
+    'Compare eligibility_event_325a of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-08", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 12))
+    'Compare eligibility_size_94 of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-08", 30000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_share_94 of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-08", 0.05, Actual, 0.000000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_run_94 of 2026-08 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 5, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-08", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_count_94 of 2026-08 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 5, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-08", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-08", Actual
+    'Compare eligibility_month_result_94 of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-08", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 15))
+    'Compare eligibility_event_94 of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-08", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 18))
+    'Compare eligibility_month_status of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-09", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 6))
+    'Compare eligibility_size_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-09", 60000001, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_share_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-09", 0.100000001666667, _
+            Actual, 0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_run_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-09", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-09", 3, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-09", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 9))
+    'Compare eligibility_event_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-09", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 12))
+    'Compare eligibility_size_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-09", 30000001, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_share_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-09", 0.0500000016666667, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_run_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-09", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 6, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-09", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-limits", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-09", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 15))
+    'Compare eligibility_event_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-09", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 18))
+    'Compare eligibility_status_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-325a", "NOT MET", _
+            PlainText(BlockCell(0, 0))
+    'Compare eligibility_restart_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-325a", "NO", PlainText(BlockCell(0, _
+            6))
+    'Compare eligibility_status_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-94", "NOT MET", _
+            PlainText(BlockCell(1, 0))
+    'Compare eligibility_restart_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-94", "NO", PlainText(BlockCell(1, 6))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
+Private Sub InputsIllustrativeEligibilitySampleMonths()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case illustrative-eligibility-sample-months.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the month ends of Eligibility: 24 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE MONTHS
+'------------------------------------------------------------------------------
+    'Type the month ends of the test case, one row each from the first row
+        PutRow NM_EL_HEADER, 1, Array(DateSerial(2024, 10, 31), 8000000000#, 246000000, _
+            -164000000, 21700000, 9300000)
+        PutRow NM_EL_HEADER, 2, Array(DateSerial(2024, 11, 30), 8025000000#, 255000000, _
+            -170000000, 23100000, 9900000)
+        PutRow NM_EL_HEADER, 3, Array(DateSerial(2024, 12, 31), 8050000000#, 264000000, _
+            -176000000, 36400000, 15600000)
+        PutRow NM_EL_HEADER, 4, Array(DateSerial(2025, 1, 31), 8075000000#, 273000000, _
+            -182000000, 25200000, 10800000)
+        PutRow NM_EL_HEADER, 5, Array(DateSerial(2025, 2, 28), 8100000000#, 294000000, _
+            -196000000, 26600000, 11400000)
+        PutRow NM_EL_HEADER, 6, Array(DateSerial(2025, 3, 31), 8125000000#, 303000000, _
+            -202000000, 28000000, 12000000)
+        PutRow NM_EL_HEADER, 7, Array(DateSerial(2025, 4, 30), 8150000000#, 312000000, _
+            -208000000, 28700000, 12300000)
+        PutRow NM_EL_HEADER, 8, Array(DateSerial(2025, 5, 31), 8175000000#, 318000000, _
+            -212000000, 30100000, 12900000)
+        PutRow NM_EL_HEADER, 9, Array(DateSerial(2025, 6, 30), 8200000000#, 288000000, _
+            -192000000, 30800000, 13200000)
+        PutRow NM_EL_HEADER, 10, Array(DateSerial(2025, 7, 31), 8225000000#, 282000000, _
+            -188000000, 29400000, 12600000)
+        PutRow NM_EL_HEADER, 11, Array(DateSerial(2025, 8, 31), 8250000000#, 279000000, _
+            -186000000, 28000000, 12000000)
+        PutRow NM_EL_HEADER, 12, Array(DateSerial(2025, 9, 30), 8275000000#, 270000000, _
+            -180000000, 26600000, 11400000)
+        PutRow NM_EL_HEADER, 13, Array(DateSerial(2025, 10, 31), 8300000000#, 264000000, _
+            -176000000, 25900000, 11100000)
+        PutRow NM_EL_HEADER, 14, Array(DateSerial(2025, 11, 30), 8325000000#, 258000000, _
+            -172000000, 27300000, 11700000)
+        PutRow NM_EL_HEADER, 15, Array(DateSerial(2025, 12, 31), 8350000000#, 267000000, _
+            -178000000, 28700000, 12300000)
+        PutRow NM_EL_HEADER, 16, Array(DateSerial(2026, 1, 31), 8375000000#, 276000000, _
+            -184000000, 30100000, 12900000)
+        PutRow NM_EL_HEADER, 17, Array(DateSerial(2026, 2, 28), 8400000000#, 291000000, _
+            -194000000, 31500000, 13500000)
+        PutRow NM_EL_HEADER, 18, Array(DateSerial(2026, 3, 31), 8425000000#, 297000000, _
+            -198000000, 32900000, 14100000)
+        PutRow NM_EL_HEADER, 19, Array(DateSerial(2026, 4, 30), 8450000000#, 300000000, _
+            -200000000, 32200000, 13800000)
+        PutRow NM_EL_HEADER, 20, Array(DateSerial(2026, 5, 31), 8475000000#, 301200000, _
+            -200800000, 30800000, 13200000)
+        PutRow NM_EL_HEADER, 21, Array(DateSerial(2026, 6, 30), 8500000000#, 282000000, _
+            -188000000, 29400000, 12600000)
+        PutRow NM_EL_HEADER, 22, Array(DateSerial(2026, 7, 31), 8525000000#, 273000000, _
+            -182000000, 28000000, 12000000)
+        PutRow NM_EL_HEADER, 23, Array(DateSerial(2026, 8, 31), 8550000000#, 276000000, _
+            -184000000, 28700000, 12300000)
+        PutRow NM_EL_HEADER, 24, Array(DateSerial(2026, 9, 30), 8575000000#, 309000000, _
+            -206000000, 30100000, 12900000)
+
+End Sub
+
+Private Sub CaseIllustrativeEligibilitySampleMonths()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-eligibility-sample-months, on CALC-09: The
+'   synthetic sample months of the template under the CRR regime, which
+'   describe no real institution: 24 month ends whose size of the business
+'   is above the amount of Article 325a in a run of three months, in a later
+'   month and in the last month, and above that of Article 94 in one month
+'   more than twelve months back.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 40 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError); InputsIllustrativeEligibilitySampleMonths;
+'   KeepInputs; RestoreInputs; RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-eligibility-sample-months"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeEligibilitySampleMonths
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eligibility_month_status of 2024-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2024-10", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 6))
+    'Compare eligibility_month_status of 2024-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2024-11", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 2, 6))
+    'Compare eligibility_month_status of 2024-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2024-12", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 3, 6))
+    'Compare eligibility_month_status of 2025-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-01", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 6))
+    'Compare eligibility_month_status of 2025-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-02", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 6))
+    'Compare eligibility_month_status of 2025-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-03", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 6))
+    'Compare eligibility_month_status of 2025-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-04", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 7, 6))
+    'Compare eligibility_month_status of 2025-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-05", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 8, 6))
+    'Compare eligibility_month_status of 2025-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-06", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 9, 6))
+    'Compare eligibility_month_status of 2025-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-07", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 10, 6))
+    'Compare eligibility_month_status of 2025-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-08", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 11, 6))
+    'Compare eligibility_month_status of 2025-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-09", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 12, 6))
+    'Compare eligibility_month_status of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-10", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 13, 6))
+    'Compare eligibility_month_status of 2025-11 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-11", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 14, 6))
+    'Compare eligibility_month_status of 2025-12 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-12", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 15, 6))
+    'Compare eligibility_month_status of 2026-01 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-01", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 16, 6))
+    'Compare eligibility_month_status of 2026-02 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-02", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 17, 6))
+    'Compare eligibility_month_status of 2026-03 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-03", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 18, 6))
+    'Compare eligibility_month_status of 2026-04 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-04", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 19, 6))
+    'Compare eligibility_month_status of 2026-05 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-05", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 20, 6))
+    'Compare eligibility_month_status of 2026-06 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-06", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 21, 6))
+    'Compare eligibility_month_status of 2026-07 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-07", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 22, 6))
+    'Compare eligibility_month_status of 2026-08 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-08", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 23, 6))
+    'Compare eligibility_month_status of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2026-09", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 24, 6))
+    'Compare eligibility_size_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2026-09", 515000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_share_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2026-09", 0.0600583090379009, _
+            Actual, 0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_run_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2026-09", 1, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_325a of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2026-09", 2, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2026-09", "NOT MET", _
+            PlainText(RowCell(NM_EL_HEADER, 24, 9))
+    'Compare eligibility_event_325a of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2026-09", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 24, 12))
+    'Compare eligibility_size_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2026-09", 43000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_size_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_share_94 of 2026-09 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 24, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2026-09", 0.00501457725947522, _
+            Actual, 0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_share_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_run_94 of 2026-09 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 24, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2026-09", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_run_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_count_94 of 2026-09 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 24, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2026-09", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-eligibility-sample-months", vbNullString, _
+            "eligibility_count_94", "DS-11", "2026-09", Actual
+    'Compare eligibility_month_result_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2026-09", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 24, 15))
+    'Compare eligibility_event_94 of 2026-09 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2026-09", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 24, 18))
+    'Compare eligibility_status_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-325a", "NOT MET", _
+            PlainText(BlockCell(0, 0))
+    'Compare eligibility_restart_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-325a", "NO", PlainText(BlockCell(0, _
+            6))
+    'Compare eligibility_status_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-94", "MET", PlainText(BlockCell(1, 0))
+    'Compare eligibility_restart_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-restart-94", "YES", PlainText(BlockCell(1, 6))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeEqMatchedPositions()
 
 '
@@ -970,6 +2699,7 @@ Private Sub InputsIllustrativeEqMatchedPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the equity positions: 6 row(s)
 '
@@ -999,6 +2729,8 @@ Private Sub InputsIllustrativeEqMatchedPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -1223,6 +2955,7 @@ Private Sub InputsIllustrativeFxOneSidedPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 5 row(s)
 '     - the foreign exchange positions: 7 row(s)
 '
@@ -1252,6 +2985,8 @@ Private Sub InputsIllustrativeFxOneSidedPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -1463,6 +3198,7 @@ Private Sub InputsIllustrativeInvalidCoPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the commodity positions: 11 row(s)
 '
@@ -1492,6 +3228,8 @@ Private Sub InputsIllustrativeInvalidCoPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -1678,6 +3416,297 @@ CaseFailed:
 
 End Sub
 
+Private Sub InputsIllustrativeInvalidEligibilityMonths()
+
+'
+'------------------------------------------------------------------------------
+'                               TYPE CASE INPUTS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Type the inputs of the test case
+'   illustrative-invalid-eligibility-months.
+'
+' WHY THIS EXISTS
+'   The inputs of the test case are literals of the module, so that Excel
+'   reads no file; each case types them on the input sheets of the workbook.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Empties the input areas, then types:
+'     - the reporting date and the reporting currency
+'     - the regime, and the total own funds
+'     - the FX table: 1 row(s)
+'     - the month ends of Eligibility: 10 row(s)
+'
+' ERROR POLICY
+'   An error of a procedure it calls propagates to the case.
+'
+' DEPENDENCIES
+'   ClearInputs; SetNamed; PutRate; PutRow
+'
+' NOTES
+'   Replaces the inputs of the workbook.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CLEAR INPUTS
+'------------------------------------------------------------------------------
+    'Empty the input areas that the test case fills
+        ClearInputs
+
+'------------------------------------------------------------------------------
+' SET REPORTING SETTINGS
+'------------------------------------------------------------------------------
+    'Set the reporting date
+        SetNamed "AsOfDate", DateSerial(2026, 9, 30)
+    'Set the reporting currency
+        SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "CRR"
+    'Set the total own funds
+        SetNamed "TotalOwnFunds", 10000000000#
+
+'------------------------------------------------------------------------------
+' TYPE FX TABLE
+'------------------------------------------------------------------------------
+    'Type one row of the FX table for each currency of the test case
+        PutRate 1, "EUR", 1
+
+'------------------------------------------------------------------------------
+' TYPE MONTHS
+'------------------------------------------------------------------------------
+    'Type the month ends of the test case, one row each from the first row
+        PutRow NM_EL_HEADER, 1, Array(DateSerial(2025, 10, 31), 8000000000#, 100000000, 0, _
+            10000000, 0)
+        PutRow NM_EL_HEADER, 2, Array("31.11.2025", 8000000000#, 100000000, 0, 10000000, 0)
+        PutRow NM_EL_HEADER, 3, Array(20251231, 8000000000#, 100000000, 0, 10000000, 0)
+        PutRow NM_EL_HEADER, 4, Array(DateSerial(2026, 1, 15), 8000000000#, 100000000, 0, _
+            10000000, 0)
+        PutRow NM_EL_HEADER, 5, Array(DateSerial(2026, 3, 31), 8000000000#, 100000000, 0, _
+            10000000, 0)
+        PutRow NM_EL_HEADER, 6, Array(DateSerial(2026, 4, 30), 0, 100000000, 0, 10000000, 0)
+        PutRow NM_EL_HEADER, 7, Array(DateSerial(2026, 5, 31), 8000000000#, 100000000, "none", _
+            10000000, 0)
+        PutRow NM_EL_HEADER, 8, Array(Empty, 8000000000#, 100000000, 0, 10000000, 0)
+        PutRow NM_EL_HEADER, 9, Array("   ", 8000000000#, 100000000, 0, 10000000, 0)
+        PutRow NM_EL_HEADER, 10, Array(DateSerial(2026, 6, 30), 8000000000#, 100000000, 0, _
+            10000000)
+
+End Sub
+
+Private Sub CaseIllustrativeInvalidEligibilityMonths()
+
+'
+'------------------------------------------------------------------------------
+'                                   RUN CASE
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Test case illustrative-invalid-eligibility-months, on CALC-09: Synthetic
+'   month ends under the CRR regime that break each test of a row of DS-11:
+'   a month end that is a text, a number that is no date, a day that is not
+'   the last of its month, a month after a gap, total assets of zero, a
+'   total that is a text and one that is missing; two rows without a month
+'   end are skipped.
+'
+' WHY THIS EXISTS
+'   A registered test case is one case of the suite: the workbook calculates
+'   its inputs and every expected output is compared with the cell that
+'   holds it.
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   Keeps the inputs of the workbook, types those of the test case and runs
+'   the calculation. Compares each of the 22 expected outputs with the cell
+'   that holds it, a number within its tolerance and a text exactly, and
+'   records every number as a result. Then puts the inputs back and asserts
+'   it.
+'
+' ERROR POLICY
+'   An unexpected error is recorded as a failure of the case and the run
+'   continues; the inputs are put back on the success and the error path.
+'
+' DEPENDENCIES
+'   TEST_Harness (BeginCase, AssertNear, AssertEqualText, RecordResult,
+'   AssertTrue, RecordCaseError);
+'   InputsIllustrativeInvalidEligibilityMonths; KeepInputs; RestoreInputs;
+'   RunSSA_Silent of M_Main
+'
+' NOTES
+'   Replaces the inputs of the workbook and rewrites the output sheets; puts
+'   the inputs back and clears the output sheets.
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ResultText  As String   'RunSSA_Silent result line, not compared
+    Dim Actual      As Double   'Number read from the workbook
+    Dim RestoreDue  As Boolean  'True once the inputs are kept
+    Dim Detail      As String   'Why the sheets could not be restored
+
+'------------------------------------------------------------------------------
+' INITIALIZE
+'------------------------------------------------------------------------------
+    'Record an error of the case as its failure and go on with the cleanup
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "illustrative-invalid-eligibility-months"
+
+'------------------------------------------------------------------------------
+' KEEP INPUTS
+'------------------------------------------------------------------------------
+    'Keep what the input areas hold, to put it back at the end
+        KeepInputs
+    'From here the inputs are put back, whichever path ends the case
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' RUN CALCULATION
+'------------------------------------------------------------------------------
+    'Type the inputs of the test case
+        InputsIllustrativeInvalidEligibilityMonths
+    'Run the calculation; its result line is not compared
+        ResultText = RunSSA_Silent()
+
+'------------------------------------------------------------------------------
+' CHECK OUTPUTS
+'------------------------------------------------------------------------------
+    'Compare eligibility_month_status of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-2025-10", "OK", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 6))
+    'Compare eligibility_size_325a of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 7))
+        TEST_Harness.AssertNear "eligibility-size-325a-of-2025-10", 100000000, Actual, _
+            0.000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_size_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_share_325a of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 8))
+        TEST_Harness.AssertNear "eligibility-share-325a-of-2025-10", 0.0125, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_share_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_run_325a of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 10))
+        TEST_Harness.AssertNear "eligibility-run-325a-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_run_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_count_325a of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 11))
+        TEST_Harness.AssertNear "eligibility-count-325a-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_count_325a", "DS-11", "2025-10", Actual
+    'Compare eligibility_month_result_325a of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-325a-of-2025-10", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 9))
+    'Compare eligibility_event_325a of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-325a-of-2025-10", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 12))
+    'Compare eligibility_size_94 of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 13))
+        TEST_Harness.AssertNear "eligibility-size-94-of-2025-10", 10000000, Actual, 0.000001, _
+            0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_size_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_share_94 of 2025-10 with its expected value and record it
+        Actual = NumberOf(RowCell(NM_EL_HEADER, 1, 14))
+        TEST_Harness.AssertNear "eligibility-share-94-of-2025-10", 0.00125, Actual, _
+            0.000000001, 0.000000001
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_share_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_run_94 of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 16))
+        TEST_Harness.AssertNear "eligibility-run-94-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_run_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_count_94 of 2025-10 with its expected value and record it
+        Actual = ZeroIfEmpty(RowCell(NM_EL_HEADER, 1, 17))
+        TEST_Harness.AssertNear "eligibility-count-94-of-2025-10", 0, Actual, 0, 0
+        TEST_Harness.RecordResult "illustrative-invalid-eligibility-months", vbNullString, _
+            "eligibility_count_94", "DS-11", "2025-10", Actual
+    'Compare eligibility_month_result_94 of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-result-94-of-2025-10", "MET", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 15))
+    'Compare eligibility_event_94 of 2025-10 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-event-94-of-2025-10", "NO", _
+            PlainText(RowCell(NM_EL_HEADER, 1, 18))
+    'Compare eligibility_month_status of text-month-end with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-text-month-end", _
+            "INVALID: MonthEnd must be a date", PlainText(RowCell(NM_EL_HEADER, 2, 6))
+    'Compare eligibility_month_status of number-month-end with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-number-month-end", _
+            "INVALID: MonthEnd must be a date", PlainText(RowCell(NM_EL_HEADER, 3, 6))
+    'Compare eligibility_month_status of mid-month with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-mid-month", _
+            "INVALID: MonthEnd must be the last day of a month", _
+            PlainText(RowCell(NM_EL_HEADER, 4, 6))
+    'Compare eligibility_month_status of gap-of-a-month with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-gap-of-a-month", _
+            "INVALID: MonthEnd must be one month after the previous row", _
+            PlainText(RowCell(NM_EL_HEADER, 5, 6))
+    'Compare eligibility_month_status of zero-total-assets with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-zero-total-assets", _
+            "INVALID: TotalAssets must be a number greater than 0", _
+            PlainText(RowCell(NM_EL_HEADER, 6, 6))
+    'Compare eligibility_month_status of text-short-total with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-text-short-total", _
+            "INVALID: a long or short total must be a number", PlainText(RowCell(NM_EL_HEADER, _
+            7, 6))
+    'Compare eligibility_month_status of missing-short-total with its expected text
+        TEST_Harness.AssertEqualText "eligibility-month-status-of-missing-short-total", _
+            "INVALID: a long or short total must be a number", PlainText(RowCell(NM_EL_HEADER, _
+            10, 6))
+    'Compare eligibility_status_325a with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-325a", _
+            "NOT ASSESSED: a row is invalid", PlainText(BlockCell(0, 0))
+    'Compare eligibility_status_94 with its expected text
+        TEST_Harness.AssertEqualText "eligibility-status-94", _
+            "NOT ASSESSED: a row is invalid", PlainText(BlockCell(1, 0))
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+CleanUp:
+    'Stop catching errors, so that an error of the cleanup cannot come back here
+        On Error GoTo 0
+    'Put the sheets back as they were, on the success and the error path
+        If RestoreDue Then
+            Detail = RestoreInputs()
+        End If
+    'Assert once that the sheets are restored, whichever path came here
+        TEST_Harness.AssertTrue "inputs-restored", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error as a failure of the case, then clean up
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub InputsIllustrativeInvalidEqPositions()
 
 '
@@ -1700,6 +3729,7 @@ Private Sub InputsIllustrativeInvalidEqPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the equity positions: 11 row(s)
 '
@@ -1729,6 +3759,8 @@ Private Sub InputsIllustrativeInvalidEqPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -1946,6 +3978,7 @@ Private Sub InputsIllustrativeInvalidFxPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the foreign exchange positions: 9 row(s)
 '
@@ -1975,6 +4008,8 @@ Private Sub InputsIllustrativeInvalidFxPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -2171,6 +4206,7 @@ Private Sub InputsIllustrativeInvalidIrPositions()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the interest rate positions: 20 row(s)
 '
@@ -2200,6 +4236,8 @@ Private Sub InputsIllustrativeInvalidIrPositions()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -2474,6 +4512,7 @@ Private Sub InputsIllustrativeIrSpecificRiskMaturityLimits()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the interest rate positions: 8 row(s)
 '
@@ -2503,6 +4542,8 @@ Private Sub InputsIllustrativeIrSpecificRiskMaturityLimits()
         SetNamed "AsOfDate", DateSerial(2026, 12, 31)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -2678,6 +4719,7 @@ Private Sub InputsIllustrativeIrTimeBandLimits()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the interest rate positions: 14 row(s)
 '
@@ -2707,6 +4749,8 @@ Private Sub InputsIllustrativeIrTimeBandLimits()
         SetNamed "AsOfDate", DateSerial(2026, 12, 31)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -3115,6 +5159,7 @@ Private Sub InputsIllustrativeOptionCharges()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the option charges: 4 risk class(es)
 '
@@ -3144,6 +5189,8 @@ Private Sub InputsIllustrativeOptionCharges()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -3314,6 +5361,7 @@ Private Sub InputsIllustrativeRequirementFxAndOptionsOnly()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 2 row(s)
 '     - the option charges: 4 risk class(es)
 '     - the foreign exchange positions: 1 row(s)
@@ -3344,6 +5392,8 @@ Private Sub InputsIllustrativeRequirementFxAndOptionsOnly()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -3561,6 +5611,7 @@ Private Sub InputsIllustrativeSampleCommodities()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the commodity positions: 6 row(s)
 '
@@ -3590,6 +5641,8 @@ Private Sub InputsIllustrativeSampleCommodities()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -3789,6 +5842,7 @@ Private Sub InputsIllustrativeSampleEquity()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the equity positions: 11 row(s)
 '
@@ -3818,6 +5872,8 @@ Private Sub InputsIllustrativeSampleEquity()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -4115,6 +6171,7 @@ Private Sub InputsIllustrativeSampleFx()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the foreign exchange positions: 6 row(s)
 '
@@ -4144,6 +6201,8 @@ Private Sub InputsIllustrativeSampleFx()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -4375,6 +6434,7 @@ Private Sub InputsIllustrativeSampleIrGeneralMarketRisk()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the interest rate positions: 12 row(s)
 '
@@ -4404,6 +6464,8 @@ Private Sub InputsIllustrativeSampleIrGeneralMarketRisk()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -5134,6 +7196,7 @@ Private Sub InputsIllustrativeSampleIrSpecificRisk()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the interest rate positions: 12 row(s)
 '
@@ -5163,6 +7226,8 @@ Private Sub InputsIllustrativeSampleIrSpecificRisk()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -5434,6 +7499,7 @@ Private Sub InputsIllustrativeSampleRequirement()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 13 row(s)
 '     - the option charges: 4 risk class(es)
 '     - the interest rate positions: 12 row(s)
@@ -5467,6 +7533,8 @@ Private Sub InputsIllustrativeSampleRequirement()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "EUR"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -5785,6 +7853,7 @@ Private Sub InputsMar4027VerticalDisallowance()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 1 row(s)
 '     - the interest rate positions: 2 row(s)
 '
@@ -5814,6 +7883,8 @@ Private Sub InputsMar4027VerticalDisallowance()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "USD"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -6028,6 +8099,7 @@ Private Sub InputsMar4061Table9()
 ' BEHAVIOR
 '   Empties the input areas, then types:
 '     - the reporting date and the reporting currency
+'     - the regime
 '     - the FX table: 7 row(s)
 '     - the foreign exchange positions: 6 row(s)
 '
@@ -6057,6 +8129,8 @@ Private Sub InputsMar4061Table9()
         SetNamed "AsOfDate", DateSerial(2026, 9, 30)
     'Set the reporting currency
         SetNamed "ReportingCcy", "CHF"
+    'Set the regime
+        SetNamed "Regime", "Basel"
 
 '------------------------------------------------------------------------------
 ' TYPE FX TABLE
@@ -6329,23 +8403,27 @@ Private Function InputArea( _
 '   Index
 '     Long: 1 to 4: the rows of the four position sheets, as many as
 '     PositionRows gives; 5: the FX table, with its descriptions; 6 and 7:
-'     the reporting date and currency; 8 to 11: the option charges.
+'     the reporting date and currency; 8 to 11: the option charges; 12 and
+'     13: the regime and the total own funds; 14: the input columns of the
+'     rows of Eligibility.
 '
 ' RETURNS
-'   The range of the area. Nothing for an Index outside 1 to 11, since the
+'   The range of the area. Nothing for an Index outside 1 to 14, since the
 '   selection has no other branch.
 '
 ' BEHAVIOR
 '   Returns the range of the area that Index names: the table of a position
 '   sheet with the rows PositionRows gives, the FX table, the reporting
-'   date, the reporting currency or the option charge of a risk class.
+'   date, the reporting currency, the option charge of a risk class, the
+'   regime, the total own funds or the month ends of Eligibility.
 '
 ' ERROR POLICY
 '   None
 '
 ' DEPENDENCIES
-'   PositionHeader; PositionRows; the IR_, EQ_ and FX_ and CO_INPUT_WIDTH
-'   constants of CORE_Config; the workbook's names
+'   PositionHeader; PositionRows; the IR_, EQ_ and FX_ and CO_INPUT_WIDTH,
+'   NM_EL_HEADER, ELIGIBILITY_ROWS and EL_INPUT_WIDTH constants of
+'   CORE_Config; the workbook's names
 '
 ' NOTES
 '   None
@@ -6384,6 +8462,10 @@ Private Function InputArea( _
             Case 9: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "EQ").RefersToRange
             Case 10: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "CO").RefersToRange
             Case 11: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "FX").RefersToRange
+            Case 12: Set InputArea = ThisWorkbook.Names("Regime").RefersToRange
+            Case 13: Set InputArea = ThisWorkbook.Names("TotalOwnFunds").RefersToRange
+            Case 14: Set InputArea = ThisWorkbook.Names(NM_EL_HEADER).RefersToRange _
+                        .Offset(1, 0).Resize(ELIGIBILITY_ROWS, EL_INPUT_WIDTH)
         End Select
 
 End Function
@@ -6983,8 +9065,8 @@ Private Sub ClearInputs()
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Empty every input area a test case fills: the position sheets, the FX
-'   table and the option charges. The reporting date and currency are always
-'   set by the case.
+'   table, the option charges, the total own funds and the month ends. The
+'   reporting date and currency and the regime are always set by the case.
 '
 ' WHY THIS EXISTS
 '   A case replaces the inputs of the workbook with those of its test case,
@@ -6997,8 +9079,8 @@ Private Sub ClearInputs()
 '   Nothing
 '
 ' BEHAVIOR
-'   Clears the contents of every input area except 6 and 7, the reporting
-'   date and currency.
+'   Clears the contents of every input area except 6, 7 and 12, the
+'   reporting date and currency and the regime.
 '
 ' ERROR POLICY
 '   None
@@ -7021,9 +9103,9 @@ Private Sub ClearInputs()
 '------------------------------------------------------------------------------
 ' CLEAR AREAS
 '------------------------------------------------------------------------------
-    'Empty every area but the reporting date and currency
+    'Empty every area but the reporting date and currency and the regime
         For i = 1 To INPUT_AREAS
-            If i <> 6 And i <> 7 Then InputArea(i).ClearContents
+            If i <> 6 And i <> 7 And i <> 12 Then InputArea(i).ClearContents
         Next i
 
 End Sub
@@ -7039,8 +9121,8 @@ Private Sub SetNamed( _
 '   Type a value in the cell a workbook name refers to.
 '
 ' WHY THIS EXISTS
-'   The reporting date, the reporting currency and the option charges are
-'   cells that the workbook names.
+'   The reporting date, the reporting currency, the option charges, the
+'   regime and the total own funds are cells that the workbook names.
 '
 ' INPUTS
 '   CellName
@@ -7142,14 +9224,14 @@ Private Sub PutRow( _
     ByVal Values As Variant)
 '
 '------------------------------------------------------------------------------
-'                               PUT POSITION ROW
+'                                 PUT INPUT ROW
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Type one row of a position sheet.
+'   Type one row of a position sheet or of Eligibility.
 '
 ' WHY THIS EXISTS
-'   The positions of a test case are typed one row at a time, from the
-'   PositionID on.
+'   The positions and the month ends of a test case are typed one row at a
+'   time, from the first column of the table on.
 '
 ' INPUTS
 '   HeaderName
@@ -7159,15 +9241,15 @@ Private Sub PutRow( _
 '     Long: row under the header, from 1.
 '
 '   Values
-'     Variant: the cells of the row from the PositionID; Empty leaves a cell
-'     empty.
+'     Variant: the cells of the row from the header's column: the
+'     PositionID, or the month end; Empty leaves a cell empty.
 '
 ' RETURNS
 '   Nothing
 '
 ' BEHAVIOR
 '   Finds the row Index under the header and types each value of Values in
-'   the cells of the row, from the PositionID to the right.
+'   the cells of the row, from the header's column to the right.
 '
 ' ERROR POLICY
 '   None
@@ -7468,6 +9550,57 @@ Private Function NamedCell( _
 '------------------------------------------------------------------------------
     'Read the cell the name refers to
         NamedCell = ThisWorkbook.Names(CellName).RefersToRange.Value
+
+End Function
+
+Private Function BlockCell( _
+    ByVal RowOffset As Long, _
+    ByVal ColumnOffset As Long) _
+    As Variant
+'
+'------------------------------------------------------------------------------
+'                            READ RESULT BLOCK CELL
+'------------------------------------------------------------------------------
+' PURPOSE
+'   The value of one cell of the result block of Eligibility.
+'
+' WHY THIS EXISTS
+'   The status and the restart condition of each approach are cells of the
+'   result block of Eligibility.
+'
+' INPUTS
+'   RowOffset
+'     Long: 0 for Article 325a, 1 for Article 94.
+'
+'   ColumnOffset
+'     Long: columns to the right of the status.
+'
+' RETURNS
+'   The value of the cell, as Range.Value gives it.
+'
+' BEHAVIOR
+'   Reads the cell that lies RowOffset rows under the first row of the block
+'   and ColumnOffset columns to the right of its first column.
+'
+' ERROR POLICY
+'   None
+'
+' DEPENDENCIES
+'   The NM_EL_RESULTS name of CORE_Config
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-19
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' READ CELL
+'------------------------------------------------------------------------------
+    'Read the cell at the row and column offsets in the result block
+        BlockCell = ThisWorkbook.Names(NM_EL_RESULTS).RefersToRange _
+            .Cells(1 + RowOffset, 1 + ColumnOffset).Value
 
 End Function
 

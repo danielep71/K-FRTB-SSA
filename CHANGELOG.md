@@ -80,6 +80,17 @@ Use only the categories an entry needs.
   Under the Basel regime the sheet is not read. The parameters, the ladder and the
   tables of `Params` below them moved down four rows. Nothing was run in Excel
   ([#84](https://github.com/danielep71/K-FRTB-SSA/issues/84)).
+- Five registered test cases of `CALC-09`, `illustrative-eligibility-…` and
+  `illustrative-invalid-eligibility-months`: the sample months, the share and
+  the amount of each approach and one euro above them, the runs and counts that
+  make an event, a month for each test a row can fail, and the Basel regime.
+  Their values are `illustrative`, and every rule of `CALC-09` is now
+  *Exercised*. A fixture may set the regime and the total own funds under the
+  new optional key `parameters`, and lists the months of `DS-11` in the order
+  of their rows; `tools/check_test_cases.py`, `tools/prototype/run_cases.py`
+  and the `cases` suite read both, and the suite now has 25 cases and 637
+  assertions. In LibreOffice every expected value is in the workbook; nothing
+  was run in Excel ([#84](https://github.com/danielep71/K-FRTB-SSA/issues/84)).
 - The options and the market of the equity risk under the `CRR` regime,
   compared with Delegated Regulations (EU) No 528/2014 and No 525/2014, whose
   Official Journal texts are now read and `verified` in the source register

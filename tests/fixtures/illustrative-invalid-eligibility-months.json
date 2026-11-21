@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-invalid-eligibility-months",
+  "synthetic": true,
+  "description": "Synthetic month ends under the CRR regime that break each test of a row of DS-11: a month end that is a text, a number that is no date, a day that is not the last of its month, a month after a gap, total assets of zero, a total that is a text and one that is missing; two rows without a month end are skipped",
+  "category": "invalid",
+  "calculation": "CALC-09",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-11": [
+      {"id": "2025-10", "inputs": {"month_end_date": "2025-10-31", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "text-month-end", "inputs": {"month_end_date": "31.11.2025", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "number-month-end", "inputs": {"month_end_date": 20251231, "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "mid-month", "inputs": {"month_end_date": "2026-01-15", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "gap-of-a-month", "inputs": {"month_end_date": "2026-03-31", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "zero-total-assets", "inputs": {"month_end_date": "2026-04-30", "total_assets_amount": 0, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "text-short-total", "inputs": {"month_end_date": "2026-05-31", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": "none", "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "no-month-end", "inputs": {"month_end_date": null, "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "blank-month-end", "inputs": {"month_end_date": "   ", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": 0, "currency_code": "EUR"}},
+      {"id": "missing-short-total", "inputs": {"month_end_date": "2026-06-30", "total_assets_amount": 8000000000, "long_325a_amount": 100000000, "short_325a_amount": 0, "long_94_amount": 10000000, "short_94_amount": null, "currency_code": "EUR"}}
+    ]
+  }
+}
