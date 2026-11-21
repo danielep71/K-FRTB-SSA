@@ -172,7 +172,8 @@ Option Private Module
     Public Const IR_CATEGORY    As Long = 11    'GOV, QUAL, OTHER or NONE
     Public Const IR_GRADE       As Long = 12    'Rating grade
     Public Const IR_ISSUE       As Long = 13    'Issue ID for specific-risk netting
-    Public Const IR_INPUT_WIDTH As Long = 14    'Columns read
+    Public Const IR_BOOK        As Long = 14    'Trading, Non-trading or blank (Trading)
+    Public Const IR_INPUT_WIDTH As Long = 15    'Columns read
 
     'Equity positions (EQPositions).
     Public Const EQ_ID          As Long = 1     'PositionID
@@ -182,7 +183,8 @@ Option Private Module
     Public Const EQ_CCY         As Long = 6     'Currency
     Public Const EQ_DIRECTION   As Long = 7     'Long or Short
     Public Const EQ_VALUE       As Long = 8     'Market value, currency units
-    Public Const EQ_INPUT_WIDTH As Long = 9     'Columns read
+    Public Const EQ_BOOK        As Long = 9     'Trading, Non-trading or blank (Trading)
+    Public Const EQ_INPUT_WIDTH As Long = 10    'Columns read
 
     'Commodity positions (COPositions).
     Public Const CO_ID          As Long = 1     'PositionID
@@ -191,14 +193,16 @@ Option Private Module
     Public Const CO_QUANTITY    As Long = 5     'Quantity, units of the commodity
     Public Const CO_PRICE       As Long = 7     'Spot price, currency per unit
     Public Const CO_CCY         As Long = 8     'Currency of the price
-    Public Const CO_INPUT_WIDTH As Long = 10    'Columns read
+    Public Const CO_BOOK        As Long = 10    'Trading, Non-trading or blank (Trading)
+    Public Const CO_INPUT_WIDTH As Long = 11    'Columns read
 
     'FX and gold positions (FXPositions).
     Public Const FX_ID          As Long = 1     'PositionID
     Public Const FX_CCY         As Long = 3     'Currency (gold: GoldCode)
     Public Const FX_DIRECTION   As Long = 4     'Long or Short
     Public Const FX_AMOUNT      As Long = 5     'Amount, currency units
-    Public Const FX_INPUT_WIDTH As Long = 6     'Columns read
+    Public Const FX_BOOK        As Long = 6     'Trading, Non-trading or blank (Trading)
+    Public Const FX_INPUT_WIDTH As Long = 7     'Columns read
 
     'Size of the business by month end (Eligibility), amounts in euro.
     Public Const EL_MONTH       As Long = 1     'Month end, a date
@@ -241,7 +245,7 @@ Option Private Module
     Public Const TOT_OTHER      As Long = 3     'EQ index charge, CO gross charge
     Public Const TOT_USED       As Long = 4     'InputRows with status OK
     Public Const TOT_REJECTED   As Long = 5     'InputRows with status INVALID
-    Public Const TOT_EXCLUDED   As Long = 6     'InputRows with status EXCLUDED (FX)
+    Public Const TOT_EXCLUDED   As Long = 6     'InputRows with status EXCLUDED
     Public Const TOT_MIXED      As Long = 7     'IR rows flagged MIXED
     Public Const TOT_BUCKETS    As Long = 8     'EQ markets or commodities found
     Public Const TOT_LONG       As Long = 9     'FX: sum of net long currencies
@@ -446,6 +450,8 @@ Option Private Module
     Public Const ST_OK              As String = "OK"                            'Row used
     Public Const ST_INVALID         As String = "INVALID: "                     'Prefix, row rejected
     Public Const ST_EXCLUDED        As String = "EXCLUDED: "                    'Prefix, row out of scope
+    Public Const BOOK_TRADING       As String = "TRADING"                       'Book code, as CodeText reads it
+    Public Const BOOK_NON_TRADING   As String = "NON-TRADING"                   'Book code, as CodeText reads it
     Public Const SEV_ERROR          As String = "ERROR"                         'Checks severity
     Public Const SEV_WARNING        As String = "WARNING"                       'Checks severity
     Public Const SEV_INFO           As String = "INFO"                          'Checks severity
@@ -482,11 +488,12 @@ Option Private Module
     Public Const RULE_PARAMS        As String = "C14"   'Unusable parameter or table value, rows over MAX_POSITION_ROWS
     Public Const RULE_EL_ROWS       As String = "C15"   'Eligibility rows rejected, CRR regime
     Public Const RULE_EL_STATUS     As String = "C16"   'Approaches NOT MET or to CEASE, CRR regime
-    Public Const RULE_COUNT         As Long = 16        'Rules C01 to C16
+    Public Const RULE_NON_TRADING   As String = "C17"   'Non-trading IR and EQ rows excluded
+    Public Const RULE_COUNT         As Long = 17        'Rules C01 to C17
 
-    'Severity of rules C01 to C16, in order
+    'Severity of rules C01 to C17, in order
     Public Const RULE_SEVERITIES    As String = _
-        "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING"
+        "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING|WARNING"
 
 '------------------------------------------------------------------------------
 ' ERROR NUMBERS

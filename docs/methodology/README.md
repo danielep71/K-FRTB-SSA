@@ -35,6 +35,8 @@ The workbook's scope, feature by feature:
 | Foreign exchange risk, gold included, by the shorthand method | Supported | `CALC-06` | From the net position entered per currency |
 | The requirement with its scaling factors, and the risk-weighted assets | Supported | `CALC-08` | |
 | Under the `CRR` regime, the size conditions of the simplified standardised approach (Article 325a) and of the small trading book derogation (Article 94) | Supported | `CALC-09`; `DS-11` | From the monthly totals entered; a finding that changes no requirement |
+| The book of a position: the non-trading book positions subject to foreign exchange or commodity risk, calculated as trading book ones | Supported | `CALC-05`, `CALC-06`; `DS-06.book` to `DS-09.book` | At the value entered, an assumption: the technical standards of Article 325(9) cover the alternative approaches only |
+| Non-trading book interest rate and equity positions | Not supported | `CALC-03`, `CALC-04`; `DS-06.book`, `DS-07.book` | Outside the scope of the market risk requirement: excluded, with a warning of `Checks` (`C17`) |
 | Non-delta charges for options: the simplified approach, the gamma and vega charges of the delta-plus method, the scenario approach | Entered by the user | `CALC-07`; `DS-10.charge` | One value per risk class, added before scaling |
 | Conversion of derivatives into positions in the underlying, and the delta-equivalent of an option | Entered by the user | The rows of `DS-06` to `DS-09` | The workbook converts nothing: each leg is a row |
 | The category and the rating grade of an issuer | Entered by the user | `DS-06.sr_category` and `DS-06.rating_grade` | The workbook does not apply the qualifying criteria |

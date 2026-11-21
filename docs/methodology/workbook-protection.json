@@ -48,28 +48,14 @@
         "formatRows": false
       },
       "input": [
-        "C5:P504"
+        "C5:Q504"
       ],
       "output": [
-        "A1:P4",
+        "A1:Q4",
         "A5:B504"
       ]
     },
     "shEQPositions": {
-      "protection": {
-        "sheet": true,
-        "formatColumns": false,
-        "formatRows": false
-      },
-      "input": [
-        "C5:K504"
-      ],
-      "output": [
-        "A1:K4",
-        "A5:B504"
-      ]
-    },
-    "shCOPositions": {
       "protection": {
         "sheet": true,
         "formatColumns": false,
@@ -83,6 +69,20 @@
         "A5:B504"
       ]
     },
+    "shCOPositions": {
+      "protection": {
+        "sheet": true,
+        "formatColumns": false,
+        "formatRows": false
+      },
+      "input": [
+        "C5:M504"
+      ],
+      "output": [
+        "A1:M4",
+        "A5:B504"
+      ]
+    },
     "shFXPositions": {
       "protection": {
         "sheet": true,
@@ -90,10 +90,10 @@
         "formatRows": false
       },
       "input": [
-        "C5:H504"
+        "C5:I504"
       ],
       "output": [
-        "A1:H4",
+        "A1:I4",
         "A5:B504"
       ]
     },
@@ -214,7 +214,7 @@
         "formatRows": false
       },
       "output": [
-        "A1:J86"
+        "A1:J87"
       ]
     },
     "shTestCatalogue": {

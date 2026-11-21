@@ -45,7 +45,7 @@ the row says so, and the rule is an assumption
 | 4 | Risk-weighted assets are the requirement multiplied by 12.5 | Article 92(6), point (b): the own funds requirements of Article 92(4), points (b) to (f), multiplied by 12.5 | **Same** | |
 | | No transitional multiplier | Article 495s(2), of `SRC-06`: until 2029-12-31, a multiplier of 0.9 on the result of the simplified standardised approach; Article 495v does not apply to an institution that applies only Articles 326 to 361 | **CRR only** | [#77](https://github.com/danielep71/K-FRTB-SSA/issues/77) |
 | | The workbook does not decide whether the approach may be used | Article 325a(1) and (2): at most 10% of total assets and EUR 500 million, assessed monthly; Article 94: 5% and EUR 50 million | **CRR only**: the workbook gives a finding from the months the user enters, and decides nothing: see `CALC-09` below | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
-| | The requirement is that of the positions entered, with no trading book boundary | Article 325(1): all trading book positions and all non-trading book positions subject to foreign exchange or commodity risk | **CRR only** | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
+| | A position's book is `Trading` or `Non-trading`, and blank is `Trading`. The non-trading book rows of foreign exchange and commodities are calculated as trading book ones; those of interest rate and equity are excluded and reported by `C17`, under both regimes | Article 325(1): all trading book positions and all non-trading book positions subject to foreign exchange or commodity risk; Article 325(9): how the requirement for the latter is calculated is left to technical standards, `SRC-09` and `SRC-10` | **Same** in the scope. **Open** in the calculation: the standards value the non-trading book positions for the alternative standardised and the alternative internal model approaches only, so under the simplified standardised approach the calculation as trading book positions, at the value entered, is an assumption | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 
 ## Interest rate risk, specific risk, `CALC-02`
 
@@ -110,6 +110,7 @@ the row says so, and the rule is an assumption
 | | | Article 357(5): commodities transferred in a repurchase agreement or lent are included | **CRR only**; enter them as positions (#82) | [#82](https://github.com/danielep71/K-FRTB-SSA/issues/82) |
 | | A derivative is entered as a notional position | Article 358(1) and (2): futures, forwards and swaps as notional amounts with a maturity | **Same** in that the workbook converts nothing | |
 | | Gold is FX risk and rejected as a commodity | Article 357(2) | **Same** | |
+| | A non-trading book position is calculated as a trading book one, at the spot price entered | Article 325(1) and (9); Article 2 of `SRC-09`: under the alternative standardised approach, the latest available fair value, measured at least monthly | **Open**: `SRC-09` does not cover the simplified standardised approach; the spot price of step 1 is an assumption for the non-trading book | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 
 ## Foreign exchange risk, `CALC-06`
 
@@ -122,6 +123,7 @@ the row says so, and the rule is an assumption
 | | | Article 354: lower requirements for closely correlated currencies, 4% of the matched position, and 1.6% for the matched positions in the currencies of Member States participating in the second stage of the economic and monetary union; the list of currencies is left to technical standards | **CRR only**; not supported, see `CALC-06` | [#78](https://github.com/danielep71/K-FRTB-SSA/issues/78) |
 | | | Article 104c: with permission, the exclusion of a position that hedges a capital ratio; Article 325(1): no requirement for positions deducted from own funds | **CRR only**; not supported: leave the position out of the input | [#78](https://github.com/danielep71/K-FRTB-SSA/issues/78) |
 | | A row in the reporting currency carries no FX risk | Article 352(4): the currencies other than the reporting currency | **Same** | |
+| | A non-trading book position is calculated as a trading book one, at the net position entered | Article 325(1) and (9); Article 1 of `SRC-09`: under the alternative standardised approach, the last available accounting value, or fair value where all non-trading book positions are measured at it at least quarterly, updated at least monthly for the exchange rates; `SRC-10` adds the translation risk of a consolidated calculation | **Open**: `SRC-09` does not cover the simplified standardised approach; the value of the net position is the user's, as under step 1, and the calculation is an assumption | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 
 ## Options, `CALC-07`
 
@@ -153,7 +155,8 @@ derogation for small trading book business, Article 94. It does so under the
 | 7 | The restart condition is `YES` where 12 months are entered and the conditions are met in each of the last 12 | Article 325a(6); Article 94(8) | **Same** in the condition. The permission of the competent authority is the institution's step | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
 | 8 | Not assessed under the Basel regime | Article 325a | **Same**: a rule of the CRR | |
 | | The notifications, the period of three months to cease and the prohibition of a new use are not calculated | Article 325a(3), (4) and (7); Article 94(5), (6) and (9) | **CRR only**: the institution's obligations, documented and not calculated | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
-| | The simpler requirement and the relief of the derogation are not calculated | Article 94(2); Article 495u of `SRC-06` | **CRR only**; not supported | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| | The simpler requirement and the relief of the derogation are not calculated | Article 94(2) | **CRR only**; not supported | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
+| | The workbook calculates every position by Article 325(2), and has no parameter for Article 495u | Article 495u of `SRC-06`: an institution eligible for the derogation of Article 94 may calculate its non-trading book positions subject to foreign exchange or commodity risk by Article 325(2), until 2029-12-31 | **CRR only**; not supported as a parameter: entered alone, those positions are calculated as the article allows, and the workbook neither knows whether the institution uses the derogation nor checks the end date | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 
 ## What the CRR holds that no contract has
 
@@ -163,8 +166,7 @@ derogation for small trading book business, Article 94. It does so under the
 | Underwriting | Articles 345 to 347, read by title | Outside the scope: no issue |
 | Collective investment undertakings | Articles 348 to 350 and 353; the rates of Article 348(1) are in `CALC-04` above | [#81](https://github.com/danielep71/K-FRTB-SSA/issues/81) |
 | Size conditions and the derogation for small trading book business | Articles 325a and 94; the finding is `CALC-09` above, and its limits are listed there | [#84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
-| The transitional multiplier and the derogation of Article 495u | `SRC-06` | [#77](https://github.com/danielep71/K-FRTB-SSA/issues/77), [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
-| Non-trading book positions subject to foreign exchange or commodity risk | Articles 325(1) and 325(9) | [#85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
+| The transitional multiplier | `SRC-06` | [#77](https://github.com/danielep71/K-FRTB-SSA/issues/77) |
 
 ## What was not compared
 

@@ -335,7 +335,7 @@ from an entry point without arguments:
 <!-- BEGIN generated: project-suite-results -->
 | Suite | Type | A passing run ends with |
 | --- | --- | --- |
-| `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=16; assertions=210; failures=0; cleanup=PASS; recovery=NONE` |
+| `core` | `TEST_Suite.RunCoreTests` | `RESULT=PASS; suite=core; operation=PASS; completeness=COMPLETE; cases=17; assertions=230; failures=0; cleanup=PASS; recovery=NONE` |
 | `workbook` | `TEST_Workbook.RunWorkbookTests` | `RESULT=PASS; suite=workbook; operation=PASS; completeness=COMPLETE; cases=5; assertions=56; failures=0; cleanup=PASS; recovery=NONE` |
 | `probes` | `TEST_Probes.RunProbeTests` | `RESULT=PASS; suite=probes; operation=PASS; completeness=COMPLETE; cases=7; assertions=49; failures=0; cleanup=PASS; recovery=NONE` |
 | `cases` | `TEST_Cases.RunCaseTests` | `RESULT=PASS; suite=cases; operation=PASS; completeness=COMPLETE; cases=25; assertions=637; failures=0; cleanup=PASS; recovery=NONE` |

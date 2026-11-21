@@ -51,7 +51,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -134,14 +134,15 @@ Public Sub CalculateEquity( _
 '     - MarketOutput: (1 To k + 1, 1 To BK_EQ_WIDTH), Buckets C:L, one row
 '       per market in order of first valid row, then a total row (k >= 0)
 '     - Totals: (1 To TOT_COUNT): TOT_SPECIFIC (single names), TOT_GENERAL,
-'       TOT_OTHER (index charge), TOT_USED, TOT_REJECTED, TOT_BUCKETS
-'       (markets)
+'       TOT_OTHER (index charge), TOT_USED, TOT_REJECTED, TOT_EXCLUDED
+'       (non-trading book rows), TOT_BUCKETS (markets)
 '
 ' BEHAVIOR
 '   Works in this order:
 '     - checks the width of InputRows
 '     - counts the uses of each PositionID
-'     - validates each row, converts a valid row to the reporting currency
+'     - validates each row, the book first after the PositionID
+'       (BookStatus: a non-trading book row is EXCLUDED), converts a valid row to the reporting currency
 '       with its signed value and adds it to the net of its stock or index
 '     - charges each net position once, on its first row: the index rate
 '       for an index, PI_EQ_SPECIFIC for a single name
@@ -152,11 +153,12 @@ Public Sub CalculateEquity( _
 ' ERROR POLICY
 '   Raises ERR_ARGUMENT when InputRows is not EQ_INPUT_WIDTH wide. A row that
 '   fails validation gets an INVALID status, is counted in TOT_REJECTED and
-'   contributes nothing; it never raises
+'   contributes nothing; it never raises. A non-trading book row gets an
+'   EXCLUDED status, is counted in TOT_EXCLUDED and contributes nothing
 '
 ' DEPENDENCIES
-'   CodeText, PlainText, KeyPosition, FindCode, DirectionSign,
-'   IsNumberValue, NumberValue and WriteTotalRow
+'   CodeText, PlainText, KeyPosition, FindCode, DirectionSign, BookStatus,
+'   IsInvalidStatus, IsNumberValue, NumberValue and WriteTotalRow
 '
 '   Reference: MAR40.43 (8% specific and 8% general), MAR40.46 (identical
 '   equity or index nets), MAR40.47 (further 2% on the net position per
@@ -170,7 +172,7 @@ Public Sub CalculateEquity( _
 '   Owns no state; writes only RowOutput, MarketOutput and Totals
 '
 ' UPDATED
-'   2026-11-20
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -246,6 +248,8 @@ Public Sub CalculateEquity( _
                 'Take the first validation rule that the row breaks as its status
                 If IdUses(KeyPosition(Ids, IdCount, CodeText(InputRows(r, EQ_ID)), False)) > 1 Then
                     Status = ST_INVALID & "duplicate PositionID"
+                ElseIf Len(BookStatus(InputRows(r, EQ_BOOK), False)) > 0 Then
+                    Status = BookStatus(InputRows(r, EQ_BOOK), False)
                 ElseIf Len(Market) = 0 Then
                     Status = ST_INVALID & "Market missing"
                 ElseIf TypeCode <> TYPE_SINGLE And TypeCode <> TYPE_INDEX Then
@@ -291,11 +295,14 @@ Public Sub CalculateEquity( _
                     End If
                     'Count the row as used
                     Totals(TOT_USED) = Totals(TOT_USED) + 1
-                Else
+                ElseIf IsInvalidStatus(Status) Then
                     'Number the rejected row and count it
                     ErrorNumber = ErrorNumber + 1
                     RowOutput(r, OC_ERROR_NO) = ErrorNumber
                     Totals(TOT_REJECTED) = Totals(TOT_REJECTED) + 1
+                Else
+                    'Count the excluded row
+                    Totals(TOT_EXCLUDED) = Totals(TOT_EXCLUDED) + 1
                 End If
             End If
         Next r

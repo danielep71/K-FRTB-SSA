@@ -39,7 +39,8 @@ Option Private Module
 '
 ' ERROR POLICY
 '   Cell content never raises: an unusable row gets an INVALID status and
-'   contributes nothing. ERR_ARGUMENT is raised for arrays of the wrong shape
+'   contributes nothing, and a non-trading book row an EXCLUDED status.
+'   ERR_ARGUMENT is raised for arrays of the wrong shape
 '
 ' DEPENDENCIES
 '   CORE_Config and CORE_Util
@@ -59,7 +60,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -190,7 +191,8 @@ Public Sub CalculateInterestRate( _
 '     - ZoneOutput: (1 To m + 1, 1 To ZONES_WIDTH), the IR_Zones columns C:AF,
 '       one row per FX table slot and a total row
 '     - Totals: (1 To TOT_COUNT) with TOT_SPECIFIC and TOT_GENERAL (reporting
-'       currency), TOT_USED, TOT_REJECTED and TOT_MIXED
+'       currency), TOT_USED, TOT_REJECTED, TOT_EXCLUDED (non-trading book
+'       rows) and TOT_MIXED
 '
 ' BEHAVIOR
 '   Checks the width of InputRows and sizes the outputs, then:
@@ -209,6 +211,7 @@ Public Sub CalculateInterestRate( _
 ' ERROR POLICY
 '   Raises ERR_ARGUMENT when InputRows is not IR_INPUT_WIDTH wide. Cell content
 '   never raises: an unusable row gets an INVALID status and contributes
+'   nothing; a non-trading book row gets an EXCLUDED status and contributes
 '   nothing
 '
 ' DEPENDENCIES
@@ -225,7 +228,7 @@ Public Sub CalculateInterestRate( _
 '   The procedure owns no state; it depends only on its arguments
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -387,6 +390,9 @@ Public Sub CalculateInterestRate( _
                     ErrorNumber = ErrorNumber + 1
                     RowOutput(r, OC_ERROR_NO) = ErrorNumber
                     Totals(TOT_REJECTED) = Totals(TOT_REJECTED) + 1
+                Else
+                    'Count the excluded row
+                    Totals(TOT_EXCLUDED) = Totals(TOT_EXCLUDED) + 1
                 End If
             End If
         Next r
@@ -857,7 +863,7 @@ Private Function RowStatus( _
 '     InputRows sharing this PositionID (1 = unique)
 '
 ' RETURNS
-'   "OK" or "INVALID: reason". An instrument that is not one of the values the
+'   "OK", "INVALID: reason" or "EXCLUDED: reason". An instrument that is not one of the values the
 '   data contract allows (IsKnownInstrument) is a reason. A final maturity, or
 '   the next repricing date of a floating-rate row, that is a number but not
 '   the serial of a date (CORE_Util.IsDateSerial) is a reason
@@ -865,8 +871,10 @@ Private Function RowStatus( _
 ' BEHAVIOR
 '   Tests the row in this order and returns the reason of the first check that
 '   fails:
-'     - duplicate PositionID, unknown instrument, currency not in the FX table,
-'       gold currency
+'     - duplicate PositionID, then the book (BookStatus: a value that is not
+'       Trading, Non-trading or blank is invalid, and the non-trading book is
+'       EXCLUDED)
+'     - unknown instrument, currency not in the FX table, gold currency
 '     - direction, position value (a number, >= 0), rate type
 '     - final maturity (present, a date, not before AsOfDate)
 '     - coupon of a fixed-rate row
@@ -881,7 +889,8 @@ Private Function RowStatus( _
 '
 ' DEPENDENCIES
 '   IsKnownInstrument; CORE_Util (CodeText, FindCode, DirectionSign,
-'   IsNumberValue, NumberValue and IsDateSerial); CORE_Config constants
+'   BookStatus, IsNumberValue, NumberValue and IsDateSerial); CORE_Config
+'   constants
 '
 '   Reference: MAR40.6 and Article 336 of the CRR for the specific risk charge,
 '   as named in the status texts; DS-06 for the instrument values
@@ -890,7 +899,7 @@ Private Function RowStatus( _
 '   None
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -914,6 +923,8 @@ Private Function RowStatus( _
     'Return the first reason the row is rejected, or OK
         If IdUses > 1 Then
             RowStatus = ST_INVALID & "duplicate PositionID"
+        ElseIf Len(BookStatus(InputRows(r, IR_BOOK), False)) > 0 Then
+            RowStatus = BookStatus(InputRows(r, IR_BOOK), False)
         ElseIf Not IsKnownInstrument(InputRows(r, IR_INSTRUMENT)) Then
             RowStatus = ST_INVALID & "Instrument must be Bond, FRN, Swap leg, Future leg, " & _
                         "FRA leg, Forward leg or Other"

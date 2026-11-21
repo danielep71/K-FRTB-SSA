@@ -29,10 +29,24 @@ ROW_MODULES = {"CALC-03": "CORE_InterestRate.bas", "CALC-04": "CORE_Equity.bas",
 PREFIXES = {"ST_INVALID": "INVALID: ", "ST_EXCLUDED": "EXCLUDED: "}
 STATUS_IN_SOURCE = re.compile(r'\b(ST_INVALID|ST_EXCLUDED) & "([^"]+)"')
 STATUS_IN_CONTRACT = re.compile(r"^- `((?:INVALID|EXCLUDED): [^`]+)`$", re.M)
+# A call of CORE_Util.BookStatus, with whether the class takes in its non-trading book.
+BOOK_CALL = re.compile(r"\bBookStatus\(InputRows\([^)]*\), (True|False)\)")
 
 
 def vba(name: str) -> str:
     return (CORE / name).read_bytes().decode("cp1252").replace("\r\n", "\n")
+
+
+def book_statuses(source: str) -> set[str]:
+    """The statuses that the calls of CORE_Util.BookStatus in a module's source give: the
+    invalid book always, and the excluded non-trading book where the class leaves it out."""
+    util = re.search(r"Public Function BookStatus\(.*?^End Function", vba("CORE_Util.bas"), re.M | re.S)
+    assert util is not None
+    texts = {PREFIXES[prefix] + text for prefix, text in STATUS_IN_SOURCE.findall(util.group(0))}
+    scopes = set(BOOK_CALL.findall(source))
+    if not scopes:
+        return set()
+    return {text for text in texts if text.startswith("INVALID") or "False" in scopes}
 
 
 def contract(calculation: str) -> str:
@@ -59,7 +73,7 @@ class StatusTexts(unittest.TestCase):
                 # A text that the source continues on the next line is one text.
                 source = re.sub(r'"\s*&\s*_\s*\n\s*"', "", vba(module))
                 given = {PREFIXES[prefix] + text
-                         for prefix, text in STATUS_IN_SOURCE.findall(source)}
+                         for prefix, text in STATUS_IN_SOURCE.findall(source)} | book_statuses(source)
                 listed = set(STATUS_IN_CONTRACT.findall(contract(calculation)))
                 self.assertTrue(given)
                 self.assertEqual(listed, given)

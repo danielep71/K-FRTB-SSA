@@ -27,7 +27,7 @@ Option Private Module
 ' BEHAVIOR
 '   Groups the helpers in six families:
 '     - value classification: IsNumberValue, NumberValue, IsDateSerial,
-'       PlainText, CodeText, DirectionSign and IsInvalidStatus
+'       PlainText, CodeText, DirectionSign, BookStatus and IsInvalidStatus
 '     - lookups: FindCode and KeyPosition
 '     - delimited lists: ParseList and ListItem
 '     - findings: AddFinding
@@ -41,7 +41,8 @@ Option Private Module
 '   list with the wrong number of items
 '
 ' DEPENDENCIES
-'   CORE_Config (DATE_SERIAL_MIN, DATE_SERIAL_MAX, ST_INVALID and ERR_ARGUMENT)
+'   CORE_Config (DATE_SERIAL_MIN, DATE_SERIAL_MAX, ST_INVALID, ST_EXCLUDED,
+'   BOOK_TRADING, BOOK_NON_TRADING and ERR_ARGUMENT)
 '
 ' NOTES
 '   Public surface: None outside this VBA project (Option Private Module). The
@@ -56,7 +57,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -382,6 +383,79 @@ Public Function DirectionSign( _
                 DirectionSign = -1#
             Case Else
                 DirectionSign = 0#
+        End Select
+
+End Function
+
+Public Function BookStatus( _
+    ByVal Value As Variant, _
+    ByVal NonTradingInScope As Boolean) _
+    As String
+'
+'------------------------------------------------------------------------------
+'                             RETURN BOOK STATUS
+'------------------------------------------------------------------------------
+' PURPOSE
+'   Returns the status a Book cell gives a position row, or an empty string
+'   when the row goes on to the other tests
+'
+' WHY THIS EXISTS
+'   The four position sheets read the Book column the same way: a blank cell
+'   is the trading book, and only the risk class decides whether a
+'   non-trading book position is in the scope of the market risk requirement
+'
+' INPUTS
+'   Value
+'     Book cell: "Trading", "Non-trading" or blank, any case
+'
+'   NonTradingInScope
+'     True for a risk class whose non-trading book positions are in the scope
+'     (foreign exchange and commodities); False for one whose are not
+'     (interest rate and equity)
+'
+' RETURNS
+'   An empty string for the trading book, and for the non-trading book when
+'   NonTradingInScope is True; "INVALID: Book must be Trading or
+'   Non-trading" for any other value; "EXCLUDED: non-trading book position
+'   outside the market risk scope" for the non-trading book when
+'   NonTradingInScope is False
+'
+' BEHAVIOR
+'   Normalises the value with CodeText and compares it with BOOK_TRADING and
+'   BOOK_NON_TRADING
+'
+' ERROR POLICY
+'   Never raises: an error value reads as text and is invalid
+'
+' DEPENDENCIES
+'   CodeText; ST_INVALID, ST_EXCLUDED, BOOK_TRADING and BOOK_NON_TRADING of
+'   CORE_Config
+'
+'   Reference: Regulation (EU) No 575/2013, Article 325(1); BCBS RBC25.1 and
+'   MAR12.6
+'
+' NOTES
+'   None
+'
+' UPDATED
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' MAP BOOK
+'------------------------------------------------------------------------------
+    'Map the book code to the status it gives the row
+        Select Case CodeText(Value)
+            Case vbNullString, BOOK_TRADING
+                BookStatus = vbNullString
+            Case BOOK_NON_TRADING
+                If NonTradingInScope Then
+                    BookStatus = vbNullString
+                Else
+                    BookStatus = ST_EXCLUDED & "non-trading book position outside the market risk scope"
+                End If
+            Case Else
+                BookStatus = ST_INVALID & "Book must be Trading or Non-trading"
         End Select
 
 End Function

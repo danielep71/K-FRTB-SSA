@@ -51,12 +51,13 @@ POSITIONS: dict[str, tuple[str, tuple[str | None, ...]]] = {
     "DS-06": ("IRPositions", (None, "instrument_code", "currency_code", "direction_code",
                               "position_value_amount", "rate_type_code", "coupon_rate",
                               "final_maturity_date", "next_repricing_date", "sr_category_code",
-                              "rating_grade_code", "issue_id", None)),
+                              "rating_grade_code", "issue_id", "book_code", None)),
     "DS-07": ("EQPositions", (None, "market_code", "type_code", "identifier_code", "currency_code",
-                              "direction_code", "market_value_amount", None)),
+                              "direction_code", "market_value_amount", "book_code", None)),
     "DS-08": ("COPositions", (None, "commodity_code", "direction_code", "quantity_count", None,
-                              "spot_price_amount", "currency_code", None, None)),
-    "DS-09": ("FXPositions", (None, "currency_code", "direction_code", "net_position_amount", None)),
+                              "spot_price_amount", "currency_code", None, "book_code", None)),
+    "DS-09": ("FXPositions", (None, "currency_code", "direction_code", "net_position_amount",
+                              "book_code", None)),
 }
 # A quantity of one position row: its calculation sheet and column.
 ROW_OUTPUTS = {"ir_position_status": ("IRCalc", 4), "ir_time_band": ("IRCalc", 11),

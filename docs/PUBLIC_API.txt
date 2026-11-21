@@ -156,8 +156,10 @@ CORE_Config	Const	IR_GRADE
 # SIG	CORE_Config	Const	IR_GRADE	Public Const IR_GRADE As Long = 12
 CORE_Config	Const	IR_ISSUE
 # SIG	CORE_Config	Const	IR_ISSUE	Public Const IR_ISSUE As Long = 13
+CORE_Config	Const	IR_BOOK
+# SIG	CORE_Config	Const	IR_BOOK	Public Const IR_BOOK As Long = 14
 CORE_Config	Const	IR_INPUT_WIDTH
-# SIG	CORE_Config	Const	IR_INPUT_WIDTH	Public Const IR_INPUT_WIDTH As Long = 14
+# SIG	CORE_Config	Const	IR_INPUT_WIDTH	Public Const IR_INPUT_WIDTH As Long = 15
 CORE_Config	Const	EQ_ID
 # SIG	CORE_Config	Const	EQ_ID	Public Const EQ_ID As Long = 1
 CORE_Config	Const	EQ_MARKET
@@ -172,8 +174,10 @@ CORE_Config	Const	EQ_DIRECTION
 # SIG	CORE_Config	Const	EQ_DIRECTION	Public Const EQ_DIRECTION As Long = 7
 CORE_Config	Const	EQ_VALUE
 # SIG	CORE_Config	Const	EQ_VALUE	Public Const EQ_VALUE As Long = 8
+CORE_Config	Const	EQ_BOOK
+# SIG	CORE_Config	Const	EQ_BOOK	Public Const EQ_BOOK As Long = 9
 CORE_Config	Const	EQ_INPUT_WIDTH
-# SIG	CORE_Config	Const	EQ_INPUT_WIDTH	Public Const EQ_INPUT_WIDTH As Long = 9
+# SIG	CORE_Config	Const	EQ_INPUT_WIDTH	Public Const EQ_INPUT_WIDTH As Long = 10
 CORE_Config	Const	CO_ID
 # SIG	CORE_Config	Const	CO_ID	Public Const CO_ID As Long = 1
 CORE_Config	Const	CO_COMMODITY
@@ -186,8 +190,10 @@ CORE_Config	Const	CO_PRICE
 # SIG	CORE_Config	Const	CO_PRICE	Public Const CO_PRICE As Long = 7
 CORE_Config	Const	CO_CCY
 # SIG	CORE_Config	Const	CO_CCY	Public Const CO_CCY As Long = 8
+CORE_Config	Const	CO_BOOK
+# SIG	CORE_Config	Const	CO_BOOK	Public Const CO_BOOK As Long = 10
 CORE_Config	Const	CO_INPUT_WIDTH
-# SIG	CORE_Config	Const	CO_INPUT_WIDTH	Public Const CO_INPUT_WIDTH As Long = 10
+# SIG	CORE_Config	Const	CO_INPUT_WIDTH	Public Const CO_INPUT_WIDTH As Long = 11
 CORE_Config	Const	FX_ID
 # SIG	CORE_Config	Const	FX_ID	Public Const FX_ID As Long = 1
 CORE_Config	Const	FX_CCY
@@ -196,8 +202,10 @@ CORE_Config	Const	FX_DIRECTION
 # SIG	CORE_Config	Const	FX_DIRECTION	Public Const FX_DIRECTION As Long = 4
 CORE_Config	Const	FX_AMOUNT
 # SIG	CORE_Config	Const	FX_AMOUNT	Public Const FX_AMOUNT As Long = 5
+CORE_Config	Const	FX_BOOK
+# SIG	CORE_Config	Const	FX_BOOK	Public Const FX_BOOK As Long = 6
 CORE_Config	Const	FX_INPUT_WIDTH
-# SIG	CORE_Config	Const	FX_INPUT_WIDTH	Public Const FX_INPUT_WIDTH As Long = 6
+# SIG	CORE_Config	Const	FX_INPUT_WIDTH	Public Const FX_INPUT_WIDTH As Long = 7
 CORE_Config	Const	EL_MONTH
 # SIG	CORE_Config	Const	EL_MONTH	Public Const EL_MONTH As Long = 1
 CORE_Config	Const	EL_ASSETS
@@ -524,6 +532,10 @@ CORE_Config	Const	ST_INVALID
 # SIG	CORE_Config	Const	ST_INVALID	Public Const ST_INVALID As String = "INVALID: "
 CORE_Config	Const	ST_EXCLUDED
 # SIG	CORE_Config	Const	ST_EXCLUDED	Public Const ST_EXCLUDED As String = "EXCLUDED: "
+CORE_Config	Const	BOOK_TRADING
+# SIG	CORE_Config	Const	BOOK_TRADING	Public Const BOOK_TRADING As String = "TRADING"
+CORE_Config	Const	BOOK_NON_TRADING
+# SIG	CORE_Config	Const	BOOK_NON_TRADING	Public Const BOOK_NON_TRADING As String = "NON-TRADING"
 CORE_Config	Const	SEV_ERROR
 # SIG	CORE_Config	Const	SEV_ERROR	Public Const SEV_ERROR As String = "ERROR"
 CORE_Config	Const	SEV_WARNING
@@ -588,10 +600,12 @@ CORE_Config	Const	RULE_EL_ROWS
 # SIG	CORE_Config	Const	RULE_EL_ROWS	Public Const RULE_EL_ROWS As String = "C15"
 CORE_Config	Const	RULE_EL_STATUS
 # SIG	CORE_Config	Const	RULE_EL_STATUS	Public Const RULE_EL_STATUS As String = "C16"
+CORE_Config	Const	RULE_NON_TRADING
+# SIG	CORE_Config	Const	RULE_NON_TRADING	Public Const RULE_NON_TRADING As String = "C17"
 CORE_Config	Const	RULE_COUNT
-# SIG	CORE_Config	Const	RULE_COUNT	Public Const RULE_COUNT As Long = 16
+# SIG	CORE_Config	Const	RULE_COUNT	Public Const RULE_COUNT As Long = 17
 CORE_Config	Const	RULE_SEVERITIES
-# SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING"
+# SIG	CORE_Config	Const	RULE_SEVERITIES	Public Const RULE_SEVERITIES As String = "ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|ERROR|WARNING|WARNING|WARNING|WARNING|INFO|INFO|ERROR|ERROR|WARNING|WARNING"
 CORE_Config	Const	ERR_LAYOUT
 # SIG	CORE_Config	Const	ERR_LAYOUT	Public Const ERR_LAYOUT As Long = &H80040801
 CORE_Config	Const	ERR_ARGUMENT
@@ -650,6 +664,8 @@ CORE_Util	Function	CodeText
 # SIG	CORE_Util	Function	CodeText	Public Function CodeText(ByVal Value As Variant) As String
 CORE_Util	Function	DirectionSign
 # SIG	CORE_Util	Function	DirectionSign	Public Function DirectionSign(ByVal Value As Variant) As Double
+CORE_Util	Function	BookStatus
+# SIG	CORE_Util	Function	BookStatus	Public Function BookStatus(ByVal Value As Variant, ByVal NonTradingInScope As Boolean) As String
 CORE_Util	Function	IsInvalidStatus
 # SIG	CORE_Util	Function	IsInvalidStatus	Public Function IsInvalidStatus(ByVal Status As String) As Boolean
 CORE_Util	Function	FindCode

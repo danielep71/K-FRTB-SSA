@@ -280,7 +280,7 @@ reads `Tests_Result`.
 | `Buckets_CO_Header` | `shBuckets` | Result | `RunSSA` | Up to 30 commodities, and a total row |
 | `Buckets_FX_Header` | `shBuckets` | Result | `RunSSA` | One row per currency of the FX table, a total row, `FX_ONOP` and `FX_Charge` |
 | `IRCalc_Header`, `EQCalc_Header`, `COCalc_Header`, `FXCalc_Header` | The four calculation sheets | Result | `RunSSA` | One row per input row, on the same row number, with its status and every intermediate value |
-| `Checks_Header` | `shChecks` | Diagnostics | `RunSSA`, in the count and result columns | 16 rules, `C01` to `C16`, with severity, sheet, reference and message |
+| `Checks_Header` | `shChecks` | Diagnostics | `RunSSA`, in the count and result columns | 17 rules, `C01` to `C17`, with severity, sheet, reference and message |
 | `Checks_Findings_Header` | `shChecks` | Diagnostics | `RunSSA` | One row per rejected row or unusable parameter, with the reason |
 | Test catalogue | `shTestCatalogue` | Diagnostics | Formulas | 19 tests: an output cell, its expected value, the difference, the tolerance and the result (`Tests_Result`) |
 
@@ -471,10 +471,10 @@ constants on `Params`, are unlocked. Two entries of the matrix:
         "formatRows": false
       },
       "input": [
-        "C5:P504"
+        "C5:Q504"
       ],
       "output": [
-        "A1:P4",
+        "A1:Q4",
         "A5:B504"
       ]
     },
@@ -501,7 +501,7 @@ constants on `Params`, are unlocked. Two entries of the matrix:
   the standard's default: `false` for `sheet`, `objects`, `scenarios`,
   `selectLockedCells` and `selectUnlockedCells`, `true` for the others. `{}`
   is an unprotected sheet. Never put a password in the matrix.
-- **`input`:** the cells and ranges, such as `E6` or `C5:P504`, that users
+- **`input`:** the cells and ranges, such as `E6` or `C5:Q504`, that users
   type in. They must be unlocked.
 - **`output`:** the cells and ranges that users must not change, such as
   results and labels. They must be locked. An input range never overlaps an

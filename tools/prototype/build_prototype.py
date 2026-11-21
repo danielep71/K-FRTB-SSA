@@ -367,6 +367,26 @@ def neither(cell: str, first: str, second: str) -> str:
 # IRPositions column offers them.
 INSTRUMENTS = ("Bond", "FRN", "Swap leg", "Future leg", "FRA leg", "Forward leg", "Other")
 INSTRUMENT_REASON = "INVALID: Instrument must be " + ", ".join(INSTRUMENTS[:-1]) + " or " + INSTRUMENTS[-1]
+# The books of a position that DS-06 to DS-09 allow, as the list of the Book column
+# offers them; a blank cell is the trading book.
+BOOKS = '"Trading,Non-trading"'
+BOOK_REASON = "INVALID: Book must be Trading or Non-trading"
+NON_TRADING_REASON = "EXCLUDED: non-trading book position outside the market risk scope"
+
+
+def with_book(position: Sequence[object]) -> list[object]:
+    """A sample position as the cells of its sheet: a blank Book, the trading book, before the Comment."""
+    return [*position[:-1], None, position[-1]]
+
+
+def book_tests(cell: str, in_scope: bool) -> tuple[str, str]:
+    """The tests of the Book column of a status formula, after the duplicate PositionID, and
+    the brackets that close them: a book that is neither blank, Trading nor Non-trading is
+    rejected, and the non-trading book of a class outside the scope is excluded."""
+    tests = (f'IF(AND({text(cell)}<>"",{neither(cell, "Trading", "Non-trading")}),"{BOOK_REASON}",')
+    if in_scope:
+        return tests, ")"
+    return tests + f'IF({text(cell)}="Non-trading","{NON_TRADING_REASON}",', "))"
 
 
 def listed_instrument(cell: str) -> str:
@@ -628,28 +648,30 @@ def build_ir_positions(ctx: Context) -> None:
     input_sheet(
         ctx.wb, "IRPositions", "Interest rate positions",
         "One row per debt position or derivative leg (MAR40.24-40.40). Swaps, futures, FRAs and forwards are entered as two "
-        "notional legs. Position value is positive; Direction gives the sign. Floating legs are slotted by the next repricing date.",
+        "notional legs. Position value is positive; Direction gives the sign. Floating legs are slotted by the next repricing date. "
+        "A Non-trading row is outside the scope and excluded.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Instrument", 12.6), ("Currency", 9.6), ("Direction", 9.6),
          ("Position value (ccy)", 15.6), ("Rate type", 10.6), ("Coupon (decimal)", 10.6), ("Final maturity date", 12.6),
          ("Next repricing date (floating)", 12.6), ("SR category", 10.6), ("Rating grade", 13.6),
-         ("Issue ID (specific-risk netting)", 22.6), ("Comment", 44)],
-        [[p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]] for p in D.IR],
-        "P", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
-              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,CRR,NONE"', "N": GRADES},
+         ("Issue ID (specific-risk netting)", 22.6), ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.IR],
+        "Q", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
+              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,CRR,NONE"', "N": GRADES, "P": BOOKS},
         {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "#,##0", "I": "@", "J": "0.000%", "K": NF_DATE,
-         "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@"})
+         "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@", "Q": "@"})
 
 
 def build_eq_positions(ctx: Context) -> None:
     input_sheet(
         ctx.wb, "EQPositions", "Equity positions",
         "One row per equity or index position, delta-equivalent for derivatives (MAR40.41-40.50). Market groups positions "
-        "for general market risk; positions in the same stock or index in a market net before the specific charge.",
+        "for general market risk; positions in the same stock or index in a market net before the specific charge. A Non-trading "
+        "row is outside the scope and excluded.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Market", 9.6), ("Type", 12.6), ("Stock or index identifier", 20.6),
-         ("Currency", 9.6), ("Direction", 9.6), ("Market value (ccy)", 15.6), ("Comment", 44)],
-        [list(p) for p in D.EQ], "K",
-        {"E": '"Single name,Index"', "H": "=FX_Ccy", "I": '"Long,Short"'},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "@", "I": "@", "J": "#,##0", "K": "@"})
+         ("Currency", 9.6), ("Direction", 9.6), ("Market value (ccy)", 15.6), ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.EQ], "L",
+        {"E": '"Single name,Index"', "H": "=FX_Ccy", "I": '"Long,Short"', "K": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "@", "I": "@", "J": "#,##0", "K": "@", "L": "@"})
 
 
 def build_co_positions(ctx: Context) -> None:
@@ -657,12 +679,14 @@ def build_co_positions(ctx: Context) -> None:
         ctx.wb, "COPositions", "Commodity positions",
         "One row per commodity position, delta-equivalent for derivatives (MAR40.64-40.73). Value = quantity x spot price, "
         "converted at the FX table. Positions with the same commodity name net. The maturity date is kept for the "
-        "maturity-ladder approach, which this prototype does not implement.",
+        "maturity-ladder approach, which this prototype does not implement. A Non-trading row is calculated as a trading book one.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Commodity", 18.6), ("Direction", 9.6), ("Quantity", 12.6),
-         ("Unit", 8.6), ("Spot price (ccy per unit)", 12.6), ("Currency", 9.6), ("Maturity date", 12.6), ("Comment", 40)],
-        [list(p) for p in D.CO], "L",
-        {"F": '"Long,Short"', "J": "=FX_Ccy"},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0.##", "H": "@", "I": "#,##0.00", "J": "@", "K": NF_DATE, "L": "@"})
+         ("Unit", 8.6), ("Spot price (ccy per unit)", 12.6), ("Currency", 9.6), ("Maturity date", 12.6), ("Book", 12.6),
+         ("Comment", 40)],
+        [with_book(p) for p in D.CO], "M",
+        {"F": '"Long,Short"', "J": "=FX_Ccy", "L": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0.##", "H": "@", "I": "#,##0.00", "J": "@", "K": NF_DATE, "L": "@",
+         "M": "@"})
 
 
 def build_fx_positions(ctx: Context) -> None:
@@ -670,12 +694,12 @@ def build_fx_positions(ctx: Context) -> None:
         ctx.wb, "FXPositions", "FX and gold positions",
         "Net positions per currency from all sources (spot, forwards, delta of options, structural positions where "
         "included), in units of the currency; gold (XAU) in troy ounces (MAR40.53-40.61). Positions in the reporting "
-        "currency carry no FX risk and are excluded.",
+        "currency carry no FX risk and are excluded. A Non-trading row is calculated as a trading book one.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Currency", 9.6), ("Direction", 9.6), ("Amount (ccy)", 17.6),
-         ("Comment", 44)],
-        [list(p) for p in D.FXPOS], "H",
-        {"E": "=FX_Ccy", "F": '"Long,Short"'},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0", "H": "@"})
+         ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.FXPOS], "I",
+        {"E": "=FX_Ccy", "F": '"Long,Short"', "H": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0", "H": "@", "I": "@"})
 
 
 # --- OptionCharges
@@ -893,8 +917,9 @@ def calc_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[t
 
 
 def build_ir_calc(ctx: Context) -> None:
+    book, book_close = book_tests("IRPositions!P{r}", in_scope=False)
     ir_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF(NOT(' + listed_instrument("IRPositions!E{r}") + '),"' + INSTRUMENT_REASON + '",'
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
@@ -913,7 +938,7 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(AND(UPPER(TRIM(Regime))<>"CRR",OR(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),$O{r}="CRR")),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
         'IF(AND($Q{r}="NO MATCH",UPPER(TRIM(Regime))="CRR"),"INVALID: no Article 336 charge for this risk weight",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
-        '"OK"))))))))))))))))))))')
+        '"OK"))))))))))))))))))))' + book_close)
     grd = text("IRPositions!N{r}")
     issue = text("IRPositions!O{r}")
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'
@@ -973,8 +998,9 @@ def build_ir_calc(ctx: Context) -> None:
 
 def build_eq_calc(ctx: Context) -> None:
     eq_currency = text("EQPositions!H{r}")
+    book, book_close = book_tests("EQPositions!K{r}", in_scope=False)
     eq_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF($E{r}="","INVALID: Market missing",'
         'IF(AND($F{r}<>"Single name",$F{r}<>"Index"),"INVALID: Type must be Single name or Index",'
         'IF($G{r}="","INVALID: stock or index identifier missing",'
@@ -982,7 +1008,7 @@ def build_eq_calc(ctx: Context) -> None:
         'IF(' + neither("EQPositions!I{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(EQPositions!J{r})),"INVALID: Market value must be a number",'
         'IF(EQPositions!J{r}<0,"INVALID: Market value must be >= 0 (Direction gives the sign)",'
-        '"OK")))))))))')
+        '"OK")))))))))' + book_close)
     calc_sheet(
         ctx.wb, "EQCalc", "Equity position calculation",
         "Per EQPositions row: signed value, net value of the same stock or index in the market, and the specific or index "
@@ -1009,8 +1035,9 @@ def build_eq_calc(ctx: Context) -> None:
 
 def build_co_calc(ctx: Context) -> None:
     co_currency = text("COPositions!J{r}")
+    book, book_close = book_tests("COPositions!L{r}", in_scope=True)
     co_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF($E{r}="","INVALID: Commodity missing",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
         'IF(' + neither("COPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
@@ -1018,7 +1045,7 @@ def build_co_calc(ctx: Context) -> None:
         'IF(COPositions!G{r}<0,"INVALID: Quantity must be >= 0 (Direction gives the sign)",'
         'IF(NOT(ISNUMBER(COPositions!I{r})),"INVALID: Spot price must be a number",'
         'IF(OR(' + no_currency(co_currency) + ',UPPER(' + co_currency + ')=GoldCode),"INVALID: currency not in FX_Table",'
-        '"OK")))))))))')
+        '"OK")))))))))' + book_close)
     calc_sheet(
         ctx.wb, "COCalc", "Commodity position calculation",
         "Per COPositions row: value at spot in reporting currency. Aggregation per commodity (net and gross) is on Buckets.",
@@ -1037,14 +1064,15 @@ def build_co_calc(ctx: Context) -> None:
 
 
 def build_fx_calc(ctx: Context) -> None:
+    book, book_close = book_tests("FXPositions!H{r}", in_scope=True)
     fx_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF(' + neither("FXPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(FXPositions!G{r})),"INVALID: Amount must be a number",'
         'IF(FXPositions!G{r}<0,"INVALID: Amount must be >= 0 (Direction gives the sign)",'
         'IF($E{r}=ReportingCcy,"EXCLUDED: reporting currency carries no FX risk",'
-        '"OK")))))))')
+        '"OK")))))))' + book_close)
     calc_sheet(
         ctx.wb, "FXCalc", "FX position calculation",
         "Per FXPositions row: signed amount in currency and in reporting currency. The net open position is built on Buckets.",
@@ -1484,6 +1512,10 @@ def check_rules(ctx: Context) -> list[Rule]:
          f'=COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"NOT MET")'
          f'+COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"CEASE")', "CRR Art. 325a(5), 94(7)",
          "Approaches whose conditions are not met in the last month entered, or that must cease; the requirement does not change."),
+        ("C17", "WARNING", "IR, EQ positions",
+         f'=COUNTIF(IRCalc!$D${FIRST}:$D${LAST},"EXCLUDED*")+COUNTIF(EQCalc!$D${FIRST}:$D${LAST},"EXCLUDED*")',
+         "CRR Art. 325(1)",
+         "Non-trading book interest rate and equity rows, excluded: outside the market risk scope, they fall under credit risk."),
     ]
     if ctx.template:
         rules[13] = rules[13][:5] + ("Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
@@ -1635,7 +1667,7 @@ def build_readme(ctx: Context) -> None:
         ("Amounts", "Reporting currency, unscaled units. FX rates are units of reporting currency per unit of currency."),
         ("Dates", "Residual maturity = (date - AsOfDate) / DaysPerYear. Time-band upper bounds are inclusive."),
         ("Row status", "OK = used; INVALID: reason = rejected, contributes nothing, listed on Checks; EXCLUDED = deliberately "
-         "out of scope (FX in reporting currency)."),
+         "out of scope (FX in reporting currency; a Non-trading Book row of IR or EQ, C17). A blank Book is Trading."),
         ("Names", "Every parameter and table is a workbook name (Formulas > Name Manager)."),
     ], True)
     r += 1

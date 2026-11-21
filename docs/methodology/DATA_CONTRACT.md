@@ -176,6 +176,7 @@ Read from the sheet `IRPositions`.
 | `sr_category` | Text | — | Yes | `GOV`, `QUAL`, `OTHER`, `CRR`, `NONE` | Column SR category. NONE: no specific risk. CRR: the category of the CRR regime, the only one of the two (with NONE) that regime accepts; GOV, QUAL and OTHER are those of the Basel regime |
 | `rating_grade` | Text | — | No | `AAA to AA-`, `A+ to BBB-`, `BB+ to BB-`, `B+ to B-`, `Below B-`, `Unrated`, `RW 0%`, `RW 10%`, `RW 20%`, `RW 50%`, `RW 75%`, `RW 100%`, `RW 150%` | Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03. Under the category CRR, the risk weight of the credit risk standardised approach that the issuer or the security would receive, as RW 20%; a security that would receive 75% is charged as one at 100%, and a covered bond at 10% as half the category of 20% and 50% |
 | `issue_id` | Text | — | No | Any | Column Issue ID (specific-risk netting). Rows with the same value are one issue; empty: an issue of its own |
+| `book` | Text | — | No | `Trading`, `Non-trading` | Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
 ### `DS-07` Equity positions
@@ -192,6 +193,7 @@ Read from the sheet `EQPositions`.
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code excepted |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `market_value` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Market value (ccy). Direction gives the sign |
+| `book` | Text | — | No | `Trading`, `Non-trading` | Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
 ### `DS-08` Commodity positions
@@ -209,6 +211,7 @@ Read from the sheet `COPositions`.
 | `spot_price` | Decimal | Currency in field `currency` | Yes | Any | Column Spot price (ccy per unit). The current spot price of one unit, used as entered |
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code excepted |
 | `maturity_date` | Date, `YYYY-MM-DD` | — | No | Any | Column Maturity date. For the maturity ladder approach, which is not supported; not read |
+| `book` | Text | — | No | `Trading`, `Non-trading` | Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
 ### `DS-09` FX positions
@@ -222,6 +225,7 @@ Read from the sheet `FXPositions`.
 | `currency` | Currency code, ISO 4217 | — | Yes | Any | Column Currency. A code of DS-05, the gold code included. A row in the reporting currency is excluded |
 | `direction` | Text | — | Yes | `Long`, `Short` | Column Direction |
 | `net_position` | Decimal | Currency in field `currency` | Yes | ≥ 0 | Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign |
+| `book` | Text | — | No | `Trading`, `Non-trading` | Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement |
 | `comment` | Text | — | No | Any | Column Comment. Not read |
 
 ### `DS-10` Non-delta option charges
@@ -310,7 +314,8 @@ as records of these datasets, and some parameters:
   amounts are in euro, which each record states as `currency_code` `EUR`.
 - **An input key** is the field's name with the suffix of its unit, unless
   the name already ends in one: `position_value_amount`, `coupon_rate`,
-  `currency_code`, `direction_code`, `final_maturity_date`, `issue_id`.
+  `currency_code`, `direction_code`, `final_maturity_date`, `issue_id`,
+  `book_code`. A position without `book_code` is in the trading book.
   A quantity of `DS-08` is `quantity_count`, a whole number: a fixture
   cannot hold a fractional quantity.
 - **Every other parameter**, and the tables `DS-03` and `DS-04`, have their
@@ -406,23 +411,23 @@ workbook reports its own rule IDs.
 ## Validation and invalid input
 
 The workbook reports a finding with the identifier of a rule of its `Checks`
-sheet, `C01` to `C16`, and, for a row, with a status text that gives the
+sheet, `C01` to `C17`, and, for a row, with a status text that gives the
 reason. The texts are listed in the *Failure behaviour* of each
 [calculation contract](CALCULATION_CONTRACTS.md).
 
 | Rule | Rejects | Effect |
 | --- | --- | --- |
-| `C01` | A row of `DS-06` that fails a test: its identifier, currency, direction, value, rate type, coupon, dates, category or rating grade | The row is excluded and the run goes on. `IRCalc` gives the reason, `Checks` lists the row, and the status line reads `INCOMPLETE` |
-| `C02` | A row of `DS-07` that fails a test: its identifier, market, type, stock or index, currency, direction or value | As `C01`, on `EQCalc` |
-| `C03` | A row of `DS-08` that fails a test: its identifier, commodity, direction, quantity, spot price or currency | As `C01`, on `COCalc` |
-| `C04` | A row of `DS-09` that fails a test: its identifier, currency, direction or amount | As `C01`, on `FXCalc` |
+| `C01` | A row of `DS-06` that fails a test: its identifier, book, currency, direction, value, rate type, coupon, dates, category or rating grade | The row is excluded and the run goes on. `IRCalc` gives the reason, `Checks` lists the row, and the status line reads `INCOMPLETE` |
+| `C02` | A row of `DS-07` that fails a test: its identifier, book, market, type, stock or index, currency, direction or value | As `C01`, on `EQCalc` |
+| `C03` | A row of `DS-08` that fails a test: its identifier, book, commodity, direction, quantity, spot price or currency | As `C01`, on `COCalc` |
+| `C04` | A row of `DS-09` that fails a test: its identifier, book, currency, direction or amount | As `C01`, on `FXCalc` |
 | `C05` | `DS-05` without the reporting currency at rate 1 | The run stops: no result is calculated, `Checks` lists the value, and the status line reads `STOPPED` |
 | `C06` | A currency listed twice in `DS-05` | As `C05` |
 | `C07` | A rate of `DS-05` that is not a number greater than 0 | As `C05` |
 | `C14` | A value of `DS-02`, `DS-03`, `DS-04` or `DS-10` that the engine cannot use: a date that is not a date, a number that is not a number or is outside its range, a zone that is not 1, 2 or 3, an empty reporting currency or gold code, a regime that is neither `Basel` nor `CRR`, a last date of the transitional multiplier that is not a date, or total own funds that are not a number greater than 0, under the `CRR`; or a position table of `DS-06` to `DS-09` with more than 500 rows ([volume](#volume)) | As `C05` |
 | `C15` | A row of `DS-11` that fails a test, under the `CRR` regime: its month end, total assets or totals | The row is excluded and the run goes on. `Eligibility` gives the reason, `Checks` counts the row, and the status line reads `INCOMPLETE`. Both approaches read `NOT ASSESSED: a row is invalid` |
 
-Seven rules report without rejecting:
+Eight rules report without rejecting:
 
 | Rule | Reports | Effect |
 | --- | --- | --- |
@@ -431,6 +436,7 @@ Seven rules report without rejecting:
 | `C10`, `C11` | More than 30 markets in `DS-07`, or more than 30 commodities in `DS-08` | A warning: `Buckets` lists the first 30, and the totals include all |
 | `C12`, `C13` | A row of `DS-09` in the reporting currency; an option charge entered in `DS-10` | For information: the row is excluded, and the charge is added |
 | `C16` | An approach of `DS-11` whose status is `NOT MET` or `CEASE`, under the `CRR` regime | A warning, counted once for each approach: the requirement is unchanged |
+| `C17` | A row of `DS-06` or `DS-07` whose book is `Non-trading` | A warning, counted once for each row: the row is excluded, `IRCalc` or `EQCalc` gives the reason, and the run goes on. The non-trading book rows of `DS-08` and `DS-09` are calculated, and no rule reports them |
 
 - A row is tested in the order of its contract's list, and the first test
   that fails gives the reason.
@@ -524,4 +530,5 @@ no portfolio.
 | 2026-11-16 | The project's datasets are numbered from `DS-02` | `DS-01` is the illustrative dataset, which the illustrative test cases still use, and an ID is never reused | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |
 | 2026-11-19 | `Other` stays among the allowed instruments of `DS-06`, and the engine rejects any value outside the list, a blank included | A debt position can be of a kind that has no value of its own, and rejecting it would force a wrong name on it; the list excludes free text, not an unlisted kind. A rejected row is reported and never calculated | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
 | 2026-11-19 | A position table of more than 500 rows is reported under rule `C14`, which stops the run, and the rows of a table are counted from the row below its header to its last row with a PositionID | `C14` already stops the run on an input it cannot use, so no rule and no row of `Checks` is added. The span is what the engine reads and what the template formats, validates and colours: a PositionID below row 504 has no format and no check, whatever number of rows are filled | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
+| 2026-11-21 | `DS-06` to `DS-09` have a field `book`, `Trading` or `Non-trading`, before the comment, and a blank book is the trading book. A non-trading book FX or commodity position is calculated as a trading book one, under both regimes; a non-trading book interest rate or equity position is excluded and reported by `C17`, a warning | Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope, and only that risk. The technical standards of Article 325(9), `SRC-09` and `SRC-10`, value those positions for the alternative approaches only, so under the simplified standardised approach the treatment as trading book positions, at the value entered, is an assumption ([`CALC-05`](CALCULATION_CONTRACTS.md), [`CALC-06`](CALCULATION_CONTRACTS.md)). A blank book keeps the existing sheets and cases as they were. An excluded row is out of the scope, not wrong: it is reported, and the run is not `INCOMPLETE` | [85](https://github.com/danielep71/K-FRTB-SSA/issues/85) |
 | 2026-11-21 | A fixture may set the regime and the total own funds under `parameters`, and gives the rows of `DS-11` in their order, without an identifier field | The cases of `CALC-09` run under the `CRR` regime, which needs total own funds; the regime and the own funds describe the institution, not a what-if on a reference value. A row of `DS-11` is a month, and its place on the sheet is what the engine reads: an invalid case needs a month end that is no date | [84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |
