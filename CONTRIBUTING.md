@@ -155,7 +155,7 @@ either, `changelog` runs without `--repository`.
 <!-- BEGIN generated: integrity-checks -->
 | Check | Runs |
 | --- | --- |
-| `tests` | `python -m unittest discover -s tests -v` |
+| `tests` | `python tools/run_tests.py -v` |
 | `ruff` | `python -m ruff check --no-cache tools tests` |
 | `mypy` | `python -m mypy --no-incremental` |
 | `actionlint` | `actionlint -no-color`, once the probe `actionlint -no-color .github/actionlint/invalid-workflow.yml` has failed with `unexpected key "bogus-key"` |
@@ -206,8 +206,17 @@ exists; `--strict` fails it instead, as CI does. CI also passes `--ci`, which
 adds a last check, `clean-working-tree`: it fails when a file is changed,
 deleted, or added and not ignored, so that the results describe the commit
 itself. To run a single check, use
-its own command, for example `python -m unittest discover -s tests` or
+its own command, for example `python tools/run_tests.py` or
 `python tools/format_vba.py --check`.
+
+`python tools/run_tests.py` runs each `tests/test_*.py` in its own process,
+as many at once as the machine has CPUs (`--jobs N` sets the number), and
+fails when any module fails or runs no test. It prints each module's output
+when the module ends, then the tests, time and result of every module. Name
+modules to run only those, for example
+`python tools/run_tests.py test_check_excel_run.py`.
+`python -m unittest discover -s tests` runs the same tests in one process,
+one module after the other.
 
 `python tools/format_vba.py --write` fixes what the last command reports;
 re-import a rewritten module into the VBE before committing

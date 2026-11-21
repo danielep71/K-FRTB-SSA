@@ -396,6 +396,14 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- `python tools/run_tests.py` runs the repository tests one module per
+  process, as many at once as the machine has CPUs, and fails when any module
+  fails or runs no test. `check_repository.py` and the `Minimum Python (3.11)`
+  job call it instead of `python -m unittest discover -s tests`, which still
+  runs the same tests one module after the other. `check_excel_run.py` reads
+  each exported module and suite once per process instead of on every
+  comparison. The tests themselves are unchanged
+  ([#107](https://github.com/danielep71/K-FRTB-SSA/issues/107)).
 - The source register completes the verification of the CRR texts. It records
   the terms under which EUR-Lex allows its content to be reused, and keeps no
   local copy of `SRC-04` to `SRC-10` all the same; the Parliament's record

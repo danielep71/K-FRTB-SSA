@@ -1597,6 +1597,22 @@ class SourceIdentityTest(unittest.TestCase):
         self.assertEqual(check_excel_run.source_difference(b"x = 1\n", b"x = 1\ny = 2\n",
                                                            False)[0], 2)
 
+    def test_equal_sources_and_repeated_reads_give_the_same_results(self) -> None:
+        # Equal bytes return at once; the cached reads return what a fresh read does.
+        for document in (False, True):
+            self.assertEqual(check_excel_run.source_difference(
+                PROJECT_SOURCE, PROJECT_SOURCE, document), (0, [], []))
+        first = check_excel_run.source_lines(PROJECT_SOURCE, False)
+        self.assertIs(check_excel_run.source_lines(PROJECT_SOURCE, False), first)
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            first[0].key = "changed"  # type: ignore[misc]
+        suite = read_suite(PROJECT_SOURCE, "64-bit")
+        again = read_suite(PROJECT_SOURCE, "64-bit")
+        self.assertEqual(suite, again)
+        self.assertIsNot(suite.cases, again.cases)
+        suite.cases.append("changed")
+        self.assertNotIn("changed", read_suite(PROJECT_SOURCE, "64-bit").cases)
+
     def test_the_tolerated_attributes_are_those_excel_writes_for_a_document(self) -> None:
         # The build writes the same attributes for a document module without a source file.
         written = re.findall(r"^Attribute (\w+) =", DOCUMENT_ATTRIBUTE_LINES, re.M)

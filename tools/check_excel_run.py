@@ -124,6 +124,7 @@ import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from typing import Any
 from xml.etree import ElementTree
@@ -463,7 +464,21 @@ def read_suite(source: bytes, office: str = "64-bit", runner: str = "RunSuite") 
     """The suite as a host of ``office`` bitness compiles it: lines inside an #If
     branch that is inactive there are blank. Its cases are the Case procedures
     that ``runner`` calls, each alone on its line, in that order; a case's id and
-    its assertions' names are the literals of its BeginCase and Assert calls."""
+    its assertions' names are the literals of its BeginCase and Assert calls.
+    Each call returns a new Suite, so a caller may change its lists."""
+    (cases, assertions, last_case, injected, expected_cases, expected_assertions,
+     injected_expected) = suite_fields(source, office, runner)
+    return Suite(list(cases), list(assertions), list(last_case), list(injected),
+                 expected_cases, expected_assertions, injected_expected)
+
+
+# A check reads the same suite many times; the arguments are immutable, and the
+# result holds tuples, so the cache cannot be changed through it.
+@lru_cache(maxsize=64)
+def suite_fields(source: bytes, office: str, runner: str
+                 ) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...],
+                            tuple[str, ...], int, int, str]:
+    """The fields of the Suite that ``read_suite`` returns, as tuples."""
     text = source.decode("ascii", errors="replace").replace("\r\n", "\n")
     environment = BITNESS_ENVIRONMENT.get(office, BITNESS_ENVIRONMENT["64-bit"])
     text = check_vba_conditionals.reachable_sources("suite.bas", text)[0][environment]
@@ -485,8 +500,9 @@ def read_suite(source: bytes, office: str = "64-bit", runner: str = "RunSuite") 
             injected += names
             value = INJECTED_VALUE.search(body)
             injected_expected = value.group(1) if value else ""
-    return Suite(cases, assertions, last_case, injected, constants.get("EXPECTED_CASES", -1),
-                 constants.get("EXPECTED_ASSERTIONS", -1), injected_expected)
+    return (tuple(cases), tuple(assertions), tuple(last_case), tuple(injected),
+            constants.get("EXPECTED_CASES", -1), constants.get("EXPECTED_ASSERTIONS", -1),
+            injected_expected)
 
 
 def document_modules(root: Path, commit: str) -> set[str]:
@@ -498,7 +514,7 @@ def document_modules(root: Path, commit: str) -> set[str]:
             if item.decode("utf-8").lower().endswith(".cls")}
 
 
-@dataclass
+@dataclass(frozen=True)
 class SourceLine:
     """One line of a module: its number, its text, and its text with the letters
     of code outside strings and comments in lower case."""
@@ -508,7 +524,10 @@ class SourceLine:
     key: str
 
 
-def source_lines(data: bytes, document: bool) -> list[SourceLine]:
+# A check compares the same modules many times; the arguments are immutable, and
+# the result is a tuple of frozen lines, so the cache cannot be changed through it.
+@lru_cache(maxsize=256)
+def source_lines(data: bytes, document: bool) -> tuple[SourceLine, ...]:
     """The lines of a module (LF line ends) as they are compared, without the
     attributes Excel writes for a document module. A string literal, a [...]
     expression and a comment, continued or not, keep their letter case."""
@@ -530,7 +549,7 @@ def source_lines(data: bytes, document: bool) -> list[SourceLine]:
         key = "".join(char.lower() if "A" <= char <= "Z" and index < len(code)
                       and code[index] == char else char for index, char in enumerate(text))
         lines.append(SourceLine(number, text, key))
-    return lines
+    return tuple(lines)
 
 
 def source_difference(actual: bytes, expected: bytes, document: bool
@@ -539,6 +558,8 @@ def source_difference(actual: bytes, expected: bytes, document: bool
     where it first differs other than in the letter case of code (0 when it does
     not), the identifiers re-cased, as "commit spelling -> exported spelling",
     and the document-module attributes that differ."""
+    if actual == expected:
+        return 0, [], []
     left, right = source_lines(actual, document), source_lines(expected, document)
     recased: dict[str, None] = {}
     for line, other in zip(left, right, strict=False):

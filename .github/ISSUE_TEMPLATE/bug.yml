@@ -112,7 +112,7 @@ body:
     id: validation
     attributes:
       label: "🧪 Validation evidence required"
-      description: The checks and evidence that will prove the fix, for example `python -m unittest discover -s tests`, a regression case, or an Excel run on the exact commit.
+      description: The checks and evidence that will prove the fix, for example `python tools/run_tests.py`, a regression case, or an Excel run on the exact commit.
     validations:
       required: true
 
