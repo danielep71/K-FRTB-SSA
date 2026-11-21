@@ -274,7 +274,7 @@ class CaseSuite(unittest.TestCase):
         self.assertIn("CurrentFormulas(r, c) <> mFormulas(i)(r, c)", differences.group(0))
         for name, body in self.bodies.items():
             if name.startswith("Inputs"):
-                self.assertRegex(body, r"'\n\s+ClearInputs\n", name)
+                self.assertRegex(body, r"\n    '[^\n]*\n\s+ClearInputs\n", name)
 
     def test_a_text_is_put_back_as_a_text_and_every_row_of_a_table_is_kept(self) -> None:
         restore = re.search(r"^Private Function RestoreInputs\(.*?^End Function$", self.text,
