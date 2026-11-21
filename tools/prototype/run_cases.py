@@ -79,6 +79,9 @@ NAMED = {"fx_overall_net_open_position": "FX_ONOP", "own_funds_requirement": "SS
          "risk_weighted_assets": "SSA_RWA"}
 # A quantity of the whole calculation in a cell of Results without a name: its row and column.
 RESULTS_CELLS = {"transitional_factor": (12, 10)}
+# The status line of the run: the quantity, the workbook name of its cell, and the words
+# that start the time of the run, which the line ends with and no case compares.
+RUN_STATUS, STATUS_NAME, RUN_TIME = "run_status", "Results_Status", " Run "
 # The currencies of the FX block of Buckets: the column of the code and of the net position.
 FX_BLOCK_CODE, FX_BLOCK_NET = 4, 8
 # A parameter a fixture may set: the workbook name of its cell, and its value when the
@@ -190,6 +193,13 @@ def row_of(sheet: Any, column: int, wanted: str, first: int = 1) -> int | None:
     return None
 
 
+def run_line(value: object) -> str:
+    """A status line without the time of the run at its end."""
+    line = "" if value is None else str(value).strip()
+    cut = line.rfind(RUN_TIME)
+    return line if cut < 0 else line[:cut]
+
+
 def actual(workbook: Any, fixture: dict[str, Any], output: dict[str, Any]) -> object:
     """The value the workbook holds for an expected output; a text that says so when it has none."""
     quantity, scope = output["quantity"], output["scope"]
@@ -200,6 +210,8 @@ def actual(workbook: Any, fixture: dict[str, Any], output: dict[str, Any]) -> ob
                 scope["record"])
         return workbook["Eligibility"].cell(month_row, column).value
     if scope is None:
+        if quantity == RUN_STATUS:
+            return run_line(verify.named_cell(workbook, STATUS_NAME).value)
         if quantity in NAMED:
             return verify.named_cell(workbook, NAMED[quantity]).value
         if quantity in RESULTS_CELLS:

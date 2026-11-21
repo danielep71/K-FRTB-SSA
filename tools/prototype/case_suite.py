@@ -350,6 +350,8 @@ def reader(fixture: dict[str, Any], output: dict[str, Any]) -> tuple[str, bool]:
         index = [item["id"] for item in fixture["datasets"]["DS-11"]].index(scope["record"]) + 1
         return f"RowCell(NM_EL_HEADER, {index}, {column - FIRST_COLUMN})", False
     if scope is None:
+        if quantity == run_cases.RUN_STATUS:
+            return "RunLine()", False
         if quantity in run_cases.NAMED:
             return f"NamedCell({NAMES[run_cases.NAMED[quantity]]})", False
         if quantity in run_cases.RESULTS_CELLS:
@@ -1085,6 +1087,22 @@ def helpers() -> list[str]:
         returns="The value of the cell, as Range.Value gives it."),
         [], [("READ CELL", ["'Read the cell the name refers to",
                             "NamedCell = ThisWorkbook.Names(CellName).RefersToRange.Value"])])
+    lines += procedure(["Private Function RunLine() _", "    As String"], "READ RUN STATUS", fields(
+        "The status line of Results, without the time of the run at its end.",
+        "The status line ends with the time of the run, which differs from one run to the "
+        "next and no case compares.",
+        "Reads the cell of the status line as text and cuts it where the last word Run "
+        "between two blanks starts, as run_cases.run_line does in the Python runner; a "
+        "line without that word is returned whole.",
+        returns="The status line, trimmed, without the time of the run.",
+        deps="PlainText of CORE_Util; the NM_RESULTS_STATUS name of CORE_Config"),
+        [("Shown", "String", "Status line on the sheet"), ("Cut", "Long", "Start of the run time")], [
+        ("READ LINE", ["'Read the status line as text",
+                       "Shown = PlainText(ThisWorkbook.Names(NM_RESULTS_STATUS).RefersToRange.Value)"]),
+        ("CUT RUN TIME", ["'Drop the time of the run that ends the line",
+                          'Cut = InStrRev(Shown, " Run ")',
+                          "If Cut > 0 Then Shown = Left$(Shown, Cut - 1)",
+                          "RunLine = Shown"])])
     lines += procedure(["Private Function BlockCell( _", "    ByVal RowOffset As Long, _",
                         "    ByVal ColumnOffset As Long) _", "    As Variant"],
                        "READ RESULT BLOCK CELL", fields(

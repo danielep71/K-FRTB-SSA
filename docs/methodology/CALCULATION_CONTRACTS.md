@@ -669,16 +669,20 @@ per currency and the overall net open position on `Buckets`.
 
 Under the `CRR` regime, a `TotalOwnFunds` that is not a number greater than 0
 is an unusable parameter: the run reads `STOPPED`, and `Checks` lists it with
-`INVALID: must be a number greater than 0`.
+`INVALID: must be a number greater than 0`. A test case compares the status
+line as `run_status`, as `CALC-08` states.
 
 **Validation:** the test case `mar40-61-table-9`, two of whose expected
 values are published in table 9 of MAR40.61, and the test cases
 `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-fx-de-minimis-limit`,
+`illustrative-crr-regime-in-lower-case`, `illustrative-crr-zero-own-funds`,
 `illustrative-fx-book`, `illustrative-fx-one-sided-positions`,
-`illustrative-invalid-fx-positions` and `illustrative-sample-fx`. The two
-cases of the `CRR` regime run the positions of table 9 with total own funds
-whose 2% equals the overall net open position of 335, where the requirement is
-zero, and whose 2% is 334.999, where it is the whole 8% of step 3.
+`illustrative-invalid-crr-own-funds`, `illustrative-invalid-fx-positions` and
+`illustrative-sample-fx`. The cases of the `CRR` regime run the positions of
+table 9 with total own funds whose 2% equals the overall net open position of
+335, where the requirement is zero, and whose 2% is 334.999, where it is the
+whole 8% of step 3; with the regime written `crr`, which is read as `CRR`; and
+with no total own funds and with total own funds of 0, which stop the run.
 `illustrative-fx-book` and two rows of `illustrative-invalid-fx-positions`
 test the book: a non-trading book row is tested and calculated as a trading
 book one. Every other expected value is `illustrative`:
@@ -816,12 +820,17 @@ each value with its reason (rules `C05` to `C07` and `C14`), among them a
 `Regime` that is neither `Basel` nor `CRR` and, under the `CRR`, a
 `TransitionalEndDate` that is not a date. A position
 sheet with more than 500 rows stops the run in the same way: `Checks` lists
-the sheet and the rows found under `C14`.
+the sheet and the rows found under `C14`. `run_status` is the status line of
+`Results` without the time of the run that ends it, which a test case
+compares: for one unusable value,
+`STOPPED: 1 unusable input(s); see Checks. No results were calculated.`
 
 **Validation:** the test cases `illustrative-requirement-fx-and-options-only`
 and `illustrative-sample-requirement`, and under the `CRR` regime
 `illustrative-crr-sample-requirement`, `illustrative-crr-transitional-end-date`
-and `illustrative-crr-after-transitional-end-date`. The first of these runs the
+and `illustrative-crr-after-transitional-end-date`, and
+`illustrative-invalid-regime`, whose regime is neither `Basel` nor `CRR` and
+whose run stops. The first of the `CRR` cases runs the
 sample portfolio, each security in the risk weight of Article 336 whose rates
 are those of its Basel category: its requirement differs from that of
 `illustrative-sample-requirement` by the index charge of `CALC-04` and the

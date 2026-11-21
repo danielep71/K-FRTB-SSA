@@ -15,7 +15,10 @@ regime and the total own funds. Under the CRR regime it applies the rules of
 the contracts that name it: the categories of Article 336 (CALC-02), 150%
 between zones 1 and 3 (CALC-03), no charge on an index (CALC-04), the de
 minimis of Article 351 (CALC-06) and the transitional multiplier of Article
-495s(2) (CALC-08).
+495s(2) (CALC-08). A regime that is neither Basel nor CRR, or total own funds
+that are not a number greater than 0 under the CRR, stops the run: derive()
+then gives the status line of the run only, as the contracts' Failure
+behaviour states it.
 
 eligibility() derives CALC-09, the eligibility under the CRR, from the rows of
 the Eligibility sheet and the regime; derive() calls it for a fixture of
@@ -53,6 +56,10 @@ ZONES_1_AND_3_CRR = 1.50
 EQ_INDEX_CRR = 0.0
 FX_DE_MINIMIS = 0.02
 TRANSITIONAL_MULTIPLIER, TRANSITIONAL_END = 0.9, "2029-12-31"
+# The regimes the Regime parameter accepts, as codes, and the status line of a run that an
+# unusable parameter stops, without the time of the run that follows it on Results.
+REGIMES = frozenset(("BASEL", "CRR"))
+STOPPED = "STOPPED: {} unusable input(s); see Checks. No results were calculated."
 # The instruments of an interest rate row that DS-06 allows, as codes.
 INSTRUMENTS = frozenset(("BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"))
 # Table 4 of MAR40.26: zone, upper limit in years for a coupon of 3% or more,
@@ -750,11 +757,23 @@ def total(quantity: str, value: float) -> Output:
     return {"quantity": quantity, "scope": None, "value": value}
 
 
+def unusable_parameters(case: Case) -> int:
+    """The number of parameters of the fixture that stop the run: a regime other than Basel and
+    CRR, and under the CRR total own funds that are not a number greater than 0. An unusable
+    regime is read as Basel, so the total own funds are not read with it."""
+    if code(case.regime) not in REGIMES:
+        return 1
+    return int(case.crr and not (is_number(case.own_funds) and case.own_funds > 0))
+
+
 def derive(fixture: dict[str, Any]) -> list[Output]:
-    """The outputs of a fixture's calculation."""
+    """The outputs of a fixture's calculation; the status line of the run alone when a
+    parameter stops it."""
     case = Case(fixture)
     outputs: list[Output] = []
-    if case.calculation in ("CALC-02", "CALC-03"):
+    if errors := unusable_parameters(case):
+        outputs.append({"quantity": "run_status", "scope": None, "text": STOPPED.format(errors)})
+    elif case.calculation in ("CALC-02", "CALC-03"):
         interest_rate(case, outputs)
     elif case.calculation == "CALC-04":
         equity(case, outputs)

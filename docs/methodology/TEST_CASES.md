@@ -45,7 +45,7 @@ the example suite of the test harness reads them, and I keep that suite as
 the test of the harness itself
 ([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
-The project's cases are 38 JSON fixtures, on the calculations `CALC-02` to
+The project's cases are 42 JSON fixtures, on the calculations `CALC-02` to
 `CALC-09`:
 
 | Cases | Category | Expected values |
@@ -60,6 +60,8 @@ The project's cases are 38 JSON fixtures, on the calculations `CALC-02` to
 | `illustrative-crr-ir-specific-risk`, `illustrative-crr-maturity-method-c2`, `illustrative-crr-sample-equity` and `illustrative-crr-sample-requirement` | `nominal` | `illustrative`: under the `CRR` regime, a row at each risk weight of Article 336, `CALC-02`; and the positions of `bcbs119-c2-maturity-method`, `illustrative-sample-equity` and `illustrative-sample-requirement`, each debt security in the risk weight whose rates are those of its Basel category, so that each value that differs from that of the Basel case is the effect of a rule of the CRR: 150% between zones 1 and 3, no charge on an index, the transitional multiplier |
 | `illustrative-crr-fx-de-minimis-limit`, `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-transitional-end-date` and `illustrative-crr-after-transitional-end-date` | `boundary` | `illustrative`: under the `CRR` regime, the positions of `mar40-61-table-9` with total own funds whose 2% equals the overall net open position and is just below it; and the positions of `illustrative-requirement-fx-and-options-only` on the last date of the transitional multiplier and the day after it |
 | `illustrative-invalid-crr-ir-positions` | `invalid` | `illustrative`: under the `CRR` regime, the status of a row for each test of the category and the risk weight, and of a row that fails an earlier test |
+| `illustrative-crr-regime-in-lower-case` and `illustrative-crr-zero-own-funds` | `boundary` | `illustrative`: the positions of `mar40-61-table-9` with the regime written `crr`, which is read as `CRR` and gives the values of `illustrative-crr-fx-de-minimis-limit`; and under the `CRR` regime with total own funds of 0, which stop the run |
+| `illustrative-invalid-regime` and `illustrative-invalid-crr-own-funds` | `invalid` | `illustrative`: the positions of `mar40-61-table-9` with a regime that is neither `Basel` nor `CRR`, and under the `CRR` regime with no total own funds; each run stops. A stopped case expects one output, `run_status`: the status line of `Results` without the time of the run that ends it |
 | `illustrative-eligibility-sample-months` and `illustrative-eligibility-basel-regime` | `nominal` | `illustrative`: under the `CRR` regime, the template's 24 sample months, `CALC-09`, with the status of every month, the figures of the last and the status and restart condition of each approach; under the Basel regime, the status that assesses nothing |
 | `illustrative-eligibility-limits` and `illustrative-eligibility-events` | `boundary` | `illustrative`: a size of the business equal to the share of the total assets or to the amount, and one euro above it; a run of two and of three months, and a count of six and of seven |
 | `illustrative-invalid-eligibility-months` | `invalid` | `illustrative`: the status of a month for each test of a row of `DS-11` a JSON value can break, and the status of each approach while a row is invalid |
@@ -75,7 +77,7 @@ validates a rule: the derivation is the project's own, LibreOffice is not a
 supported host, and the suite has not run in Excel
 ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
-Two [accuracy contracts](#accuracy-contracts) cover a calculation of the
+Three [accuracy contracts](#accuracy-contracts) cover a calculation of the
 project. `ACC-02` is on the overall net open position and the requirement of
 the FX calculation, `CALC-06`: its calibration case is `illustrative-sample-fx`
 and its holdout case `mar40-61-table-9`, whose two values are published.
@@ -84,10 +86,19 @@ disallowances, the net position charge and the charge of the maturity
 method, `CALC-03`: its calibration case is
 `illustrative-sample-ir-general-market-risk` and its holdout cases
 `bcbs119-c2-maturity-method` and `mar40-27-vertical-disallowance`, whose
-values are published. Both are drafts and cannot be frozen yet: a frozen
+values are published. `ACC-04` is on the transitional factor, the
+requirement and the risk-weighted assets of `CALC-08` under the `CRR` regime:
+its calibration case is `illustrative-crr-sample-requirement` and its holdout
+cases `illustrative-crr-transitional-end-date` and
+`illustrative-crr-after-transitional-end-date`, whose values are all
+`illustrative`. All three are drafts and cannot be frozen yet: a frozen
 contract needs three holdout cases whose values are `published` or
-`independent`, and the project has one for `CALC-06` and two for `CALC-03`
-([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47)). Their
+`independent`, and the project has one for `CALC-06`, two for `CALC-03` and
+none under the `CRR` regime, for which no published worked example and no
+independent implementation was found
+([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47),
+[issue 86](https://github.com/danielep71/K-FRTB-SSA/issues/86);
+[the search](SOURCES.md#published-examples-of-the-crr-regime)). Their
 results are those the `cases` suite records in an Excel run, in
 `cases-results.json`.
 

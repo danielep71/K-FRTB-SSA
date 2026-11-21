@@ -36,10 +36,10 @@ the workbook cites it.
 `SRC-04` to `SRC-08` are the texts of the CRR regime of the milestone v0.3.0
 ([the decisions of #74](VALIDATION_PLAN.md#decisions)): the simplified
 standardised approach of Article 325(2) of the CRR, with Chapters 2 to 4 of
-Title IV of Part Three. No rule cites them yet: the
-comparison of the rules with them is a task of its own
-([#76](https://github.com/danielep71/K-FRTB-SSA/issues/76)), and a rule of the
-CRR regime will cite them by article and paragraph. `SRC-04` is a consolidated
+Title IV of Part Three. The rules of the CRR regime cite them by article and
+paragraph in the [calculation contracts](CALCULATION_CONTRACTS.md), after
+the comparison of the two regimes
+([#76](https://github.com/danielep71/K-FRTB-SSA/issues/76)). `SRC-04` is a consolidated
 text, a documentation tool without legal effect: where CRR3 amended an
 article, the rule is checked against the Official Journal text of the
 amending act, `SRC-05` or `SRC-06`. `SRC-09` and `SRC-10` are the technical
@@ -70,6 +70,30 @@ or is an assumption where no act is registered. State on 2026-11-21:
 - **Locator:** where the issuer publishes it, precise enough to find the same
   version again.
 - **Status:** `unverified`, `verified`, or `superseded by SRC-NN`.
+
+### Published examples of the CRR regime
+
+A case of the CRR regime has `published` values only where a registered
+source prints a worked example of Articles 325(2) and 326 to 361 whose
+figures it can compare, and `independent` values only where another author's
+implementation is registered with an `IMPL-` ID
+([reference classes](TEST_CASES.md#reference-classes)). On 2026-11-21 I
+searched the web, the Single Rulebook Q&A of the EBA and the repositories of
+GitHub for both, and registered nothing. The search was not exhaustive:
+
+| Searched | Found | Why it is not used |
+| --- | --- | --- |
+| The CRR, CRR3 and Delegated Regulation (EU) 2026/1221 (`SRC-04` to `SRC-06`) | Rules and tables only | The texts print no worked example |
+| The Single Rulebook Q&A of the EBA, on Articles 339, 351 and 352 | Question 2022_6658, on the overall net foreign exchange position on a consolidated basis, prints two calculations under Article 351, with requirements of 4 and 19.2; questions 2014_1356 and 2018_3682, on the maturity-based calculation of Article 339 | The EBA rejected 2022_6658 for publication on 2023-03-01: its figures are the submitter's, never answered. The answers of the others, as the search returned them, print no figure a case can compare. An answer of the EBA has no binding force in law |
+| Supervisors' publications: the Bank of England and the PRA, the Bundesbank | The PRA's rules of the simplified standardised approach from 2027-01-01, its supervisory statement SS13/13 and its reporting instructions; the Bundesbank's page on market risk | Rules and instructions of another jurisdiction, or a summary; none, as the search returned it, prints a worked example of the EU text |
+| Worked examples that a supervisor's rulebook prints | The appendices of the rulebook of the Central Bank of Bahrain, with a worked example of the maturity method and one of the maturity ladder for commodities | A rulebook of another jurisdiction, not the CRR. Only their titles were read, so whether their rates are those of the CRR was not checked |
+| Repositories on GitHub with the words *simplified standardised approach*, *standardised approach market risk CRR*, *maturity ladder market risk capital* and *Article 351 foreign exchange own funds* | This repository only | No implementation of the CRR's market risk by another author was found. The nearest that the web search returned, the Python package `rwa-calc`, describes itself as a calculator of credit risk |
+
+Every case of the CRR regime is therefore `illustrative`, its rules stay
+*Exercised* in the [traceability table](VALIDATION_PLAN.md#traceability), and
+its accuracy contract `ACC-04` stays a draft
+([decisions](VALIDATION_PLAN.md#decisions)). A worked example found later
+is registered with an ID of its own, as `SRC-03` was for the Basel regime.
 
 ## Local copies
 

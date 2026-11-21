@@ -239,10 +239,32 @@ class CrrDerivation(unittest.TestCase):
                 self.assertAlmostEqual(outputs[("fx_charge", None)], charge, places=9)
         self.assertAlmostEqual(derived(fx_case(200.0))[("fx_charge", None)], 16.0, places=9)
 
-    def test_the_crr_needs_total_own_funds_for_the_de_minimis(self) -> None:
-        for own_funds in (None, 0):
-            with self.subTest(own_funds=own_funds), self.assertRaises(AssertionError):
-                ssa.derive(under_crr(fx_case(200.0), own_funds))
+    def test_an_unusable_regime_or_total_own_funds_stops_the_run(self) -> None:
+        stopped: list[dict[str, object]] = [{
+            "quantity": "run_status", "scope": None,
+            "text": "STOPPED: 1 unusable input(s); see Checks. No results were calculated."}]
+        # Under the CRR the total own funds must be a number greater than 0; an unusable regime is
+        # read as Basel, whose run does not read them, so the two never count twice.
+        cases: tuple[tuple[dict[str, object], list[dict[str, object]] | None], ...] = (
+            ({"regime_code": "CRR"}, stopped),
+            ({"regime_code": "CRR", "total_own_funds_amount": 0}, stopped),
+            ({"regime_code": "CRR", "total_own_funds_amount": -10_000}, stopped),
+            ({"regime_code": "CRR", "total_own_funds_amount": "10000"}, stopped),
+            ({"regime_code": "EU"}, stopped),
+            ({"regime_code": "", "total_own_funds_amount": 0}, stopped),
+            ({"regime_code": " crr ", "total_own_funds_amount": 0.01}, None),
+            ({"regime_code": "basel"}, None),
+            ({}, None))
+        for parameters, outputs in cases:
+            with self.subTest(parameters=parameters):
+                result = ssa.derive({**fx_case(200.0), "parameters": parameters})
+                if outputs is None:
+                    self.assertIn("fx_charge", [output["quantity"] for output in result])
+                else:
+                    self.assertEqual(result, outputs)
+        # The de minimis of foreign_exchange() keeps its own guard for a caller that skips derive().
+        with self.assertRaises(AssertionError):
+            ssa.foreign_exchange(ssa.Case(under_crr(fx_case(200.0), None)), [])
 
     def test_the_transitional_factor_applies_under_the_crr_up_to_its_last_date(self) -> None:
         options = [{"id": name, "inputs": {"currency_code": "EUR", "charge_amount": 0}}
@@ -515,7 +537,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 38)
+        self.assertEqual(len(self.cases), 42)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -525,7 +547,28 @@ class Registered(unittest.TestCase):
                 if calculation != "CALC-07":
                     self.assertIn("boundary", categories)
         invalid = {case["calculation"] for case in self.cases.values() if case["category"] == "invalid"}
-        self.assertEqual(invalid, {"CALC-03", "CALC-04", "CALC-05", "CALC-06", "CALC-09"})
+        self.assertEqual(invalid, {"CALC-03", "CALC-04", "CALC-05", "CALC-06", "CALC-08", "CALC-09"})
+
+    def test_each_parameter_that_stops_the_run_has_a_negative_and_a_boundary_case(self) -> None:
+        # The regime: one that is neither value, and the CRR written in lower case, which is read.
+        # The total own funds under the CRR: none, and 0, the largest value that is not greater
+        # than 0. Each stopped case expects the status line alone; the CRR in lower case expects
+        # what the CRR in capitals does.
+        stopped = "STOPPED: 1 unusable input(s); see Checks. No results were calculated."
+        for name, regime, own_funds in (("illustrative-invalid-regime", "EU", 16750),
+                                        ("illustrative-invalid-crr-own-funds", "CRR", None),
+                                        ("illustrative-crr-zero-own-funds", "CRR", 0)):
+            with self.subTest(case=name):
+                parameters = self.cases[name]["parameters"]
+                self.assertEqual((parameters["regime_code"], parameters.get("total_own_funds_amount")),
+                                 (regime, own_funds))
+                self.assertEqual(self.cases[name]["datasets"], self.cases["mar40-61-table-9"]["datasets"])
+                self.assertEqual(self.expected(name), {("run_status", None): stopped})
+        lower, upper = "illustrative-crr-regime-in-lower-case", "illustrative-crr-fx-de-minimis-limit"
+        self.assertEqual(self.cases[lower]["parameters"],
+                         {**self.cases[upper]["parameters"], "regime_code": "crr"})
+        self.assertEqual(self.cases[lower]["datasets"], self.cases[upper]["datasets"])
+        self.assertEqual(self.expected(lower), self.expected(upper))
 
     def test_the_sample_cases_hold_the_sample_data_of_the_template(self) -> None:
         datasets = self.cases["illustrative-sample-requirement"]["datasets"]
@@ -700,7 +743,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 38)
+        self.assertEqual(len(names), 42)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])
@@ -788,6 +831,13 @@ class Runner(unittest.TestCase):
             return self.tool.actual(workbook, case, {"quantity": quantity, "scope": scope})
 
         self.assertEqual(read("own_funds_requirement"), 48267441.0)
+        # The status line without the time of the run that ends it.
+        status = self.tool.verify.named_cell(workbook, "Results_Status")
+        status.value = "STOPPED: 1 unusable input(s); see Checks. No results were calculated. Run 2026-11-21 10:00."
+        self.assertEqual(read("run_status"), "STOPPED: 1 unusable input(s); see Checks. No results were calculated.")
+        status.value = None
+        self.assertEqual(read("run_status"), "")
+        self.assertEqual(self.tool.run_line(" OK: Run of 3 positions. Run 10:00. "), "OK: Run of 3 positions.")
         self.assertEqual(read("transitional_factor"), 0.9)
         self.assertEqual(read("requirement_before_scaling", "DS-10", "EQ"), 2792000.0)
         self.assertEqual(read("ir_position_status", "DS-06", case["datasets"]["DS-06"][1]["id"]), "OK")
