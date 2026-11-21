@@ -30,7 +30,7 @@ except ImportError:  # pragma: no cover - installed from .github/requirements.tx
 FIXTURES = ROOT / "tests" / "fixtures"
 EXPECTED = ROOT / "tests" / "expected"
 TEMPLATE = ROOT / "src" / "workbook" / "Template.xlsx"
-PROJECT = frozenset(f"CALC-0{number}" for number in range(2, 9))
+PROJECT = frozenset(f"CALC-0{number}" for number in range(2, 10))
 
 
 def fixture(case: str) -> dict[str, Any]:
@@ -408,7 +408,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 20)
+        self.assertEqual(len(self.cases), 25)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -418,7 +418,7 @@ class Registered(unittest.TestCase):
                 if calculation != "CALC-07":
                     self.assertIn("boundary", categories)
         invalid = {case["calculation"] for case in self.cases.values() if case["category"] == "invalid"}
-        self.assertEqual(invalid, {"CALC-03", "CALC-04", "CALC-05", "CALC-06"})
+        self.assertEqual(invalid, {"CALC-03", "CALC-04", "CALC-05", "CALC-06", "CALC-09"})
 
     def test_the_sample_cases_hold_the_sample_data_of_the_template(self) -> None:
         datasets = self.cases["illustrative-sample-requirement"]["datasets"]
@@ -433,6 +433,12 @@ class Registered(unittest.TestCase):
                                  [(row[0], row[column]) for row in rows])
         self.assertEqual(self.cases["illustrative-sample-requirement"]["reporting_date"],
                          ssa_reference.AS_OF.isoformat())
+        # The sample months of Eligibility, in the order of their rows.
+        months = self.cases["illustrative-eligibility-sample-months"]
+        self.assertEqual(months["parameters"]["regime_code"], "CRR")
+        self.assertEqual([tuple(record["inputs"][key] for key in ssa.MONTH_KEYS)
+                          for record in months["datasets"]["DS-11"]],
+                         [(row[0].isoformat(), *row[1:]) for row in ssa_reference.ELIGIBILITY])
         # The cases of one calculation hold the same records as the whole portfolio.
         for case, dataset in (("illustrative-sample-ir-general-market-risk", "DS-06"),
                               ("illustrative-sample-equity", "DS-07"),
@@ -492,7 +498,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 20)
+        self.assertEqual(len(names), 25)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])
@@ -519,6 +525,30 @@ class Runner(unittest.TestCase):
         for sheet in ("EQPositions", "COPositions", "FXPositions"):
             self.assertIsNone(workbook[sheet].cell(5, 3).value)
 
+    def test_a_fixture_sets_its_parameters_and_its_months(self) -> None:
+        assert openpyxl is not None
+        workbook = openpyxl.load_workbook(TEMPLATE)
+        verify = self.tool.verify
+        case = fixture("illustrative-invalid-eligibility-months")
+        self.tool.write_inputs(workbook, case)
+        self.assertEqual(verify.named_cell(workbook, "Regime").value, "CRR")
+        self.assertEqual(verify.named_cell(workbook, "TotalOwnFunds").value, 10000000000)
+        sheet = workbook["Eligibility"]
+        # Row 5 is the first record; a month end that is no ISO date is written as it is.
+        self.assertEqual(sheet["C5"].value.isoformat(), "2025-10-31")
+        self.assertEqual([sheet[f"C{row}"].value for row in (6, 7, 12)], ["31.11.2025", 20251231, None])
+        self.assertEqual([sheet.cell(7, column).value for column in range(4, 9)],
+                         [8000000000, 100000000, 0, 10000000, 0])
+        self.assertIsNone(sheet["H14"].value)
+        self.assertIsNone(sheet["C15"].value)
+        # A case that sets no parameter has the reference regime and no own funds.
+        self.tool.write_inputs(workbook, fixture("illustrative-sample-fx"))
+        self.assertEqual(verify.named_cell(workbook, "Regime").value, "Basel")
+        self.assertIsNone(verify.named_cell(workbook, "TotalOwnFunds").value)
+        self.assertIsNone(sheet["C5"].value)
+        with self.assertRaises(ValueError):
+            self.tool.write_inputs(workbook, {**case, "parameters": {"scaling_ir_factor": 1.0}})
+
     def test_a_value_that_is_not_what_a_cell_can_hold_is_written_as_it_is(self) -> None:
         self.assertEqual(self.tool.cell_value("final_maturity_date", 20311231), 20311231)
         self.assertEqual(self.tool.cell_value("final_maturity_date", "31/12/2030"), "31/12/2030")
@@ -544,6 +574,15 @@ class Runner(unittest.TestCase):
         self.assertEqual(read("ir_position_status", "DS-06", case["datasets"]["DS-06"][1]["id"]), "OK")
         self.assertEqual(read("ir_horizontal_disallowance_within_zones", "DS-05", "EUR"), 60.0)
         self.assertEqual(read("ir_vertical_disallowance", "DS-05", "ZAR"), "no such currency on IR_Zones")
+        # An output of CALC-09: a cell of the row of its month, or of the result block.
+        months = fixture("illustrative-eligibility-limits")
+        workbook["Eligibility"]["P6"].value = 50000001.0
+        workbook["Eligibility"]["J33"].value = "NO"
+        self.assertEqual(self.tool.actual(workbook, months, {
+            "quantity": "eligibility_size_94", "scope": {"dataset": "DS-11", "record": "2026-05"}}),
+            50000001.0)
+        self.assertEqual(self.tool.actual(workbook, months, {
+            "quantity": "eligibility_restart_94", "scope": None}), "NO")
 
     def test_a_number_agrees_within_its_tolerance_and_a_text_exactly(self) -> None:
         number = {"value": 100.0, "tolerance": {"absolute": 0.5, "relative": 0}}

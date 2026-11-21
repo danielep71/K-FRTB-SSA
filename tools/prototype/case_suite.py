@@ -4,9 +4,10 @@
 Usage: python tools/prototype/case_suite.py [--write]
 
 It reads each JSON fixture of tests/fixtures/ whose calculation is one of the
-project's, CALC-02 to CALC-08, with its expected file of tests/expected/, and
+project's, CALC-02 to CALC-09, with its expected file of tests/expected/, and
 writes tests/modules/TEST_Cases.bas: a suite of the VBA test harness with one
-case per test case. A case types the fixture's records on the input sheets,
+case per test case. A case types the fixture's parameters and records on the
+input sheets,
 runs the calculation through RunSSA_Silent, compares every expected output
 with the cell that holds it, a number within the output's tolerance and a
 text exactly, records every number as a result, and puts the inputs back as
@@ -273,7 +274,8 @@ def input_sections(fixture: dict[str, Any]) -> list[tuple[str, list[str]]]:
         ("SET REPORTING SETTINGS", [
             "'Set the reporting date", f'SetNamed "AsOfDate", {date}',
             "'Set the reporting currency",
-            f'SetNamed "ReportingCcy", {text_literal(fixture["reporting_currency_code"])}'])]
+            f'SetNamed "ReportingCcy", {text_literal(fixture["reporting_currency_code"])}',
+            *parameter_lines(fixture)])]
     rates = ["'Type one row of the FX table for each currency of the test case"]
     for index, record in enumerate(datasets.get("DS-05", []), 1):
         rates += wrapped(f"PutRate {index}, {text_literal(record['id'])}, "
@@ -301,7 +303,38 @@ def input_sections(fixture: dict[str, Any]) -> list[tuple[str, list[str]]]:
                             f"Array({', '.join(values)})")
         if len(rows) > 1:
             sections.append((f"TYPE {kind.upper()} POSITIONS", rows))
-    return sections
+    return sections + month_sections(fixture)
+
+
+def month_sections(fixture: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    """The section that types the records of DS-11, as run_cases.write_months does."""
+    records = fixture["datasets"].get("DS-11", [])
+    if len(records) > run_cases.MONTH_ROWS:
+        raise SuiteError(f"{fixture['id']}: more than {run_cases.MONTH_ROWS} months")
+    months = ["'Type the month ends of the test case, one row each from the first row"]
+    for index, record in enumerate(records, 1):
+        values = [cell_literal(key, record["inputs"].get(key)) for key in run_cases.MONTH_KEYS]
+        while values and values[-1] == "Empty":
+            values.pop()
+        if values:
+            months += wrapped(f"PutRow NM_EL_HEADER, {index}, Array({', '.join(values)})")
+    return [("TYPE MONTHS", months)] if len(months) > 1 else []
+
+
+def parameter_lines(fixture: dict[str, Any]) -> list[str]:
+    """The statements that set the parameters, as run_cases.write_inputs: the regime always,
+    its reference value where the fixture does not set it, and the total own funds where it
+    does; ClearInputs has emptied them."""
+    parameters = fixture.get("parameters", {})
+    for key in parameters.keys() - run_cases.PARAMETERS.keys():
+        raise SuiteError(f"{fixture['id']}: no cell for the parameter {key}")
+    lines = []
+    for key, (name, default) in run_cases.PARAMETERS.items():
+        value = parameters.get(key, default)
+        if value is not None:
+            what = key.removesuffix("_code").removesuffix("_amount").replace("_", " ")
+            lines += [f"'Set the {what}", f'SetNamed "{name}", {cell_literal(key, value)}']
+    return lines
 
 
 def reader(fixture: dict[str, Any], output: dict[str, Any]) -> tuple[str, bool]:
@@ -309,6 +342,13 @@ def reader(fixture: dict[str, Any], output: dict[str, Any]) -> tuple[str, bool]:
     whether it is a number already (True) or the value of a cell (False)."""
     quantity, scope = output["quantity"], output["scope"]
     results_first = run_cases.RESULTS_ROW["IR"] - 1
+    if (cell := run_cases.eligibility_cell(quantity)) is not None:
+        row, column = cell
+        if scope is None:
+            return (f"BlockCell({row - run_cases.BLOCK_ROW}, "
+                    f"{column - run_cases.BLOCK_COLUMN})"), False
+        index = [item["id"] for item in fixture["datasets"]["DS-11"]].index(scope["record"]) + 1
+        return f"RowCell(NM_EL_HEADER, {index}, {column - FIRST_COLUMN})", False
     if scope is None:
         if quantity in run_cases.NAMED:
             return f"NamedCell({NAMES[run_cases.NAMED[quantity]]})", False
@@ -438,8 +478,9 @@ FIXED_HEADER = [
      "certification log as evidence of an Excel run\n"
      "\n"
      "Each case replaces the inputs of the workbook with those of its test case: the "
-     "reporting date and currency, the FX table, the option charges and the four "
-     "position sheets. It rewrites the output sheets through RunSSA_Silent, puts back "
+     "reporting date and currency, the regime and the total own funds, the FX table, the "
+     "option charges, the four position sheets and the month ends of Eligibility. It "
+     "rewrites the output sheets through RunSSA_Silent, puts back "
      "the inputs the workbook had, on the success and the error path, and asserts it. "
      "It clears the output sheets when it puts the inputs back."),
     ("ERROR POLICY",
@@ -616,15 +657,19 @@ def helpers() -> list[str]:
         "areas are numbered so that one loop can visit them all.",
         "Returns the range of the area that Index names: the table of a position sheet "
         "with the rows PositionRows gives, the FX table, the reporting date, the "
-        "reporting currency or the option charge of a risk class.",
+        "reporting currency, the option charge of a risk class, the regime, the total own "
+        "funds or the month ends of Eligibility.",
         inputs=arguments(("Index", "Long: 1 to 4: the rows of the four position sheets, "
                                    "as many as PositionRows gives; 5: the FX table, with its "
                                    "descriptions; 6 and 7: the reporting date and currency; "
-                                   "8 to 11: the option charges.")),
-        returns="The range of the area. Nothing for an Index outside 1 to 11, since the "
+                                   "8 to 11: the option charges; 12 and 13: the regime and "
+                                   "the total own funds; 14: the input columns of the rows "
+                                   "of Eligibility.")),
+        returns="The range of the area. Nothing for an Index outside 1 to 14, since the "
                 "selection has no other branch.",
-        deps="PositionHeader; PositionRows; the IR_, EQ_ and FX_ and CO_INPUT_WIDTH "
-             "constants of CORE_Config; the workbook's names"),
+        deps="PositionHeader; PositionRows; the IR_, EQ_ and FX_ and CO_INPUT_WIDTH, "
+             "NM_EL_HEADER, ELIGIBILITY_ROWS and EL_INPUT_WIDTH constants of CORE_Config; "
+             "the workbook's names"),
         [("Header", "Range", "Header of a position sheet"),
          ("Codes", "Range", "FX table codes"), ("Rates", "Range", "FX table rates")], [
         ("SELECT AREA", [
@@ -648,6 +693,10 @@ def helpers() -> list[str]:
             '    Case 9: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "EQ").RefersToRange',
             '    Case 10: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "CO").RefersToRange',
             '    Case 11: Set InputArea = ThisWorkbook.Names(NM_OPTIONS_PREFIX & "FX").RefersToRange',
+            '    Case 12: Set InputArea = ThisWorkbook.Names("Regime").RefersToRange',
+            '    Case 13: Set InputArea = ThisWorkbook.Names("TotalOwnFunds").RefersToRange',
+            "    Case 14: Set InputArea = ThisWorkbook.Names(NM_EL_HEADER).RefersToRange _",
+            "                .Offset(1, 0).Resize(ELIGIBILITY_ROWS, EL_INPUT_WIDTH)",
             "End Select"])])
     lines += procedure(["Private Function PositionHeader( _", "    ByVal Index As Long) _",
                         "    As Range"], "GET POSITION HEADER", fields(
@@ -875,24 +924,25 @@ def helpers() -> list[str]:
                           "    SameValue = (First = Second)",
                           "End If"])])
     lines += procedure(["Private Sub ClearInputs()"], "CLEAR INPUTS", fields(
-        "Empty every input area a test case fills: the position sheets, the FX table and "
-        "the option charges. The reporting date and currency are always set by the case.",
+        "Empty every input area a test case fills: the position sheets, the FX table, the "
+        "option charges, the total own funds and the month ends. The reporting date and "
+        "currency and the regime are always set by the case.",
         "A case replaces the inputs of the workbook with those of its test case, so the "
         "areas it fills must be empty before it types.",
-        "Clears the contents of every input area except 6 and 7, the reporting date and "
-        "currency.",
+        "Clears the contents of every input area except 6, 7 and 12, the reporting date "
+        "and currency and the regime.",
         deps="InputArea; INPUT_AREAS",
         notes="Clears the contents of those areas; their formats stay."),
         [("i", "Long", "Input area")], [
-        ("CLEAR AREAS", ["'Empty every area but the reporting date and currency",
+        ("CLEAR AREAS", ["'Empty every area but the reporting date and currency and the regime",
                          "For i = 1 To INPUT_AREAS",
-                         "    If i <> 6 And i <> 7 Then InputArea(i).ClearContents",
+                         "    If i <> 6 And i <> 7 And i <> 12 Then InputArea(i).ClearContents",
                          "Next i"])])
     lines += procedure(["Private Sub SetNamed( _", "    ByVal CellName As String, _",
                         "    ByVal Value As Variant)"], "SET NAMED VALUE", fields(
         "Type a value in the cell a workbook name refers to.",
-        "The reporting date, the reporting currency and the option charges are cells "
-        "that the workbook names.",
+        "The reporting date, the reporting currency, the option charges, the regime and "
+        "the total own funds are cells that the workbook names.",
         "Types Value in the cell that CellName refers to, through PutValue.",
         inputs=arguments(("CellName", "String: a workbook name that refers to one cell."),
                          ("Value", "Variant: what the cell holds; as PutValue.")),
@@ -919,16 +969,17 @@ def helpers() -> list[str]:
                             "End If"])])
     lines += procedure(["Private Sub PutRow( _", "    ByVal HeaderName As String, _",
                         "    ByVal Index As Long, _", "    ByVal Values As Variant)"],
-                       "PUT POSITION ROW", fields(
-        "Type one row of a position sheet.",
-        "The positions of a test case are typed one row at a time, from the PositionID "
-        "on.",
+                       "PUT INPUT ROW", fields(
+        "Type one row of a position sheet or of Eligibility.",
+        "The positions and the month ends of a test case are typed one row at a time, "
+        "from the first column of the table on.",
         "Finds the row Index under the header and types each value of Values in the "
-        "cells of the row, from the PositionID to the right.",
+        "cells of the row, from the header's column to the right.",
         inputs=arguments(("HeaderName", "String: workbook name of the sheet's header cell."),
                          ("Index", "Long: row under the header, from 1."),
-                         ("Values", "Variant: the cells of the row from the PositionID; "
-                                    "Empty leaves a cell empty.")),
+                         ("Values", "Variant: the cells of the row from the header's column: "
+                                    "the PositionID, or the month end; Empty leaves a cell "
+                                    "empty.")),
         deps="PutValue"),
         [("Target", "Range", "First cell of the row"), ("c", "Long", "Cell of the row")], [
         ("LOCATE ROW", ["'Take the first cell of the row under the header",
@@ -1031,6 +1082,21 @@ def helpers() -> list[str]:
         returns="The value of the cell, as Range.Value gives it."),
         [], [("READ CELL", ["'Read the cell the name refers to",
                             "NamedCell = ThisWorkbook.Names(CellName).RefersToRange.Value"])])
+    lines += procedure(["Private Function BlockCell( _", "    ByVal RowOffset As Long, _",
+                        "    ByVal ColumnOffset As Long) _", "    As Variant"],
+                       "READ RESULT BLOCK CELL", fields(
+        "The value of one cell of the result block of Eligibility.",
+        "The status and the restart condition of each approach are cells of the result "
+        "block of Eligibility.",
+        "Reads the cell that lies RowOffset rows under the first row of the block and "
+        "ColumnOffset columns to the right of its first column.",
+        inputs=arguments(("RowOffset", "Long: 0 for Article 325a, 1 for Article 94."),
+                         ("ColumnOffset", "Long: columns to the right of the status.")),
+        returns="The value of the cell, as Range.Value gives it.",
+        deps="The NM_EL_RESULTS name of CORE_Config"),
+        [], [("READ CELL", ["'Read the cell at the row and column offsets in the result block",
+                            "BlockCell = ThisWorkbook.Names(NM_EL_RESULTS).RefersToRange _",
+                            "    .Cells(1 + RowOffset, 1 + ColumnOffset).Value"])])
     lines += procedure(["Private Function CurrencyRow( _", "    ByVal HeaderName As String, _",
                         "    ByVal ColumnOffset As Long, _", "    ByVal Code As String) _",
                         "    As Range"], "FIND CURRENCY ROW", fields(
@@ -1137,7 +1203,9 @@ def helpers() -> list[str]:
 def input_notes(fixture: dict[str, Any], sections: list[tuple[str, list[str]]]) -> str:
     """The BEHAVIOR of an Inputs procedure, from the records of the fixture."""
     datasets = fixture["datasets"]
-    items = ["  - the reporting date and the reporting currency"]
+    items = ["  - the reporting date and the reporting currency",
+             "  - the regime" + (", and the total own funds"
+                                 if "total_own_funds_amount" in fixture.get("parameters", {}) else "")]
     if datasets.get("DS-05"):
         items.append(f"  - the FX table: {len(datasets['DS-05'])} row(s)")
     if datasets.get("DS-10"):
@@ -1145,6 +1213,8 @@ def input_notes(fixture: dict[str, Any], sections: list[tuple[str, list[str]]]) 
     for dataset, kind in POSITION_KINDS.items():
         if datasets.get(dataset):
             items.append(f"  - the {kind} positions: {len(datasets[dataset])} row(s)")
+    if datasets.get("DS-11"):
+        items.append(f"  - the month ends of Eligibility: {len(datasets['DS-11'])} row(s)")
     return "Empties the input areas, then types:\n" + "\n".join(items)
 
 
@@ -1242,7 +1312,7 @@ def module() -> str:
                       ("Private Const EXPECTED_ASSERTIONS", f"As Long = {assertions}",
                        "Assertions a complete run evaluates")], tight=True),
             "", "    'The inputs a test case replaces (InputArea)",
-            *aligned([("Private Const INPUT_AREAS", "As Long = 11", "Areas kept and put back"),
+            *aligned([("Private Const INPUT_AREAS", "As Long = 14", "Areas kept and put back"),
                       ("Private Const INPUT_ROWS", f"As Long = {run_cases.CAPACITY}",
                        "Fewest rows of a position sheet kept")]),
             "", "    'Where a result per currency is found",
@@ -1255,9 +1325,9 @@ def module() -> str:
                        "Buckets FX block: net position")]),
             "", *section("PRIVATE STATE"),
             *aligned([("Private mRows(1 To 4)", "As Long", "Rows of each position sheet kept"),
-                      ("Private mKept(1 To 11)", "As Variant",
+                      ("Private mKept(1 To 14)", "As Variant",
                        "What each input area held: values"),
-                      ("Private mFormulas(1 To 11)", "As Variant",
+                      ("Private mFormulas(1 To 14)", "As Variant",
                        "What each input area held: formulas")]),
             "", ""]
     text += entry_points(len(pairs), assertions)

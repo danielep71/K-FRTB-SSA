@@ -855,9 +855,10 @@ month entered, they read `NOT ASSESSED: no month entered`. A status `NOT MET` or
 `CEASE` is a warning of `Checks`, counted in rule `C16` once for each approach, and
 the requirement is unchanged.
 
-**Validation:** the VBA test suites check the engine against the derivation of
-`tests/derivations/ssa.py`; no registered test case or `published` value covers it
-yet. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the
+**Validation:** five registered test cases, `illustrative-eligibility-…` and
+`illustrative-invalid-eligibility-months`, hold `illustrative` values that
+`tests/derivations/ssa.py` derives from this contract; no `published` value covers
+it yet. See the [validation matrix](VALIDATION_PLAN.md#validation-matrix) and the
 rows of `CALC-09` in the [traceability table](VALIDATION_PLAN.md#traceability).
 
 ## Decisions

@@ -287,7 +287,7 @@ reads a cell this way:
 ### In a test fixture
 
 A [test fixture](TEST_CASES.md#fixture-format) gives the inputs of a case
-as records of these datasets:
+as records of these datasets, and some parameters:
 
 - **Reporting date and currency** are in the fixture's envelope,
   `reporting_date` and `reporting_currency_code`: they are `as_of_date` and
@@ -295,24 +295,37 @@ as records of these datasets:
 - **FX rates** are records of `DS-05`: the record's `id` is the currency
   code, and its input is `fx_rate`. The reporting currency is listed with
   rate 1, as on the sheet.
+- **Regime and total own funds** are in the fixture's `parameters`,
+  `regime_code` and `total_own_funds_amount`: they are `regime` and
+  `total_own_funds` of `DS-02`, and the amount is in the reporting currency.
+  They describe the institution, not a what-if. Without them the regime is
+  `Basel` and the total own funds are empty.
 - **Positions** are records of `DS-06` to `DS-09`, whose `id` is the
   `position_id`. **Option charges** are records of `DS-10`, whose `id` is
   the risk class.
+- **Months** are records of `DS-11`, in the order of the rows of
+  `Eligibility` from its first row: the first record is row 5. The dataset
+  has no identifier field, so the record's `id` only names the row, such as
+  the month `2026-09`, and `month_end_date` is an input like the others. Its
+  amounts are in euro, which each record states as `currency_code` `EUR`.
 - **An input key** is the field's name with the suffix of its unit, unless
   the name already ends in one: `position_value_amount`, `coupon_rate`,
   `currency_code`, `direction_code`, `final_maturity_date`, `issue_id`.
   A quantity of `DS-08` is `quantity_count`, a whole number: a fixture
   cannot hold a fractional quantity.
 - **Every other parameter**, and the tables `DS-03` and `DS-04`, have their
-  reference values: a fixture cannot change them. A what-if on a parameter
-  is not a test case.
-- A result per currency is scoped to a record of `DS-05`, and a result per
-  risk class to a record of `DS-10`.
+  reference values: a fixture cannot change them, and under the `CRR`
+  regime `transitional_end_date` is its reference value. A what-if on a
+  parameter is not a test case.
+- A result per currency is scoped to a record of `DS-05`, a result per
+  risk class to a record of `DS-10`, and a result per month to a record of
+  `DS-11`.
 
 A dataset's identifier field is its required `text` field whose name ends in
 `_id`, such as the illustrative `position_id`. A dataset whose records a
 [JSON fixture](TEST_CASES.md#fixture-format) lists has exactly one, and its
-value is the record's `id`.
+value is the record's `id`, except `DS-11`, whose rows are read in their
+order.
 
 State the unit of every amount, rate and period explicitly: a percentage, a
 decimal fraction and basis points are different fields, not different
@@ -511,3 +524,4 @@ no portfolio.
 | 2026-11-16 | The project's datasets are numbered from `DS-02` | `DS-01` is the illustrative dataset, which the illustrative test cases still use, and an ID is never reused | [19](https://github.com/danielep71/K-FRTB-SSA/issues/19) |
 | 2026-11-19 | `Other` stays among the allowed instruments of `DS-06`, and the engine rejects any value outside the list, a blank included | A debt position can be of a kind that has no value of its own, and rejecting it would force a wrong name on it; the list excludes free text, not an unlisted kind. A rejected row is reported and never calculated | [44](https://github.com/danielep71/K-FRTB-SSA/issues/44) |
 | 2026-11-19 | A position table of more than 500 rows is reported under rule `C14`, which stops the run, and the rows of a table are counted from the row below its header to its last row with a PositionID | `C14` already stops the run on an input it cannot use, so no rule and no row of `Checks` is added. The span is what the engine reads and what the template formats, validates and colours: a PositionID below row 504 has no format and no check, whatever number of rows are filled | [45](https://github.com/danielep71/K-FRTB-SSA/issues/45) |
+| 2026-11-21 | A fixture may set the regime and the total own funds under `parameters`, and gives the rows of `DS-11` in their order, without an identifier field | The cases of `CALC-09` run under the `CRR` regime, which needs total own funds; the regime and the own funds describe the institution, not a what-if on a reference value. A row of `DS-11` is a month, and its place on the sheet is what the engine reads: an invalid case needs a month end that is no date | [84](https://github.com/danielep71/K-FRTB-SSA/issues/84) |

@@ -45,8 +45,8 @@ the example suite of the test harness reads them, and I keep that suite as
 the test of the harness itself
 ([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
-The project's cases are 20 JSON fixtures, on the calculations `CALC-02` to
-`CALC-08`:
+The project's cases are 25 JSON fixtures, on the calculations `CALC-02` to
+`CALC-09`:
 
 | Cases | Category | Expected values |
 | --- | --- | --- |
@@ -56,6 +56,9 @@ The project's cases are 20 JSON fixtures, on the calculations `CALC-02` to
 | `illustrative-sample-…`, six cases, and `illustrative-option-charges` | `nominal` | `illustrative`: the template's sample portfolio, one case per calculation |
 | `illustrative-ir-time-band-limits`, `illustrative-ir-specific-risk-maturity-limits`, `illustrative-eq-matched-positions`, `illustrative-co-matched-positions`, `illustrative-fx-one-sided-positions`, `illustrative-requirement-fx-and-options-only` | `boundary` | `illustrative`: the limits of the bands, positions that offset in full, a zero amount, a risk class without positions |
 | `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break |
+| `illustrative-eligibility-sample-months` and `illustrative-eligibility-basel-regime` | `nominal` | `illustrative`: under the `CRR` regime, the template's 24 sample months, `CALC-09`, with the status of every month, the figures of the last and the status and restart condition of each approach; under the Basel regime, the status that assesses nothing |
+| `illustrative-eligibility-limits` and `illustrative-eligibility-events` | `boundary` | `illustrative`: a size of the business equal to the share of the total assets or to the amount, and one euro above it; a run of two and of three months, and a count of six and of seven |
+| `illustrative-invalid-eligibility-months` | `invalid` | `illustrative`: the status of a month for each test of a row of `DS-11` a JSON value can break, and the status of each approach while a row is invalid |
 
 `tests/derivations/ssa.py` computes every expected value from the
 calculation contracts. Two runners compare the workbook with them: the
@@ -110,10 +113,11 @@ results are those the `cases` suite records in an Excel run, in
 
 | Rule | Detail |
 | --- | --- |
-| Envelope | `schema_version` (1), `kind` (`test-fixture`), `id`, `synthetic` (`true`), `description`, `category`, `calculation`, `reporting_date`, `reporting_currency_code` and `datasets` are required, and no other key is allowed. An `invalid` case relaxes this for the calculation inputs ([invalid inputs](#invalid-inputs)) |
+| Envelope | `schema_version` (1), `kind` (`test-fixture`), `id`, `synthetic` (`true`), `description`, `category`, `calculation`, `reporting_date`, `reporting_currency_code` and `datasets` are required, and `parameters` is optional; no other key is allowed. An `invalid` case relaxes this for the calculation inputs ([invalid inputs](#invalid-inputs)) |
+| Parameters | A non-empty object of the parameters the case sets, keyed as `inputs` are; an `_amount` is in `reporting_currency_code`. The data contract says which parameters a fixture may set ([in a test fixture](DATA_CONTRACT.md#in-a-test-fixture)); every other has its reference value |
 | Calculation | A `CALC-` ID declared by a heading of the [calculation contracts](CALCULATION_CONTRACTS.md) |
 | Datasets | A non-empty object whose keys are `DS-` IDs declared in the *Datasets* table of the [data contract](DATA_CONTRACT.md); each holds a non-empty list of records |
-| Records | Each record has an `id`, unique in the fixture, and an `inputs` object. The `id` is the value of the dataset's identifier field, its required `text` field whose name ends in `_id`, such as the illustrative `position_id` ([fields](DATA_CONTRACT.md#fields)), so `inputs` leaves that field out; it holds every other field the case needs |
+| Records | Each record has an `id`, unique in the fixture, and an `inputs` object. The `id` is the value of the dataset's identifier field, its required `text` field whose name ends in `_id`, such as the illustrative `position_id` ([fields](DATA_CONTRACT.md#fields)), so `inputs` leaves that field out; it holds every other field the case needs. A dataset without an identifier field, whose rows are read in their order, takes its records in that order, and its `id` names the row ([in a test fixture](DATA_CONTRACT.md#in-a-test-fixture)) |
 | Inputs | Keys are lower snake case and end in a unit suffix (below). The field tables of the data contract decide which fields exist; a key is the field's name with the suffix of its unit, unless the name already ends in one, so the illustrative `notional` and `currency` are `notional_amount` and `currency_code`. Input files of a [file-based case](#file-based-cases) keep the field names of the data contract |
 | Currencies | `reporting_currency_code` is the currency of results. A record whose `inputs` hold an `_amount` key also holds `currency_code`, the currency of all its amounts, so a currency mismatch is always visible |
 | Illustrative entries | A `CALC-` or `DS-` ID marked *Illustrative* in its guide may be used only by an `illustrative-` case |
@@ -492,8 +496,8 @@ Each fixture declares one `category`:
   - **Always valid:** `schema_version`, `kind`, `id`, `synthetic`,
     `description`, `category` and `reporting_date`, and the expected file.
   - **May be invalid, missing or unknown:** `calculation`,
-    `reporting_currency_code` and `datasets`, with their records, keys, unit
-    suffixes and values.
+    `reporting_currency_code`, `parameters` and `datasets`, with their
+    records, keys, unit suffixes and values.
   - The `description` names the input rule the case breaks.
 - The `_status` quantities and their texts are fixed by the calculation
   contract, under its *Failure behaviour*. A rejection never substitutes a

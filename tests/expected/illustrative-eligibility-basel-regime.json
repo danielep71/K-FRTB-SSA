@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-eligibility-basel-regime",
+  "outputs": [
+    {
+      "quantity": "eligibility_status_325a", "scope": null, "rule": "CALC-09.8", "text": "NOT ASSESSED: Basel regime",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract gives an approach that is not assessed. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_status_94", "scope": null, "rule": "CALC-09.8", "text": "NOT ASSESSED: Basel regime",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract gives an approach that is not assessed. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

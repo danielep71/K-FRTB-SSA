@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-eligibility-basel-regime",
+  "synthetic": true,
+  "description": "Three synthetic month ends under the Basel regime, which assesses neither approach and reads no row",
+  "category": "nominal",
+  "calculation": "CALC-09",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "Basel"},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-11": [
+      {"id": "2026-07", "inputs": {"month_end_date": "2026-07-31", "total_assets_amount": 8000000000, "long_325a_amount": 360000000, "short_325a_amount": -240000000, "long_94_amount": 42000000, "short_94_amount": -18000000, "currency_code": "EUR"}},
+      {"id": "2026-08", "inputs": {"month_end_date": "2026-08-31", "total_assets_amount": 8000000000, "long_325a_amount": 360000000, "short_325a_amount": -240000000, "long_94_amount": 42000000, "short_94_amount": -18000000, "currency_code": "EUR"}},
+      {"id": "2026-09", "inputs": {"month_end_date": "2026-09-30", "total_assets_amount": 8000000000, "long_325a_amount": 360000000, "short_325a_amount": -240000000, "long_94_amount": 42000000, "short_94_amount": -18000000, "currency_code": "EUR"}}
+    ]
+  }
+}
