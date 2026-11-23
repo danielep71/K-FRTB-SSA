@@ -411,7 +411,8 @@ Use only the categories an entry needs.
   published), and `CRR_COMPARISON.md` says that its rules are implemented
   since it was written. No calculation and no expected value changes, and
   nothing was run in Excel
-  ([#87](https://github.com/danielep71/K-FRTB-SSA/issues/87)).
+  ([#87](https://github.com/danielep71/K-FRTB-SSA/issues/87),
+  [#117](https://github.com/danielep71/K-FRTB-SSA/issues/117)).
 - The headline of `Results` shows the regime of the run, `Basel` or `CRR`,
   on a fifth row below the reporting date, in the formula workbook and in the
   template. It is a formula that repeats the `Regime` parameter, written as
