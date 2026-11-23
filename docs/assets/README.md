@@ -13,9 +13,11 @@ It shows the stage, *Prototype*, and that the workbook has not been run in
 Excel yet, and no result of a calculation. Its only figures are the four scaling
 factors of the simplified standardised approach, 1.30 for interest rate risk,
 3.50 for equity risk, 1.90 for commodity risk and 1.20 for foreign exchange
-risk. They are those of MAR40.2 of `SRC-02` in the
-[sources](../methodology/SOURCES.md), with which I compared the image on
-2026-11-16.
+risk. They are those of MAR40.2 of `SRC-02` and of Article 325(2) of
+`SRC-05` in the [sources](../methodology/SOURCES.md), which the image tags
+*MAR40 · CRR*. I compared the factors with `SRC-02` on 2026-11-16; the
+[comparison with the CRR](../methodology/CRR_COMPARISON.md#requirement-and-scaling-calc-08)
+records that the factors equal those of `SRC-05`.
 
 To render it again (Chromium, then crop to the 1280 x 640 frame):
 

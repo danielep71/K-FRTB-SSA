@@ -45,7 +45,10 @@ The workbook's scope, feature by feature:
 | Securitisation positions, credit derivatives and the correlation trading portfolio | Not supported | `CALC-02` | No input identifies one: entered as a debt position, it is calculated as one. Do not enter it |
 | Commodities risk by the maturity ladder approach | Not supported | `CALC-05` | The maturity date of a commodity position is not used |
 | National discretions, the equity arbitrage treatments, the offset of depository receipts and the exemption for insignificant FX business | Not supported | `CALC-02` to `CALC-06` | Each contract's *Limits and non-goals* names them |
-| A jurisdiction's own implementation, such as the European Union's | Not supported | [Sources](SOURCES.md#decisions) | The basis is the Basel Framework's chapter MAR40 |
+| The regime: Basel MAR40, or the simplified standardised approach of Article 325(2) of the CRR | Supported | `CALC-02` to `CALC-09`; `DS-02.regime` | Selected by the `Regime` parameter. The differences are in the [comparison](CRR_COMPARISON.md). No value of the CRR regime is validated |
+| Under the `CRR` regime: the transitional multiplier of Article 495s(2), the specific risk of Article 336, 150% between zones 1 and 3, no index charge and the de minimis of Article 351 | Supported | `CALC-02`, `CALC-03`, `CALC-04`, `CALC-06`, `CALC-08` | Values are `illustrative` |
+| Under the `CRR` regime: the cap of Article 335, the reversal of the first two offsets, the duration method, the collective investment undertakings, the commodity maturity ladders, ancillary agricultural business, the closely correlated currencies and the exclusions of Article 104c | Not supported | `CALC-02` to `CALC-06` | Each contract's *Limits and non-goals* names them |
+| A jurisdiction's own implementation other than the Basel Framework's and the CRR | Not supported | [Sources](SOURCES.md#decisions) | |
 
 - **Supported:** in scope. The workbook calculates it, as the named
   [calculation contract](CALCULATION_CONTRACTS.md) states, once that

@@ -1678,12 +1678,16 @@ def build_readme(ctx: Context) -> None:
         ("Not implemented", "Duration method for IR general market risk; commodity maturity-ladder approach; delta-plus and "
          "scenario option methods (enter their non-delta charges on OptionCharges); securitisation and nth-to-default "
          "specific risk; index-arbitrage carve-outs (MAR40.48-40.50); the 4% specific-risk option for liquid diversified "
-         "portfolios; the FX de minimis exemption (MAR40.62); structural FX position exclusions."),
+         "portfolios; the FX de minimis exemption under the Basel regime (MAR40.62; the CRR regime applies Article 351); "
+         "structural FX position exclusions. Under the CRR regime also: the cap of Article 335, the duration method, "
+         "the reversal of the first two zone offsets, collective investment undertakings, the commodity maturity "
+         "ladders, ancillary agricultural business, closely correlated currencies and the exclusions of Article 104c."),
         ("Simplifications", "Positions are entered already decomposed into legs. Specific-risk hedges other than identical "
          "issues are not recognised. Immaterial-currency aggregation (MAR40.24) is not offered."),
-        ("Regime", "Basel MAR40 only. EU CRR3 provisions on the simplified standardised approach, and their application date, "
-         "are not modelled and should be checked against the Official Journal before use."),
-        ("Status", "Prototype: not validated for regulatory reporting. Sample data are illustrative."),
+        ("Regime", "Basel MAR40 by default, or CRR (Article 325(2) of Regulation (EU) No 575/2013), set on Params; the "
+         "headline of Results shows which one produced the figures. The CRR regime is not validated: every value is "
+         "illustrative, no Excel evidence exists for it, and a result is not a statement of compliance with the CRR."),
+        ("Status", "Prototype: not validated for regulatory reporting, under either regime. Sample data are illustrative."),
     ], True)
     r += 1
     section(ws, r, "References", "C", "D")
