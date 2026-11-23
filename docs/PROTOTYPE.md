@@ -144,7 +144,8 @@ a total.
 risk, the other charge, the options, the requirement before scaling, the
 scaling factor and the requirement after scaling, then the total, a row for
 the transitional multiplier (1 under the Basel regime) and the risk-weighted
-assets. `IRCalc`, `EQCalc`, `COCalc` and `FXCalc` hold every
+assets. Its headline repeats the reporting currency, the reporting date and the
+regime of the run, `Basel` or `CRR`. `IRCalc`, `EQCalc`, `COCalc` and `FXCalc` hold every
 intermediate value of each row; `IR_Ladder`, `IR_Zones` and `Buckets` hold the
 ladders, the offsets and the totals per market, commodity and currency.
 

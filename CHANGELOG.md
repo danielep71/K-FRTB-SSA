@@ -396,6 +396,16 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The headline of `Results` shows the regime of the run, `Basel` or `CRR`,
+  on a fifth row below the reporting date, in the formula workbook and in the
+  template. It is a formula that repeats the `Regime` parameter, written as
+  `CRR` or `Basel` whatever its case, so a figure no longer needs the
+  transitional multiplier row to say which rules produced it. The input
+  fingerprint moves from `E18` to `E19`, and the output area of `Results` in
+  the protection matrix grows by one row. The template is built again; no
+  calculation and no expected value changes, and nothing was run in Excel
+  ([#87](https://github.com/danielep71/K-FRTB-SSA/issues/87)).
+
 - `python tools/run_tests.py` runs the repository tests one module per
   process, as many at once as the machine has CPUs, and fails when any module
   fails or runs no test. `check_repository.py` and the `Minimum Python (3.11)`

@@ -1356,7 +1356,9 @@ def build_results(ctx: Context) -> None:
     heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges; x the transitional multiplier under the CRR"),
              ("Risk-weighted assets", "=SSA_RWA", "Requirement x 12.5"),
              ("Reporting currency", "=ReportingCcy", "All amounts in this currency, unscaled units"),
-             ("Reporting date", "=AsOfDate", "")]
+             ("Reporting date", "=AsOfDate", ""),
+             ("Regime", '=IF(UPPER(TRIM(Regime))="CRR","CRR",IF(UPPER(TRIM(Regime))="BASEL","Basel",Regime))',
+              "Basel (MAR40) or CRR (Regulation (EU) No 575/2013), as set on Params")]
     for k, (lab, fm, note) in enumerate(heads):
         rr = 14 + k
         put(ws, f"C{rr}", lab, None, None, b=True, sz=10)
@@ -1364,19 +1366,19 @@ def build_results(ctx: Context) -> None:
         put(ws, f"F{rr}", note, None, None, color=GREY_TXT)
         ws.row_dimensions[rr].height = 22
     # Written by the run, as a value, and read by CheckStatus.
-    put(ws, "C18", "Input fingerprint", None, None, b=True, sz=10)
-    put(ws, "E18", None, "@", "total", align="center", sz=11)
-    put(ws, "F18", "Of the inputs of the last run; CheckStatus compares it with the sheets" if ctx.template
+    put(ws, "C19", "Input fingerprint", None, None, b=True, sz=10)
+    put(ws, "E19", None, "@", "total", align="center", sz=11)
+    put(ws, "F19", "Of the inputs of the last run; CheckStatus compares it with the sheets" if ctx.template
         else "Not used: every output is a live formula", None, None, color=GREY_TXT)
-    ws.row_dimensions[18].height = 22
-    name(wb, "Results_Fingerprint", "Results!$E$18")
-    section(ws, 19, "Where the numbers come from", "C", "P")
+    ws.row_dimensions[19].height = 22
+    name(wb, "Results_Fingerprint", "Results!$E$19")
+    section(ws, 20, "Where the numbers come from", "C", "P")
     for k, (sh, txt) in enumerate([("IR_Zones", "Interest rate charges per currency, with every offset"),
                                    ("IR_Ladder", "Weighted positions per currency and time band"),
                                    ("Buckets", "Equity by market, commodities by commodity, FX net open position"),
                                    ("Checks", "Rejected rows and parameter findings")]):
-        link(ws, f"C{20 + k}", sh)
-        put(ws, f"D{20 + k}", txt, None, None)
+        link(ws, f"C{21 + k}", sh)
+        put(ws, f"D{21 + k}", txt, None, None)
     ws.freeze_panes = "D7"
 
 

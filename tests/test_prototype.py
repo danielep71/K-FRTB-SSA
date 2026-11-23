@@ -450,16 +450,35 @@ class Generator(NeedsOpenpyxl):
                 for word in ('"INCOMPLETE"', '"FAILED"', '"OUTDATED"'):
                     self.assertIn(word, rules[0])
 
+    def test_the_headline_of_results_shows_the_regime_next_to_the_currency_and_the_date(
+            self) -> None:
+        assert openpyxl is not None
+        for form in (self.template, self.formula):
+            book = openpyxl.load_workbook(form)
+            sheet = book["Results"]
+            with self.subTest(form=form.name):
+                self.assertEqual([sheet[f"C{row}"].value for row in range(14, 19)],
+                                 ["Own funds requirement", "Risk-weighted assets",
+                                  "Reporting currency", "Reporting date", "Regime"])
+                self.assertEqual(sheet["E16"].value, "=ReportingCcy")
+                self.assertEqual(sheet["E17"].value, "=AsOfDate")
+                self.assertIn("Regime", sheet["E18"].value)
+                self.assertEqual(sheet["C20"].value, "Where the numbers come from")
+        # The run compares the regime with the formula workbook, with the currency and the date.
+        compare = tool("compare_outputs")
+        self.assertTrue(any(area.sheet == "Results" and 18 in area.rows
+                            for area in compare.FIXED_AREAS))
+
     def test_the_fingerprint_of_the_inputs_has_a_named_cell_that_the_template_leaves_empty(
             self) -> None:
         assert openpyxl is not None
         book = openpyxl.load_workbook(self.template)
-        self.assertEqual(book.defined_names["Results_Fingerprint"].attr_text, "Results!$E$18")
-        self.assertIsNone(book["Results"]["E18"].value)
-        self.assertEqual(book["Results"]["C18"].value, "Input fingerprint")
+        self.assertEqual(book.defined_names["Results_Fingerprint"].attr_text, "Results!$E$19")
+        self.assertIsNone(book["Results"]["E19"].value)
+        self.assertEqual(book["Results"]["C19"].value, "Input fingerprint")
         # It is outside the areas that a run clears and the comparison reads.
         compare = tool("compare_outputs")
-        self.assertFalse(any(area.sheet == "Results" and 18 in area.rows
+        self.assertFalse(any(area.sheet == "Results" and 19 in area.rows
                              for area in compare.FIXED_AREAS))
 
     def test_no_other_repository_is_named_in_the_workbook(self) -> None:

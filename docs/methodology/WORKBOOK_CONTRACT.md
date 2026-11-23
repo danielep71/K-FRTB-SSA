@@ -272,7 +272,7 @@ reads `Tests_Result`.
 | Option charges | `shOptionCharges` | Input | Users, in the *Charge* column | Four rows, one per risk class (the `Options` names) |
 | `Eligibility_Header` | `shEligibility` | Input | Users, in columns C to H | One row per month end, up to 24; `RunSSA` writes the calculated columns I to U of each row |
 | `Eligibility_Results` | `shEligibility` | Result | `RunSSA` | One row per approach, `325a` and `94`, below the rows of the months |
-| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes, a total row and a row for the transitional multiplier; below them a headline of four formulas |
+| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes, a total row and a row for the transitional multiplier; below them a headline of five formulas: the requirement, the risk-weighted assets, the reporting currency, the reporting date and the regime |
 | `Results_Fingerprint` | `shResults` | Parameter | `RunSSA` | One cell: the fingerprint of the inputs of the last run, which `CheckStatus` reads |
 | `IR_Zones_Header` | `shIRZones` | Result | `RunSSA` | One row per currency of the FX table, and a total row |
 | `IR_Ladder_Header` | `shIRLadder` | Result | `RunSSA` | One block of 15 time bands per currency of the FX table |
@@ -485,7 +485,7 @@ constants on `Params`, are unlocked. Two entries of the matrix:
         "formatRows": false
       },
       "output": [
-        "A1:P23"
+        "A1:P24"
       ]
     }
   }
@@ -562,6 +562,7 @@ sheet with a password too. How Excel treats `UserInterfaceOnly` is
 | 2026-11-15 | A date is a serial from 1 January 1900 to 31 December 9999, and no shorter limit applies to a final maturity | A number above that range, such as a date typed as `20311231`, is not a date in Excel or VBA. A long maturity is valid, and the last time band has no upper bound | [29](https://github.com/danielep71/K-FRTB-SSA/issues/29) |
 | 2026-11-15 | A changed input is found by a fingerprint of the inputs, which a check compares on request, when the workbook is opened and before it is saved | A change event would mark the results at once, but its first write after a run empties Excel's undo history, it does not fire while events are off, and it cannot be exercised outside Excel | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-15 | Every output sheet repeats the status line of `Results` with a formula, in `E1` | A reader of one sheet can tell whether it belongs to the last run, and one written cell holds the state | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
+| 2026-11-23 | The headline of `Results` shows the regime of the run, below the reporting date, as `Basel` or `CRR` | A reader of a requirement sees which rules produced it, and the transitional multiplier row alone does not say so under the `Basel` regime. The cell is a formula that repeats the `Regime` parameter, and the input fingerprint moves to `E19` | [87](https://github.com/danielep71/K-FRTB-SSA/issues/87) |
 | 2026-11-14 | No sheet is protected and no cell is unlocked yet | The prototype is brought in as received; the change is tracked | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
 | 2026-11-19 | Every sheet is protected, without a password, and only the input cells are unlocked: the cells with the input fill, and the MAR40 constants of `Params` | Users cannot overwrite a label, a header, a formula or a result by accident, and keep the means to try a what-if. A password would have to be stored, or lost, and would add no security to a workbook whose code a user can read | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
 | 2026-11-19 | The options of the protection are those of the standard's default but for two: users may change the width of a column and the height of a row | A user who cannot read a column cannot use the sheet; inserting, deleting, sorting and filtering would break a fixed table | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
