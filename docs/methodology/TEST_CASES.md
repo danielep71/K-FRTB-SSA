@@ -533,13 +533,69 @@ Three kinds of VBA test complement the cases. Each is described in the
 | [End-to-end case runner](TEST_HARNESS.md#end-to-end-case-runner) | A case's fixture and expected file, written to the input sheets | That the workbook, run through its public entry point, gives the case's expected values within its tolerance |
 | [Volume benchmark](TEST_HARNESS.md#volume-benchmarks) | A large synthetic input built in memory, never committed | How long the calculation takes on one host; never a reference value and never certification evidence |
 
+<a id="generated-cases"></a>
+
+## Generated cases
+
+`tests/test_generated_cases.py` generates cases from the registered fixtures of
+`CALC-02` to `CALC-08` and checks properties of the derivation script
+`tests/derivations/ssa.py` that a list of cases cannot. It uses the standard
+library only: every draw comes from a fixed seed, so a failure repeats, and the
+message names the fixture and the draw. `python tools/run_tests.py` runs it, in
+under a second.
+
+| Property | Generated input | Fails when |
+| --- | --- | --- |
+| Order | The records of every dataset shuffled | A result depends on the order of the rows |
+| Sign | A charge of any fixture | A charge is negative or not finite |
+| Scale | Every amount and quantity multiplied by 0.5, 3 or 1000, under the Basel regime | A charge does not scale by the same factor |
+| Direction | Every `Long` turned into `Short` and the reverse | A charge changes |
+| Unusable value | One to three position fields set to an empty cell, text, a wrong type, zero, a negative number or an edge, in `DS-06` to `DS-09` | The script raises, or a charge is negative or not finite, where the contracts' *Failure behaviour* answers with a row status |
+
+A corruption check, as in the relation tests, shows that the comparison fails on
+a shifted charge. I also ran the test on three injected defects, an asymmetric sign, a charge
+offset by 1 and a script that raises on an empty text; each was caught.
+
+**What it found.** The positions never made the script fail. The FX rates did:
+a rate that is text raises `TypeError`, and a rate of 0, a negative rate, a
+reporting currency missing or at another rate and a currency listed twice are
+calculated, where the contract stops the run with rules `C05` to `C07`. The
+script does not implement those rules and no registered case covers them, which
+[issue 119](https://github.com/danielep71/K-FRTB-SSA/issues/119) records. The test
+leaves the `fx_rate` field out until that issue is closed.
+
+**Limits.**
+
+- It runs the derivation script, not the VBA engine. The engine runs in Excel or,
+  as `tools/prototype/run_cases.py` does, in LibreOffice, so a property holds for
+  the engine only where a case shows it.
+- A property validates no value. The values stay `illustrative`, and a generated
+  case never counts for a rule in the [completeness policy](#completeness-policy).
+- The inputs are the registered fixtures with the values above, not a search guided
+  by coverage. `CALC-09` is out because it reads its months in order, `CALC-01`
+  because it is an illustrative stand-in, and `DS-10` because the workbook checks
+  no option charge.
+
+**Fuzzers.** I did not add a fuzzer. A coverage-guided fuzzer for Python, Atheris,
+needs a native libFuzzer build and a third-party dependency that this repository
+does not otherwise have, and it would test a Python script that is not what the
+workbook ships. The VBA engine, which is, takes cell values that JSON cannot express,
+and [its tests](#case-categories) belong in a VBA test module. The OpenSSF Scorecard
+*Fuzzing* check does not detect the approach above: its
+[source](https://github.com/ossf/scorecard/blob/main/checks/raw/fuzzing.go)
+recognizes OSS-Fuzz, ClusterFuzzLite and, for Python, the text `import atheris` in a
+`*.py` file, and its
+[documentation](https://github.com/ossf/scorecard/blob/main/docs/checks.md)
+lists no Python library. The score of that check stays at its lowest value, and
+I accept that.
+
 <a id="completeness-policy"></a>
 
 ## Completeness policy
 
 - A rule is **validated** only when at least one `published` or
-  `independent` case passes for it. `illustrative` cases, relation tests and
-  volume benchmarks never count.
+  `independent` case passes for it. `illustrative` cases, relation tests,
+  generated cases and volume benchmarks never count.
 - Each implemented rule also needs at least one `boundary` case, and each
   input domain at least one `invalid` case, as a fixture or a VBA test.
 - A run that does not execute every expected case and assertion is
