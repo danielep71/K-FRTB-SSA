@@ -65,6 +65,18 @@ Use only the categories an entry needs.
 
 ### Added
 
+- Generated cases: `tests/test_generated_cases.py` generates cases from the
+  registered fixtures of `CALC-02` to `CALC-08` with fixed seeds and checks
+  that the derivation script keeps five properties on them: the order of the
+  records, the sign of a charge, its scale, the direction of the positions and
+  an unusable position value that gives a status and never an exception. It
+  needs no new dependency and runs in under a second. It found that the
+  derivation script ignores the FX rate stop rules `C05` to `C07`, which
+  [#119](https://github.com/danielep71/K-FRTB-SSA/issues/119) records. I did
+  not add a fuzzer: the OpenSSF Scorecard *Fuzzing* check does not detect
+  this approach, and `docs/methodology/TEST_CASES.md` states why. The test
+  covers the derivation script, not the VBA engine, and nothing was run in
+  Excel ([#69](https://github.com/danielep71/K-FRTB-SSA/issues/69)).
 - Registered test cases of the `CRR` regime, with `illustrative` values:
   `illustrative-crr-ir-specific-risk`, a row at each risk weight of
   Article 336; `illustrative-crr-maturity-method-c2`,
