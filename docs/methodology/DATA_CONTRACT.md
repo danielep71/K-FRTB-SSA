@@ -501,8 +501,8 @@ file. What a run records, where it can be read later:
   ([status and staleness](WORKBOOK_CONTRACT.md#status-and-staleness));
 - the rows used and the rows rejected per risk class, on `Results`, and each
   rejected row with its reason, on `Checks`;
-- the reporting date and the reporting currency, in the headline of
-  `Results`;
+- the reporting date, the reporting currency and the regime, in the headline
+  of `Results`;
 - the commit, the time and the configuration of the build, on the `README`
   sheet.
 
