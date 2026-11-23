@@ -3,8 +3,8 @@
 The registered cases check the values someone derived. This module checks what a
 list of cases cannot: that the derivation script, ssa.py, keeps the relations of
 the calculations on inputs it generates from the registered fixtures, and that it
-never fails with an exception on an unusable position value, which the contracts'
-Failure behaviour answers with a row status.
+never fails with an exception on an unusable position value or FX rate, which the contracts'
+Failure behaviour answers with a row status or with a stop of the run.
 
 Every case is generated from a fixed seed with the standard library, so a failure
 repeats: the message names the fixture and the draw. No generator or fuzzing
@@ -13,9 +13,6 @@ library is used or needed (see docs/methodology/TEST_CASES.md, Generated cases).
 Out of scope, on purpose:
 - The VBA engine. It runs in Excel or in LibreOffice (tools/prototype/run_cases.py),
   never in this module, so these properties hold for the derivation only.
-- The FX rates (DS-05, field fx_rate): the derivation script does not implement the
-  stop rules C05 to C07 yet, so a generated rate would only find that gap, which
-  issue 119 tracks. Its acceptance criteria ask for the exclusion below to go.
 - The option charge amounts (DS-10): the contracts state that the workbook checks none.
 - CALC-01 and CALC-09: CALC-01 is an illustrative stand-in, and CALC-09 reads its
   months in order, so a shuffle changes its result by design.
@@ -41,8 +38,9 @@ FIXTURES = ROOT / "tests" / "fixtures"
 CALCULATIONS = frozenset(f"CALC-0{number}" for number in range(2, 9))
 SEED = 20261123
 DRAWS = 20
-# The datasets of the positions. DS-05 (FX rates) and DS-10 (option charges) are out of scope.
-POSITIONS = ("DS-06", "DS-07", "DS-08", "DS-09")
+# The datasets the unusable values are put in: the FX rates and the positions. DS-10 (option charges)
+# is out of scope.
+MUTATED = ("DS-05", "DS-06", "DS-07", "DS-08", "DS-09")
 # The quantities that are a charge or a requirement of a risk class, in the reporting currency.
 CHARGES = frozenset({
     "ir_specific_risk_charge", "ir_general_market_risk_charge", "eq_specific_risk_charge",
@@ -143,13 +141,13 @@ class GeneratedCases(unittest.TestCase):
             with self.subTest(fixture=name):
                 self.assertTrue(agree(charges(case), charges(flipped)))
 
-    def test_an_unusable_position_value_gives_a_status_and_never_an_exception(self) -> None:
+    def test_an_unusable_value_gives_a_status_and_never_an_exception(self) -> None:
         rng = random.Random(SEED)
         for name, case in self.cases:
             for draw in range(DRAWS):
                 mutated = copy.deepcopy(case)
                 for _ in range(rng.randint(1, 3)):
-                    dataset = rng.choice([key for key in POSITIONS if mutated["datasets"].get(key)]
+                    dataset = rng.choice([key for key in MUTATED if mutated["datasets"].get(key)]
                                          or [None])
                     if dataset is None:
                         break
@@ -158,6 +156,8 @@ class GeneratedCases(unittest.TestCase):
                         record["inputs"][rng.choice(list(record["inputs"]))] = rng.choice(UNUSABLE)
                 with self.subTest(fixture=name, draw=draw):
                     outputs = ssa.derive(mutated)
+                    if any(output["quantity"] == "run_status" for output in outputs):
+                        self.assertEqual(len(outputs), 1, outputs)
                     for output in outputs:
                         value = output.get("value")
                         if isinstance(value, float):

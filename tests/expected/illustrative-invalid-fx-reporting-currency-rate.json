@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-invalid-fx-reporting-currency-rate",
+  "outputs": [
+    {
+      "quantity": "run_status", "scope": null, "rule": null, "text": "STOPPED: 1 unusable input(s); see Checks. No results were calculated.",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status line that the contract's Failure behaviour gives a run that one unusable value of the FX table stops, rule C05, without the time of the run that ends it on Results. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-23"}
+    }
+  ]
+}

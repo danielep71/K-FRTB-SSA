@@ -65,6 +65,16 @@ Use only the categories an entry needs.
 
 ### Added
 
+- FX table stop rules in the derivation script: `tests/derivations/ssa.py` now
+  stops the run, as the contract states, on a rate that is not a number greater
+  than 0 (`C07`), a currency listed twice (`C06`) and a reporting currency that
+  is not listed or not at rate 1 (`C05`), and counts each in the `STOPPED` status
+  line as the engine does. Five registered `invalid` cases cover them, one for
+  each way a row can break, which raises the registered cases to 49 and the
+  assertions of the workbook's `cases` suite to 874. The generated cases now
+  mutate the `fx_rate` field too. The cases agree with the engine in LibreOffice
+  and nothing was run in Excel
+  ([#119](https://github.com/danielep71/K-FRTB-SSA/issues/119)).
 - Generated cases: `tests/test_generated_cases.py` generates cases from the
   registered fixtures of `CALC-02` to `CALC-08` with fixed seeds and checks
   that the derivation script keeps five properties on them: the order of the

@@ -61,6 +61,7 @@ The project's cases are 42 JSON fixtures, on the calculations `CALC-02` to
 | `illustrative-crr-fx-de-minimis-limit`, `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-transitional-end-date` and `illustrative-crr-after-transitional-end-date` | `boundary` | `illustrative`: under the `CRR` regime, the positions of `mar40-61-table-9` with total own funds whose 2% equals the overall net open position and is just below it; and the positions of `illustrative-requirement-fx-and-options-only` on the last date of the transitional multiplier and the day after it |
 | `illustrative-invalid-crr-ir-positions` | `invalid` | `illustrative`: under the `CRR` regime, the status of a row for each test of the category and the risk weight, and of a row that fails an earlier test |
 | `illustrative-crr-regime-in-lower-case` and `illustrative-crr-zero-own-funds` | `boundary` | `illustrative`: the positions of `mar40-61-table-9` with the regime written `crr`, which is read as `CRR` and gives the values of `illustrative-crr-fx-de-minimis-limit`; and under the `CRR` regime with total own funds of 0, which stop the run |
+| `illustrative-invalid-fx-rate-not-positive`, `-rate-not-a-number`, `-currency-listed-twice`, `-reporting-currency-missing` and `-reporting-currency-rate` | `invalid` | `illustrative`: the positions of `mar40-61-table-9` with one unusable row of the FX table: a rate of 0, a rate that is text, JPY listed twice, no row for the reporting currency and the reporting currency at rate 2; each run stops, under rule `C07`, `C06` or `C05`, and expects the status line alone |
 | `illustrative-invalid-regime` and `illustrative-invalid-crr-own-funds` | `invalid` | `illustrative`: the positions of `mar40-61-table-9` with a regime that is neither `Basel` nor `CRR`, and under the `CRR` regime with no total own funds; each run stops. A stopped case expects one output, `run_status`: the status line of `Results` without the time of the run that ends it |
 | `illustrative-eligibility-sample-months` and `illustrative-eligibility-basel-regime` | `nominal` | `illustrative`: under the `CRR` regime, the template's 24 sample months, `CALC-09`, with the status of every month, the figures of the last and the status and restart condition of each approach; under the Basel regime, the status that assesses nothing |
 | `illustrative-eligibility-limits` and `illustrative-eligibility-events` | `boundary` | `illustrative`: a size of the business equal to the share of the total assets or to the amount, and one euro above it; a run of two and of three months, and a count of six and of seven |
@@ -550,7 +551,7 @@ under a second.
 | Sign | A charge of any fixture | A charge is negative or not finite |
 | Scale | Every amount and quantity multiplied by 0.5, 3 or 1000, under the Basel regime | A charge does not scale by the same factor |
 | Direction | Every `Long` turned into `Short` and the reverse | A charge changes |
-| Unusable value | One to three position fields set to an empty cell, text, a wrong type, zero, a negative number or an edge, in `DS-06` to `DS-09` | The script raises, or a charge is negative or not finite, where the contracts' *Failure behaviour* answers with a row status |
+| Unusable value | One to three position fields set to an empty cell, text, a wrong type, zero, a negative number or an edge, in `DS-05` to `DS-09` | The script raises, a charge is negative or not finite, or a run that stops gives more than its status line, where the contracts' *Failure behaviour* answers with a row status or stops the run |
 
 A corruption check, as in the relation tests, shows that the comparison fails on
 a shifted charge. I also ran the test on three injected defects, an asymmetric sign, a charge
@@ -560,9 +561,10 @@ offset by 1 and a script that raises on an empty text; each was caught.
 a rate that is text raises `TypeError`, and a rate of 0, a negative rate, a
 reporting currency missing or at another rate and a currency listed twice are
 calculated, where the contract stops the run with rules `C05` to `C07`. The
-script does not implement those rules and no registered case covers them, which
-[issue 119](https://github.com/danielep71/K-FRTB-SSA/issues/119) records. The test
-leaves the `fx_rate` field out until that issue is closed.
+script did not implement those rules and no registered case covered them, which
+[issue 119](https://github.com/danielep71/K-FRTB-SSA/issues/119) recorded. The script
+implements them now, five registered `invalid` cases cover them, and the test mutates
+the `fx_rate` field with the other fields.
 
 **Limits.**
 
