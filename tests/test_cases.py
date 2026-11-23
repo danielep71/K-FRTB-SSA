@@ -537,7 +537,7 @@ class Registered(unittest.TestCase):
     cases: dict[str, dict[str, Any]]
 
     def test_each_calculation_has_a_nominal_and_a_boundary_case(self) -> None:
-        self.assertEqual(len(self.cases), 42)
+        self.assertEqual(len(self.cases), 47)
         for calculation in sorted(PROJECT):
             categories = {case["category"] for case in self.cases.values()
                           if case["calculation"] == calculation}
@@ -563,6 +563,27 @@ class Registered(unittest.TestCase):
                 self.assertEqual((parameters["regime_code"], parameters.get("total_own_funds_amount")),
                                  (regime, own_funds))
                 self.assertEqual(self.cases[name]["datasets"], self.cases["mar40-61-table-9"]["datasets"])
+                self.assertEqual(self.expected(name), {("run_status", None): stopped})
+        # The FX table, rules C05 to C07: the positions of table 9 with one unusable row each.
+        table = {record["id"]: record["inputs"]["fx_rate"]
+                 for record in self.cases["mar40-61-table-9"]["datasets"]["DS-05"]}
+        for name, rows in (("illustrative-invalid-fx-rate-not-positive", {**table, "USD": 0}),
+                           ("illustrative-invalid-fx-rate-not-a-number", {**table, "USD": "abc"}),
+                           ("illustrative-invalid-fx-currency-listed-twice", None),
+                           ("illustrative-invalid-fx-reporting-currency-missing",
+                            {code: rate for code, rate in table.items() if code != "CHF"}),
+                           ("illustrative-invalid-fx-reporting-currency-rate", {**table, "CHF": 2.0})):
+            with self.subTest(case=name):
+                case = self.cases[name]
+                self.assertEqual(case["category"], "invalid")
+                self.assertNotIn("parameters", case)
+                self.assertEqual(case["datasets"]["DS-09"], self.cases["mar40-61-table-9"]["datasets"]["DS-09"])
+                listed = [(record["id"], record["inputs"]["fx_rate"]) for record in case["datasets"]["DS-05"]]
+                if rows is None:
+                    self.assertEqual(sorted(listed), sorted([*table.items(), ("JPY", 1.0)]))
+                else:
+                    self.assertEqual(dict(listed), rows)
+                    self.assertEqual(len(listed), len(rows))
                 self.assertEqual(self.expected(name), {("run_status", None): stopped})
         lower, upper = "illustrative-crr-regime-in-lower-case", "illustrative-crr-fx-de-minimis-limit"
         self.assertEqual(self.cases[lower]["parameters"],
@@ -743,7 +764,7 @@ class Runner(unittest.TestCase):
 
     def test_it_runs_the_cases_of_the_project_and_not_the_illustrative_examples(self) -> None:
         names = [case["id"] for case in self.tool.cases([])]
-        self.assertEqual(len(names), 42)
+        self.assertEqual(len(names), 47)
         self.assertNotIn("illustrative-format-example", names)
         self.assertEqual([case["id"] for case in self.tool.cases(["mar40-61-table-9"])],
                          ["mar40-61-table-9"])

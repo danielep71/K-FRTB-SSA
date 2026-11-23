@@ -114,7 +114,7 @@ built for people who need to **check** a number as well as produce one:
 | Status and staleness | A status line on every output sheet, and a check that says whether the results shown are those of the inputs now on the sheets |
 | Worksheet functions | Four `FRTBSSA_*` functions for the building blocks, returning Excel errors for invalid inputs |
 | Deployment | Plain exported VBA and a macro-free template; no add-in, COM component, DLL or extra VBA reference |
-| Testing | 44 registered numerical cases, VBA suites under a test harness, static checks of the VBA in CI, and an offline check that the evidence of an Excel run matches one commit |
+| Testing | 49 registered numerical cases, VBA suites under a test harness, static checks of the VBA in CI, and an offline check that the evidence of an Excel run matches one commit |
 | Reproducibility | Tools that build the workbook from the source of one commit, byte for byte |
 
 The [support matrix](docs/methodology/README.md#support-matrix) lists what is
@@ -260,10 +260,10 @@ delta already deducted.
 | Class | Meaning | Used for |
 | --- | --- | --- |
 | `published` | A value printed in MAR40 or in the Basel Committee's 2005 update of its 1996 market risk amendment, checked against the text | Three cases: the example of table 9 of MAR40.61, the vertical disallowance of MAR40.27 and the maturity-method example |
-| `illustrative` | A derivation of mine, separate from the code under test, written from the contracts | The other 41 cases; it never counts as validation |
+| `illustrative` | A derivation of mine, separate from the code under test, written from the contracts | The other 46 cases; it never counts as validation |
 
-- **44 registered cases** cover the calculations, the limits, the invalid
-  inputs and the CRR rules; 42 run in the workbook's `cases` suite, with 864
+- **49 registered cases** cover the calculations, the limits, the invalid
+  inputs and the CRR rules; 47 run in the workbook's `cases` suite, with 874
   assertions, and the same cases run against the formula workbook and the
   Python derivation, which must agree.
 - **No CRR value is validated.** Every value of the `CRR` regime is

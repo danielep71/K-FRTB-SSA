@@ -757,13 +757,29 @@ def total(quantity: str, value: float) -> Output:
     return {"quantity": quantity, "scope": None, "value": value}
 
 
+def fx_table_errors(case: Case) -> int:
+    """The number of unusable values of the FX table, the sum of the counts of rules C05 to C07.
+
+    C07 counts each listed currency whose rate is not a number greater than 0. C06 counts each
+    currency listed again after its first row. C05 is 1 when the reporting currency is not listed
+    or its first row has a rate other than 1. A row without a code is blank and is not read."""
+    rows = [(code(record["id"]), record["inputs"].get("fx_rate")) for record in case.records("DS-05")]
+    listed = [(currency, rate) for currency, rate in rows if currency != ""]
+    rate_errors = sum(1 for _, rate in listed if not (is_number(rate) and rate > 0))
+    repeated = len(listed) - len({currency for currency, _ in listed})
+    first = next((rate for currency, rate in listed if currency == case.reporting != ""), None)
+    return rate_errors + repeated + int(not (is_number(first) and first == 1))
+
+
 def unusable_parameters(case: Case) -> int:
-    """The number of parameters of the fixture that stop the run: a regime other than Basel and
-    CRR, and under the CRR total own funds that are not a number greater than 0. An unusable
-    regime is read as Basel, so the total own funds are not read with it."""
+    """The number of values of the fixture that stop the run: a regime other than Basel and CRR,
+    under the CRR total own funds that are not a number greater than 0, and the unusable values
+    of the FX table. An unusable regime is read as Basel, so the total own funds are not read
+    with it."""
+    errors = fx_table_errors(case)
     if code(case.regime) not in REGIMES:
-        return 1
-    return int(case.crr and not (is_number(case.own_funds) and case.own_funds > 0))
+        return errors + 1
+    return errors + int(case.crr and not (is_number(case.own_funds) and case.own_funds > 0))
 
 
 def derive(fixture: dict[str, Any]) -> list[Output]:

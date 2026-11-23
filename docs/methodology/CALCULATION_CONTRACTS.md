@@ -677,13 +677,20 @@ values are published in table 9 of MAR40.61, and the test cases
 `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-fx-de-minimis-limit`,
 `illustrative-crr-regime-in-lower-case`, `illustrative-crr-zero-own-funds`,
 `illustrative-fx-book`, `illustrative-fx-one-sided-positions`,
-`illustrative-invalid-crr-own-funds`, `illustrative-invalid-fx-positions` and
+`illustrative-invalid-crr-own-funds`, `illustrative-invalid-fx-currency-listed-twice`,
+`illustrative-invalid-fx-positions`, `illustrative-invalid-fx-rate-not-a-number`,
+`illustrative-invalid-fx-rate-not-positive`,
+`illustrative-invalid-fx-reporting-currency-missing`,
+`illustrative-invalid-fx-reporting-currency-rate` and
 `illustrative-sample-fx`. The cases of the `CRR` regime run the positions of
 table 9 with total own funds whose 2% equals the overall net open position of
 335, where the requirement is zero, and whose 2% is 334.999, where it is the
 whole 8% of step 3; with the regime written `crr`, which is read as `CRR`; and
 with no total own funds and with total own funds of 0, which stop the run.
-`illustrative-fx-book` and two rows of `illustrative-invalid-fx-positions`
+Five cases run the positions of table 9 with one unusable row of the FX table
+each and stop the run: a rate of 0 and a rate that is text (rule `C07`), a
+currency listed twice (`C06`), and the reporting currency missing and at rate 2
+(`C05`). `illustrative-fx-book` and two rows of `illustrative-invalid-fx-positions`
 test the book: a non-trading book row is tested and calculated as a trading
 book one. Every other expected value is `illustrative`:
 derived within the project, it validates nothing. See the [validation
