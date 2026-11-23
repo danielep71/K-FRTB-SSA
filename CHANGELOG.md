@@ -396,6 +396,22 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- The documents describe the two regimes. `README.md` is rewritten: what the
+  approach is, the capabilities, the quick start, how a run works, the
+  differences between the Basel and the `CRR` regime, the evidence classes,
+  what has been checked and the known limitations. `docs/PROTOTYPE.md`, the
+  website (`index.html`), the support matrix of the methodology guide and the
+  `README` sheet of the template no longer say that the CRR is not modelled:
+  they say what the `CRR` regime calculates, which rules it does not support,
+  and that every value of the regime is `illustrative`, not validated, and not
+  run in Excel, so a result is neither for regulatory reporting nor a statement
+  of compliance with the CRR. The social preview is tagged *MAR40 · CRR*, the
+  counts of test cases and expected values are those of the repository (44
+  cases, 823 expected values in the 43 cases with a JSON fixture, 16 of them
+  published), and `CRR_COMPARISON.md` says that its rules are implemented
+  since it was written. No calculation and no expected value changes, and
+  nothing was run in Excel
+  ([#87](https://github.com/danielep71/K-FRTB-SSA/issues/87)).
 - The headline of `Results` shows the regime of the run, `Basel` or `CRR`,
   on a fifth row below the reporting date, in the formula workbook and in the
   template. It is a formula that repeats the `Regime` parameter, written as

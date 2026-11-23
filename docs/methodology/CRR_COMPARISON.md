@@ -8,9 +8,10 @@ points to, so that each difference has its own implementation task and no rule
 changes on a reading of the CRR alone. It follows the decisions on the scope
 of the CRR regime ([#74](https://github.com/danielep71/K-FRTB-SSA/issues/74)).
 
-It is a reading of the text, made on 2026-11-20. It validates nothing: no
-rule of the CRR regime is implemented, tested or confirmed by a competent
-authority, and the traceability statuses of the
+It is a reading of the text, made on 2026-11-20, before the tasks it names
+implemented the rules of the CRR regime. It validates nothing: those rules are
+tested against `illustrative` values only, and none is confirmed by a competent
+authority. The traceability statuses of the
 [validation plan](VALIDATION_PLAN.md#traceability) are unchanged.
 
 ## How to read it

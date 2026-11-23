@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>K-FRTB-SSA — Market risk capital, simplified standardised approach</title>
-  <meta name="description" content="K-FRTB-SSA is an open-source Excel/VBA prototype of the FRTB simplified standardised approach (Basel MAR40): interest rate, equity, commodity and FX risk, with every intermediate value on a sheet.">
+  <meta name="description" content="K-FRTB-SSA is an open-source Excel/VBA prototype of the FRTB simplified standardised approach, under Basel MAR40 or the EU CRR: interest rate, equity, commodity and FX risk, with every intermediate value on a sheet.">
   <meta name="theme-color" content="#00338d">
   <link rel="canonical" href="https://danielep71.github.io/K-FRTB-SSA/">
   <meta property="og:type" content="website">
@@ -36,10 +36,10 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <p class="eyebrow">Market risk / Basel MAR40</p>
+      <p class="eyebrow">Market risk / Basel MAR40 and EU CRR</p>
       <h1>Four risk classes.<br><em>One scaled requirement.</em></h1>
       <p class="lead">A transparent implementation of the FRTB simplified standardised approach.</p>
-      <p class="hero-copy">Follow positions in interest rates, equities, commodities and foreign exchange through netting, weighting and offsetting to one capital requirement. An open-source Excel/VBA prototype writes every intermediate value to a sheet.</p>
+      <p class="hero-copy">Follow positions in interest rates, equities, commodities and foreign exchange through netting, weighting and offsetting to one capital requirement, under the Basel rules or the EU CRR. An open-source Excel/VBA prototype writes every intermediate value to a sheet.</p>
       <div class="actions">
         <a class="button primary" href="#start">Explore the prototype ↓</a>
         <a class="button ghost" href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/methodology/WORKBOOK_CONTRACT.md">Read the workbook contract ↗</a>
@@ -63,7 +63,7 @@
   <section id="method">
     <p class="eyebrow">01 / The calculation</p>
     <h2>Four charges, scaled and summed.</h2>
-    <p class="intro">The simplified standardised approach keeps one charge per risk class and multiplies each by a scaling factor (MAR40.2). Risk-weighted assets are 12.5 times the requirement (MAR40.1).</p>
+    <p class="intro">The simplified standardised approach keeps one charge per risk class and multiplies each by a scaling factor (MAR40.2). Risk-weighted assets are 12.5 times the requirement (MAR40.1). The <code>Regime</code> parameter selects Basel MAR40 or the CRR, and the headline of <code>Results</code> says which one produced the figures.</p>
     <p class="formula" aria-label="Requirement equals 1.30 times interest rate, plus 3.50 times equity, plus 1.90 times commodity, plus 1.20 times foreign exchange">K = 1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX</p>
     <div class="cards four">
       <article class="card">
@@ -91,7 +91,7 @@
         <p>That is the larger of the net long and the net short currency positions, plus the net gold position. Positions in the reporting currency are excluded.</p>
       </article>
     </div>
-    <p class="note">Non-delta option charges are calculated outside the workbook, entered per risk class and added before scaling. Not implemented: the duration method, the commodity maturity ladder, the delta-plus and scenario methods for options, securitisation specific risk and the FX de minimis exemption. The prototype follows Basel MAR40 only; the EU CRR3 provisions are not modelled. The <code>README</code> sheet of the <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/src/workbook/Template.xlsx">template ↗</a> lists every limitation.</p>
+    <p class="note">Non-delta option charges are calculated outside the workbook, entered per risk class and added before scaling. Not implemented: the duration method, the commodity maturity ladder, the delta-plus and scenario methods for options and securitisation specific risk. The <code>CRR</code> regime multiplies the requirement by 0.9 up to 2029-12-31 (Article 495s(2)), charges the offset between zones 1 and 3 at 150% (Article 339), charges no index (Article 344), applies the FX de minimis of Article 351 and reports the size conditions of Articles 325a and 94; its other rules are those of MAR40. Every value of the <code>CRR</code> regime is illustrative: it is not validated, and nothing has been run in Excel for it. The <code>README</code> sheet of the <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/src/workbook/Template.xlsx">template ↗</a> lists every limitation.</p>
   </section>
 </div>
 
@@ -103,7 +103,7 @@
       <li>
         <span class="number">01 / INPUT</span>
         <h3>Enter parameters and positions</h3>
-        <p>The reporting date, the FX rates and one row per position, on four position sheets. The MAR40 constants are parameters too: a changed constant is flagged as a what-if run.</p>
+        <p>The reporting date, the regime, the FX rates and one row per position, on four position sheets. The MAR40 constants are parameters too: a changed constant is flagged as a what-if run.</p>
       </li>
       <li>
         <span class="number">02 / CALCULATE</span>
@@ -113,7 +113,7 @@
       <li>
         <span class="number">03 / CHECK</span>
         <h3>Read the findings</h3>
-        <p>An invalid row is rejected with its reason and listed; it is never corrected. Fourteen rules report errors and warnings, and a test catalogue compares outputs with the published example of MAR40.61 and with expected values for the sample data.</p>
+        <p>An invalid row is rejected with its reason and listed; it is never corrected. The rules report errors and warnings, and a test catalogue compares outputs with the published example of MAR40.61 and with expected values for the sample data.</p>
       </li>
     </ol>
     <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/docs/methodology/WORKBOOK_CONTRACT.md">Open the workbook contract ↗</a>
@@ -154,7 +154,7 @@ cd K-FRTB-SSA</code>
     <div class="split">
       <div>
         <h3>Evidence available</h3>
-        <p>Every change passes static checks of the exported VBA source, a reproducible build from one commit and the repository's own tests, in a pull request with a recorded review. I have run the prototype in LibreOffice's VBA mode only. None of this is an Excel run or regulatory validation.</p>
+        <p>Every change passes static checks of the exported VBA source, a reproducible build from one commit and the repository's own tests, in a pull request with a recorded review. The numerical cases hold three published values; the other 41 are my own derivations, and every value of the CRR regime is among them. I have run the prototype in LibreOffice's VBA mode only. None of this is an Excel run or regulatory validation, or a statement of compliance with the CRR.</p>
         <a href="https://github.com/danielep71/K-FRTB-SSA/blob/main/README.md#-quality-gates">Read the quality gates ↗</a>
       </div>
       <div>

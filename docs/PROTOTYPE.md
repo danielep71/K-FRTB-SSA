@@ -3,14 +3,19 @@
 This guide is for you if you want to use the workbook, or to understand what
 it does before you read its contracts. It is a prototype: I have run it only
 in LibreOffice's VBA mode, never in Excel, and I have not validated it for
-regulatory reporting. [What has been checked](#what-has-been-checked) says
-what exists.
+regulatory reporting. It calculates under two regimes, Basel MAR40 and the EU
+CRR, and the CRR regime is not validated either. [What has been
+checked](#what-has-been-checked) says what exists.
 
 ## What it calculates
 
 The market risk own funds requirement and the risk-weighted assets under the
-simplified standardised approach of the Basel Framework's chapter MAR40
-([`SRC-02`](methodology/SOURCES.md)):
+simplified standardised approach, under the regime you set in `Regime` on
+`Params`: the Basel Framework's chapter MAR40
+([`SRC-02`](methodology/SOURCES.md)), which is the default, or Article 325(2)
+of Regulation (EU) No 575/2013, the CRR ([`SRC-04`](methodology/SOURCES.md)).
+The two regimes share the calculations below; [the regimes](#the-two-regimes)
+say where they differ:
 
 - **Interest rate risk:** the specific risk of debt positions, netted per
   issue, and the general market risk by the maturity method, with one ladder
@@ -26,7 +31,29 @@ simplified standardised approach of the Basel Framework's chapter MAR40
   assets as 12.5 times the total (`CALC-07`, `CALC-08`).
 
 The [contracts](methodology/CALCULATION_CONTRACTS.md) state each rule with its
-paragraph of MAR40.
+paragraph of MAR40, and the [comparison](methodology/CRR_COMPARISON.md) with its
+article of the CRR.
+
+## The two regimes
+
+`Regime` is `Basel` by default. The headline of `Results` shows the regime of
+the run, next to the reporting currency and the reporting date.
+
+| Rule | `Basel` | `CRR` |
+| --- | --- | --- |
+| Requirement | The scaled charges, summed | Multiplied by 0.9 up to `TransitionalEndDate`, 2029-12-31 (Article 495s(2)); the factor is a row of `Results` |
+| Specific risk of debt | Table 1 of MAR40.6, by category and rating grade | Article 336: the category `CRR`, whose grade is the risk weight under the credit-risk standardised approach |
+| Offset between zones 1 and 3 | 100% | 150% (Article 339(9), point (f)) |
+| Index | A further 2% | No charge of its own (Article 344) |
+| Foreign exchange | 8% of the overall net open position | Zero while that position is at most 2% of `TotalOwnFunds` (Article 351) |
+| Size conditions | Not read | `Eligibility` gives `MET`, `NOT MET` or `CEASE` for Articles 325a and 94, a finding that changes no requirement |
+
+Under the `CRR` regime you enter the delta-equivalent position of every option
+and the non-delta charge with the delta already deducted, and one market for
+the equities listed in the euro area. A regime that is neither `Basel` nor
+`CRR`, or the `CRR` without `TransitionalEndDate` or `TotalOwnFunds`, stops the
+run. Every value of the `CRR` regime is `illustrative`: I found no published
+worked example and no independent implementation to compare it with.
 
 ## What you need
 
@@ -183,6 +210,11 @@ says how to open it, how to compile it and how to record an Excel run.
   maturity ladder approach, and the delta-plus and scenario methods for
   options: the workbook uses the maturity method and the simplified
   approach, and you enter the non-delta charge of options.
+- **Under the CRR regime,** the cap of Article 335, the reversal of the first
+  two offsets of Article 339(6), the collective investment undertakings of
+  Article 348, the maturity ladders of Articles 359 and 361, the ancillary
+  agricultural business of Article 356, the closely correlated currencies of
+  Article 354 and the exclusions of Article 104c.
 - **Securitisation positions,** credit derivatives and the correlation
   trading portfolio. Nothing in an input identifies one: entered as a debt
   position, it is calculated as one. Do not enter it.
@@ -191,7 +223,8 @@ says how to open it, how to compile it and how to record an Excel run.
   each currency are inputs.
 - **National discretions,** the equity arbitrage treatments, the offset of
   depository receipts, the exemption for insignificant foreign exchange
-  business, and a jurisdiction's own implementation of MAR40.
+  business under the Basel regime, and a jurisdiction's own implementation of
+  MAR40.
 - **Everything outside MAR40,** such as the sensitivities-based method of the
   standardised approach.
 - **More than 500 rows** on a position sheet: the template is formatted for
@@ -208,14 +241,17 @@ leaves out.
 
 - **MAR40.** Every parameter of the engine equals the text of the Basel
   Framework chapter in force from 2023-01-01, compared on 2026-11-16.
-- **Test cases.** 20 [test cases](methodology/TEST_CASES.md) run on the
-  engine in LibreOffice and agree with their expected values. 16 values are
-  published: two of the example of table 9 of MAR40.61, the overall net open
-  position and the requirement; three of the example of MAR40.27, the
-  vertical disallowance of one band; and eleven of the worked example of the
-  maturity method in the 2005 update of the 1996 Amendment. The other 350 are
-  `illustrative`: I derived them from the contracts, as I wrote the engine
-  from them, so their agreement validates no rule.
+- **Test cases.** 44 [test cases](methodology/TEST_CASES.md) cover the
+  calculations, the limits, the invalid inputs and the CRR rules; 42 run on
+  the engine in LibreOffice and agree with their expected values. The 43
+  cases with a JSON fixture hold 823 expected values. 16 are published: two of
+  the example of table 9 of MAR40.61, the overall net open position and the
+  requirement; three of the example of MAR40.27, the vertical disallowance of
+  one band; and eleven of the worked example of the maturity method in the
+  2005 update of the 1996 Amendment. The other 807 are `illustrative`: I
+  derived them from the contracts, as I wrote the engine from them, so their
+  agreement validates no rule, and every value of the `CRR` regime is among
+  them.
 - **Tests of the code.** Four VBA suites run under the
   [test harness](methodology/TEST_HARNESS.md), in LibreOffice only.
 - **Excel.** The workbook has not been compiled or run in Excel, so no
@@ -225,4 +261,4 @@ leaves out.
 
 The [validation plan](methodology/VALIDATION_PLAN.md) gives each rule's status.
 Do not use a result of this workbook for regulatory reporting, and do not read
-it as a statement of compliance.
+it as a statement of compliance with the Basel Framework or the CRR.
