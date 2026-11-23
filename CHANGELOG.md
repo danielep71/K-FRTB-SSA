@@ -396,6 +396,7 @@ Use only the categories an entry needs.
 
 ### Changed
 
+- CodeQL now also analyzes every push to a branch other than Dependabot's, so the head of each pull request carries the CodeQL check that OpenSSF Scorecard counts for its SAST check. Before, only commits that a push to `main` or a release branch had analyzed carried it: 4 of the last 30 commits, although every pull request was analyzed ([#68](https://github.com/danielep71/K-FRTB-SSA/issues/68)). Pull requests are still analyzed without write permission. The Scorecard score changes only once this reaches `main`.
 - The documents describe the two regimes. `README.md` is rewritten: what the
   approach is, the capabilities, the quick start, how a run works, the
   differences between the Basel and the `CRR` regime, the evidence classes,

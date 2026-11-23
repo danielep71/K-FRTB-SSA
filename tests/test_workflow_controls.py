@@ -460,11 +460,13 @@ class WorkflowControlTests(unittest.TestCase):
 
     def test_code_scanning_covers_each_language_and_skips_when_unavailable(self):
         document = workflows()['codeql.yml']
-        # The default branch is listed by name and may be renamed; Repository
-        # integrity checks that it is present (workflow-default-branch).
-        self.assertEqual(document['on']['push'], document['on']['pull_request'])
-        self.assertEqual(set(document['on']['push']), {'branches'})
-        self.assertIn('release/**', document['on']['push']['branches'])
+        # Pull requests name the default branch, which may be renamed; Repository
+        # integrity checks that it is present (workflow-default-branch). Pushes
+        # cover every branch but Dependabot's, whose token cannot upload, so the
+        # head of each pull request carries the check Scorecard counts as SAST.
+        self.assertEqual(document['on']['push'], {'branches-ignore': ['dependabot/**']})
+        self.assertEqual(set(document['on']['pull_request']), {'branches'})
+        self.assertIn('release/**', document['on']['pull_request']['branches'])
         self.assertIn('schedule', document['on'])
         jobs = document['jobs']
         gate = jobs['availability']['steps'][0]
