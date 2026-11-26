@@ -99,7 +99,7 @@ Public Function IsNumberValue( _
 '
 ' INPUTS
 '   Value
-'     Cell value as read from Range.Value
+'     Cell value as read from Range.Value2, or from Range.Value
 '
 ' RETURNS
 '   True for a number or a date
@@ -118,7 +118,7 @@ Public Function IsNumberValue( _
 '   None
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------

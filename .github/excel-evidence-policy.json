@@ -32,8 +32,8 @@
       "name": "probes",
       "source": "tests/modules/TEST_Probes.bas",
       "certification_entry_point": "CertifyProbes",
-      "expected_cases": 7,
-      "expected_assertions": 49,
+      "expected_cases": 8,
+      "expected_assertions": 54,
       "log": "probes.log",
       "certification_log": "probes-certification.log"
     },
