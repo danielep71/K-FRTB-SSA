@@ -646,6 +646,33 @@ calculation sheets.
    with no protection error. Then repeat the four attempts: the same must
    happen. Save, close and open the workbook again: the sheets are still
    protected, and Excel asks for no password. Run `RunSSA` once more.
+7. **The sample data against the formula workbook.** Compare what the engine
+   writes in Excel with what Excel calculates from formulas on the same
+   inputs. In the same clone, build the formula workbook and take a fresh
+   copy of the development workbook:
+
+   ```sh
+   python tools/prototype/build_prototype.py formula.xlsx
+   copy test-results\build\Workbook-development.xlsm host-compare.xlsm
+   ```
+
+   Open `formula.xlsx`, press **Ctrl+Alt+F9**, check that `C4` of
+   `TestCatalogue` reads `N of N tests PASS`, and **Save As**
+   `formula-values.xlsx`, so that Excel saves the values it calculated. Close
+   it. Open `host-compare.xlsm`, enable the macros, run `RunSSA` (**Alt+F8**),
+   check that the status line, `Results!C4`, begins `OK:`, save and close.
+   Then compare the two:
+
+   ```sh
+   python tools/prototype/compare_outputs.py host-compare.xlsm formula-values.xlsx
+   ```
+
+   It must print `differences: 0`, as `python3 tools/prototype/verify.py` does
+   in LibreOffice (its step 3). Each difference is a finding: write its cells
+   with both values, as a difference that LibreOffice does not show. The step
+   covers every output area on the sample data. It does not cover the
+   registered cases or the error values typed in the inputs, which the `cases`
+   and `probes` suites of the one-command run measure.
 
 Write each result as what you saw, with the Excel build and the Windows
 version, even where it is not what is expected: a difference is a finding.

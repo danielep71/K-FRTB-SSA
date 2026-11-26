@@ -65,6 +65,11 @@ Use only the categories an entry needs.
 
 ### Added
 
+- A step in the host checks by hand of `INSTALLATION.md` that compares the
+  engine's run in Excel on the sample data with the formula workbook that Excel
+  calculates, area by area, with `tools/prototype/compare_outputs.py`, so that a
+  difference from the LibreOffice run has a procedure to find it. Nothing was
+  run in Excel ([#124](https://github.com/danielep71/K-FRTB-SSA/issues/124)).
 - FX table stop rules in the derivation script: `tests/derivations/ssa.py` now
   stops the run, as the contract states, on a rate that is not a number greater
   than 0 (`C07`), a currency listed twice (`C06`) and a reporting currency that
