@@ -73,7 +73,7 @@ body:
     id: validation
     attributes:
       label: "🧪 Validation evidence required"
-      description: How the correction will be checked, for example `python -m unittest discover -s tests`, a rendered review or a link check.
+      description: How the correction will be checked, for example `python tools/run_tests.py`, a rendered review or a link check.
     validations:
       required: true
 

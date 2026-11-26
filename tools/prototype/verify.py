@@ -18,13 +18,18 @@ It needs LibreOffice and openpyxl. The steps:
    constant and an option charge. It also adds keys that a criteria function
    would read as a pattern or as a comparison: a PositionID, Issue IDs, a
    stock, a market, commodities, and a currency of FX_Table that is a
-   pattern for another one, with positions in it. And it adds error values
+   pattern for another one, with positions in it. It adds rows of each book:
+   non-trading, trading typed in lower case, and unknown, in each position
+   sheet. And it adds error values
    where a text is typed and no output shows it: the Issue ID of a rejected
    row, and a direction.
 5. Type error values where an output shows the text, on the formula workbook
    only: no output cell holds an error value, and each such text reads
    "#ERROR", as the engine reads it in Excel. LibreOffice gives the engine 0
    for a cell that holds an error value, so the two cannot be compared here.
+   The same under the CRR regime for months of Eligibility with error values:
+   no output cell holds one, and each such month is rejected as
+   ssa.eligibility rejects it.
 6. Make two Params values unusable: the run stops and lists both.
 7. Run the three suites of the VBA tests, through TEST_Suite.Test_RunCore,
    TEST_Workbook.Test_RunWorkbook and TEST_Cases.Test_RunCases: each run
@@ -32,6 +37,12 @@ It needs LibreOffice and openpyxl. The steps:
    registered test cases.
 8. Run the registered test cases, as run_cases.py does: the workbook holds
    every expected value.
+9. Type series of months on Eligibility under the CRR regime, in both
+   workbooks: the sample months, months that all meet the conditions, a
+   series that ends in a run of three, one whose last month meets them after
+   seven of twelve that do not, and rows of each invalid kind. The engine's
+   calculated columns, result block and counts of Checks equal the formula
+   workbook's and those of ssa.eligibility in tests/derivations/ssa.py.
 
 Every macro runs through tools/devbuild/lo_macro.py, on the workbook the
 build produces. --uno-python names the Python that provides LibreOffice's
@@ -52,6 +63,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unittest.mock
 import warnings
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -62,10 +74,12 @@ import openpyxl
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "tools" / "devbuild"))
+sys.path.insert(0, str(ROOT / "tests" / "derivations"))
 
 import build_prototype  # noqa: E402
 import build_workbook  # noqa: E402
 import compare_outputs  # noqa: E402
+import ssa  # noqa: E402
 import ssa_reference  # noqa: E402
 
 LO_MACRO = ROOT / "tools" / "devbuild" / "lo_macro.py"
@@ -187,6 +201,15 @@ def negative(source: Path, target: Path) -> None:
          "OTHER", "BB+ to BB-", NOT_AVAILABLE],
         ["IR-E2", "T", "Bond", "EUR", "#DIV/0!", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
          "NONE", "", ""],
+        # Books: a non-trading row is excluded, before any other test of the row;
+        # a trading book typed in lower case is used; an unknown book is rejected.
+        ["IR-NT1", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "Non-trading"],
+        ["IR-NT2", "T", None, "ZAR", None, None, None, None, None, None, None, None, None, " non-TRADING "],
+        ["IR-TR", "T", "Bond", "EUR", "Short", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "trading"],
+        ["IR-BK", "T", "Bond", "EUR", "Long", 1e6, "Fixed", 0.05, day(2030, 1, 1), None,
+         "NONE", "", "", "Banking"],
     ])
     append_rows(workbook["EQPositions"], FIRST_ROW + len(ssa_reference.EQ), [
         ["EQ-BAD", "T", "IT", "Basket", "B", "EUR", "Long", 1e6],
@@ -196,6 +219,9 @@ def negative(source: Path, target: Path) -> None:
         ["EQ-W2", "T", "FR", "Single name", "ABC", "EUR", "Short", 4e5],
         ["EQ-W3", "T", "F?", "Single name", "BNP", WILD_CURRENCY, "Long", 3e6],
         ["EQ-W4", "T", "DE", "Single name", "SAP", "US*", "Long", 1e6],
+        # Books: a non-trading stock is excluded, an unknown book rejected.
+        ["EQ-NT", "T", "IT", "Single name", "ENI", "EUR", "Long", 1e6, "Non-trading"],
+        ["EQ-BK", "T", "IT", "Single name", "ISP", "EUR", "Long", 1e6, "Banking"],
     ])
     append_rows(workbook["COPositions"], FIRST_ROW + len(ssa_reference.CO), [
         ["CO-BAD", "T", "Gold bar", "Long", "ten", "oz", 3500, "EUR"],
@@ -206,6 +232,9 @@ def negative(source: Path, target: Path) -> None:
         ["CO-W1", "T", "C*", "Long", 10, "t", 9800, "USD"],
         ["CO-W2", "T", "Whea?", "Long", 500, "t", 250, WILD_CURRENCY],
         ["CO-W3", "T", "~Wheat", "Long", 100, "t", 250, "EUR"],
+        # Books: a non-trading commodity is calculated, an unknown book rejected.
+        ["CO-NT", "T", "Brent crude", "Long", 100, "bbl", 72, "USD", None, "Non-trading"],
+        ["CO-BK", "T", "Copper", "Long", 1, "t", 9800, "USD", None, "Banking"],
     ])
     append_rows(workbook["FXPositions"], FIRST_ROW + len(ssa_reference.FXPOS), [
         ["FX-007", "FX", "EUR", "Long", 5e6],
@@ -214,6 +243,9 @@ def negative(source: Path, target: Path) -> None:
         ["FX-W1", "FX", "U*", "Long", 1e6],
         ["FX-W2", "FX", WILD_CURRENCY, "Short", 6e6],
         ["FX-E1", "FX", "CHF", NOT_AVAILABLE, 1e6],
+        # Books: a non-trading position is calculated, an unknown book rejected.
+        ["FX-NT", "FX", "CHF", "Short", 1e6, "Non-trading"],
+        ["FX-BK", "FX", "CHF", "Long", 1e6, "Banking"],
     ])
     # USD, typed in FX_Table with a blank at each end and in lower case: the
     # positions in USD, and the ladders and sums of the currency, do not change.
@@ -256,6 +288,20 @@ def error_keys(source: Path, target: Path) -> None:
     workbook.save(target)
 
 
+def error_months() -> list[Month | None]:
+    """Months of Eligibility with an error value in the month end, in the total assets and in a
+    long total, each a rejected row, and a row without a month end whose totals are error values,
+    which is skipped."""
+    day = datetime.date
+    return [(day(2025, 10, 31), 8e9, 1e8, 0, 1e7, 0),
+            (NOT_AVAILABLE, 8e9, 1e8, 0, 1e7, 0),
+            (day(2025, 12, 31), 8e9, 1e8, 0, 1e7, 0),
+            (day(2026, 1, 31), NOT_AVAILABLE, 1e8, 0, 1e7, 0),
+            (day(2026, 2, 28), 8e9, "#VALUE!", 0, 1e7, 0),
+            (None, NOT_AVAILABLE, NOT_AVAILABLE, 0, 1e7, 0),
+            (day(2026, 3, 31), 8e9, 1e8, 0, 1e7, 0)]
+
+
 def error_cells(path: Path) -> list[str]:
     """The cells of the output areas of a workbook of values that hold an error value."""
     workbook = openpyxl.load_workbook(path, data_only=True)
@@ -271,6 +317,53 @@ def unusable(source: Path, target: Path) -> None:
     named_cell(workbook, "AsOfDate").value = "not a date"
     named_cell(workbook, "OptionsIR").value = "abc"
     workbook.save(target)
+
+
+def crr_positions(workbook: Any) -> None:
+    """Give each interest rate row of the sample the category CRR and the risk weight that has its charges.
+
+    Under the CRR the category of a row is CRR or NONE; the grade is the risk weight whose rates of
+    Article 336 are the rates that the row's Basel category and grade have, so that the specific risk
+    of the sample does not change."""
+    weights = {(0.0,): "RW 0%", (0.0025, 0.01, 0.016): "RW 20%", (0.08,): "RW 100%", (0.12,): "RW 150%"}
+    sheet = workbook["IRPositions"]
+    for row in range(FIRST_ROW, FIRST_ROW + len(ssa_reference.IR)):
+        category, grade = sheet.cell(row, 13).value, sheet.cell(row, 14).value
+        if category in (None, "NONE"):
+            continue
+        charges = tuple(sorted({rate for (cat, grd, _), rate in ssa_reference.SR.items()
+                                if (cat, grd) == (category, grade)}))
+        sheet.cell(row, 13).value = "CRR"
+        sheet.cell(row, 14).value = weights[charges]
+
+
+def regime(source: Path, target: Path, name: str, end: object, own_funds: object = None,
+           rows: str = "convert") -> None:
+    """Save ``source`` with the regime, the last date of the transitional multiplier and the total own funds set.
+
+    ``rows`` says what becomes of the interest rate rows: under the CRR they get the category CRR first
+    ("convert"); "keep" leaves them as the Basel regime has them; "mixed" gives the first two rows the
+    category CRR with a weight of the table and one that is not in it."""
+    workbook = load(source)
+    named_cell(workbook, "Regime").value = name
+    named_cell(workbook, "TransitionalEndDate").value = end
+    named_cell(workbook, "TotalOwnFunds").value = own_funds
+    sheet = workbook["IRPositions"]
+    if rows == "convert" and str(name).strip().upper() == "CRR":
+        crr_positions(workbook)
+    elif rows == "mixed":
+        if str(name).strip().upper() == "CRR":
+            crr_positions(workbook)
+        for row, grade in ((FIRST_ROW, "RW 20%"), (FIRST_ROW + 1, "RW 33%")):
+            sheet.cell(row, 13).value = "CRR"
+            sheet.cell(row, 14).value = grade
+    workbook.save(target)
+
+
+def read_names(path: Path, *names: str) -> list[Any]:
+    """The values of one-cell defined names in a workbook of values."""
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    return [named_cell(workbook, name).value for name in names]
 
 
 def findings(path: Path) -> Findings:
@@ -381,7 +474,20 @@ def error_values(run: Run) -> str:
                 ERROR_TEXT]
     if not all(compare_outputs.same(*pair) for pair in zip(read, expected, strict=True)):
         raise Failure(f"read {read}, expected {expected}")
-    return f"no error value in an output area; every such text reads {ERROR_TEXT}"
+    # Months of Eligibility under the CRR regime with error values: only the formula
+    # workbook, since LibreOffice's engine reads an error value typed in a cell as 0.
+    months_formula, months_values = run.folder / "errors-months.xlsx", run.folder / "errors-months-values.xlsx"
+    rows = error_months()
+    with_months(run.formula, months_formula, rows)
+    run.macro(months_formula, "-", months_values)
+    errors = error_cells(months_values)
+    differences = eligibility_differences(months_values, ssa.eligibility(sheet_months(rows), "CRR", {}), "formula")
+    if errors or differences:
+        raise Failure("\n".join([f"months with error values: {len(errors)} output cell(s) hold an error value, "
+                                 f"{len(differences)} difference(s) from ssa.eligibility",
+                                 *(errors + differences)[:compare_outputs.SHOWN]]))
+    return (f"no error value in an output area; every such text reads {ERROR_TEXT}; "
+            "months of Eligibility with error values are rejected as ssa.eligibility rejects them")
 
 
 def stopped_run(run: Run) -> str:
@@ -392,6 +498,267 @@ def stopped_run(run: Run) -> str:
     if not result.startswith("RESULT=STOPPED; errors=2;") or len(listed) != 2:
         raise Failure(f"{result}; findings: {sorted(map(str, listed))}")
     return result
+
+
+def crr_regime(run: Run) -> str:
+    """The CRR regime on the sample data: the transitional factor and the de minimis in both workbooks, and the stops."""
+    day = datetime.date
+    reporting = ssa_reference.AS_OF
+    last = day(2029, 12, 31)
+    # The overall net open position of the sample is 335 million: 2% of 10 billion is 200 million, of 17 billion
+    # 340 million, of 16 billion 320 million.
+    cases: tuple[tuple[str, str, object, float, float, bool], ...] = (
+        ("the default last date", "crr", last, 1e10, 0.9, False),
+        ("the reporting date as last date", "CRR", reporting, 1e10, 0.9, False),
+        ("the day before the reporting date as last date", "CRR",
+         reporting - datetime.timedelta(days=1), 1e10, 1.0, False),
+        ("own funds whose 2% is above the position", "CRR", last, 1.7e10, 0.9, True),
+        ("own funds whose 2% is below the position", "CRR", last, 1.6e10, 0.9, False))
+    lines: list[str] = []
+    # The sample's rows are given the CRR categories that have their specific-risk charges, so that the
+    # requirement before the multiplier is the reference model's under the CRR (150% between zones 1 and 3,
+    # no charge on an index), unless the FX requirement is waived.
+    baseline = ssa_reference.calc_all(1.50, 0.0)["total"]
+    for label, name, end, own_funds, factor, waived in cases:
+        formula, workbook = run.folder / "crr-formula.xlsx", run.folder / "crr.xlsm"
+        values, output = run.folder / "crr-formula-values.xlsx", run.folder / "vba-crr.xlsx"
+        regime(run.formula, formula, name, end, own_funds)
+        regime(run.workbook, workbook, name, end, own_funds)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        if not result.startswith("RESULT=OK;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        for path in (output, values):
+            before, after, rwa, onop, charge = read_names(
+                path, "SSA_RequirementBeforeTransition", "SSA_Requirement", "SSA_RWA", "FX_ONOP", "FX_Charge")
+            expected_charge = 0.0 if waived else 0.08 * onop
+            if not (waived or compare_outputs.same(before, baseline)):
+                raise Failure(f"{label}, {path.name}: before {before}, the reference model {baseline}")
+            if not (compare_outputs.same(after, before * factor)
+                    and compare_outputs.same(rwa, after * 12.5)
+                    and compare_outputs.same(charge, expected_charge)):
+                raise Failure(f"{label}, {path.name}: before {before}, after {after}, RWA {rwa}, "
+                              f"FX charge {charge} on {onop}, factor expected {factor}, "
+                              f"waived expected {waived}")
+        lines.append(f"{label}: factor {factor}, FX {'waived' if waived else 'charged'}, {compared}")
+    # A regime, a last date and total own funds that stop the run.
+    stops: tuple[tuple[str, str, object, object], ...] = (
+        ("an unknown regime", "EU", last, 1e10),
+        ("the CRR with a last date that is no date", "CRR", "never", 1e10),
+        ("the CRR without total own funds", "CRR", last, None))
+    for stop, name, end, funds in stops:
+        workbook, output = run.folder / "crr-stop.xlsm", run.folder / "vba-crr-stop.xlsx"
+        regime(run.workbook, workbook, name, end, funds)
+        result = run.macro(workbook, RUN, output)
+        listed = findings(output)
+        if not result.startswith("RESULT=STOPPED; errors=1;") or len(listed) != 1:
+            raise Failure(f"{stop}: {result}; findings: {sorted(map(str, listed))}")
+        lines.append(f"{stop}: stopped, one finding")
+    return "\n".join(lines)
+
+
+def zone_rows() -> list[list[object]]:
+    """Two swap legs in one currency that leave a position to offset between zones 1 and 3 only.
+
+    The long leg reprices in nine months and the short one in twelve years, so that the zone 2 is empty
+    and the whole of the zone 1 position is matched against the zone 3."""
+    day = datetime.timedelta
+    return [
+        ["IR-Z13A", "T", "Swap leg", "USD", "Long", 100e6, "Floating", None,
+         ssa_reference.AS_OF + day(days=3650), ssa_reference.AS_OF + day(days=270), "NONE", "", ""],
+        ["IR-Z13B", "T", "Swap leg", "USD", "Short", 100e6, "Floating", None,
+         ssa_reference.AS_OF + day(days=5000), ssa_reference.AS_OF + day(days=4380), "NONE", "", ""]]
+
+
+def crr_zones(run: Run) -> str:
+    """The offset between zones 1 and 3 of both regimes, against the reference model, in both workbooks."""
+    lines: list[str] = []
+    extra = [(*row, "") for row in zone_rows()]
+    for name, rate, field in (("Basel", 1.00, "SSA_Requirement"),
+                              ("CRR", 1.50, "SSA_RequirementBeforeTransition")):
+        paths = []
+        for source, suffix in ((run.formula, "xlsx"), (run.workbook, "xlsm")):
+            staged = run.folder / f"zone-source.{suffix}"
+            workbook = load(source)
+            append_rows(workbook["IRPositions"], FIRST_ROW + len(ssa_reference.IR), zone_rows())
+            workbook.save(staged)
+            target = run.folder / f"zone-{name}.{suffix}"
+            regime(staged, target, name, datetime.date(2029, 12, 31), 1e10)
+            paths.append(target)
+        formula, workbook_path = paths
+        values, output = run.folder / "zone-formula-values.xlsx", run.folder / "vba-zone.xlsx"
+        run.macro(formula, "-", values)
+        result = run.macro(workbook_path, RUN, output)
+        if not result.startswith("RESULT=OK;"):
+            raise Failure(f"{name}: {result}")
+        compared = run.compare(output, values)
+        with unittest.mock.patch.object(ssa_reference, "IR", [*ssa_reference.IR, *extra]):
+            expected = ssa_reference.calc_all(rate, 0.0 if name == "CRR" else 0.02)["total"]
+        for path in (output, values):
+            (given,) = read_names(path, field)
+            if not compare_outputs.same(given, expected):
+                raise Failure(f"{name}, {path.name}: {field} {given}, the reference model {expected} "
+                              f"with {rate:.0%} between zones 1 and 3")
+        lines.append(f"{name}: {rate:.0%} between zones 1 and 3, requirement {expected:,.2f}, {compared}")
+    return "\n".join(lines)
+
+
+def crr_categories(run: Run) -> str:
+    """The categories of the other regime, and a weight that the table lacks, in both workbooks."""
+    lines: list[str] = []
+    cases = (("the CRR with the Basel categories", "CRR", "keep"),
+             ("Basel with the categories CRR", "Basel", "mixed"),
+             ("the CRR with a weight that is not in the table", "CRR", "mixed"))
+    for label, name, rows in cases:
+        formula, workbook = run.folder / "cat-formula.xlsx", run.folder / "cat.xlsm"
+        values, output = run.folder / "cat-formula-values.xlsx", run.folder / "vba-cat.xlsx"
+        regime(run.formula, formula, name, datetime.date(2029, 12, 31), 1e10, rows)
+        regime(run.workbook, workbook, name, datetime.date(2029, 12, 31), 1e10, rows)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        if not result.startswith("RESULT=INCOMPLETE;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        engine, reference = findings(output), findings(values)
+        if engine != reference:
+            raise Failure(f"{label}: findings differ: {sorted(map(str, engine ^ reference))}")
+        lines.append(f"{label}: {len(engine)} findings, the same in both; {compared}")
+    return "\n".join(lines)
+
+
+# Eligibility: the rows of the months, the first column of the calculated columns
+# (Month status, I), the result block (D32:J33) and the rows of rules C15 and C16 on Checks.
+ELIGIBILITY_ROWS = 24
+STATUS_COLUMN, RESULT_ROW, RESULT_COLUMN = 9, 32, 4
+C15_ROW, C16_ROW, COUNT_COLUMN = 21, 22, 6
+APPROACHES = ("325a", "94")
+FIGURES = ("size", "share", "result", "run", "count", "event")
+RESULTS = ("status", "last_month", "size", "share", "run", "count", "restart")
+Month = tuple[object, object, object, object, object, object]
+
+
+def months(pattern: str, *, last: datetime.date = ssa_reference.AS_OF) -> list[Month]:
+    """One row per letter, the last month in the month of ``last``: M where both approaches
+    meet the conditions, N where Article 325a misses them and Article 94 meets them. With total
+    assets of 8 billion the amounts bind: 400 and 600 million for Article 325a, 40 million for
+    Article 94."""
+    rows: list[Month] = []
+    for k, flag in enumerate(pattern):
+        size = 600e6 if flag == "N" else 400e6
+        rows.append((ssa_reference.month_end(last, len(pattern) - 1 - k), 8e9,
+                     0.6 * size, -0.4 * size, 28e6, 12e6))
+    return rows
+
+
+def eligibility_scenarios() -> tuple[tuple[str, list[Month | None]], ...]:
+    """The series of months, each with its rows from row 5 down; None leaves a row blank."""
+    day = datetime.date
+    invalid: list[Month | None] = [
+        (day(2025, 10, 31), 8e9, 1e8, 0, 1e7, 0),
+        # A month end that is a text, one that is a number but no date, one that is not the
+        # last day of its month and one that is not one month after the row before it.
+        ("2025-11-30", 8e9, 1e8, 0, 1e7, 0),
+        (20251231, 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 1, 15), 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 3, 31), 8e9, 1e8, 0, 1e7, 0),
+        # Total assets of 0, a short total that is a text, a row without a month end and one
+        # whose month end holds only blanks, which is read as empty.
+        (day(2026, 4, 30), 0, 1e8, 0, 1e7, 0),
+        (day(2026, 5, 31), 8e9, 1e8, "none", 1e7, 0),
+        (None, 8e9, 1e8, 0, 1e7, 0),
+        ("   ", 8e9, 1e8, 0, 1e7, 0),
+        (day(2026, 6, 30), 8e9, 1e8, 0, 1e7, 0)]
+    return (
+        ("the sample months", list(ssa_reference.ELIGIBILITY)),
+        ("24 months that meet the conditions", list(months("M" * 24))),
+        ("a run of three after two blank rows", [None, None, *months("MMMMMMMMNNN")]),
+        ("seven of the last twelve not met, the last met", list(months("MMMMNMNNMNNMNNMM"))),
+        ("a row of each invalid kind", invalid))
+
+
+def with_months(source: Path, target: Path, rows: Sequence[Month | None]) -> None:
+    """Save ``source`` with the CRR regime and ``rows`` on Eligibility, the other rows blank."""
+    regime(source, target, "CRR", datetime.date(2029, 12, 31), 1e10)
+    workbook = load(target)
+    sheet = workbook["Eligibility"]
+    for offset in range(ELIGIBILITY_ROWS):
+        record = rows[offset] if offset < len(rows) else None
+        for column in range(6):
+            sheet.cell(FIRST_ROW + offset, FIRST_COLUMN + column).value = (
+                None if record is None else record[column])
+    workbook.save(target)
+
+
+def sheet_months(rows: Sequence[Month | None]) -> list[Month]:
+    """The 24 rows of Eligibility as ssa.eligibility reads them: a blank row is six empty cells."""
+    blank: Month = (None, None, None, None, None, None)
+    padded = [blank if row is None else row for row in rows]
+    return padded + [blank] * (ELIGIBILITY_ROWS - len(padded))
+
+
+def same_cell(given: object, expected: object) -> bool:
+    """A cell of the engine against a value of ssa.eligibility: a date as its serial number."""
+    if isinstance(expected, datetime.date) and not isinstance(expected, datetime.datetime):
+        expected = datetime.datetime.combine(expected, datetime.time())
+    return compare_outputs.same(given, expected)
+
+
+def eligibility_differences(path: Path, expected: dict[str, Any], source: str = "VBA") -> list[str]:
+    """The cells of Eligibility and the counts of rules C15 and C16 that differ from ``expected``,
+    what ssa.eligibility gives; ``source`` names the workbook in the messages."""
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    sheet, checks = workbook["Eligibility"], workbook["Checks"]
+    differences: list[str] = []
+
+    def check(cell: Any, value: object) -> None:
+        if not same_cell(cell.value, value):
+            differences.append(f"Eligibility!{cell.coordinate}: {source}={cell.value!r} ssa.py={value!r}")
+
+    for offset, item in enumerate(expected["rows"]):
+        row = FIRST_ROW + offset
+        check(sheet.cell(row, STATUS_COLUMN), None if item is None else item["status"])
+        for k, approach in enumerate(APPROACHES):
+            figures = None if item is None else item[approach]
+            for j, key in enumerate(FIGURES):
+                check(sheet.cell(row, STATUS_COLUMN + 1 + 6 * k + j), None if figures is None else figures[key])
+    for k, approach in enumerate(APPROACHES):
+        for j, key in enumerate(RESULTS):
+            value = expected[key] if key == "last_month" else expected[key][approach]
+            check(sheet.cell(RESULT_ROW + k, RESULT_COLUMN + j), value)
+    rejected = sum(1 for item in expected["rows"] if item is not None and item["status"] != ssa.OK)
+    flagged = sum(1 for status in expected["status"].values() if status in ("NOT MET", "CEASE"))
+    for row, count in ((C15_ROW, rejected), (C16_ROW, flagged)):
+        cell = checks.cell(row, COUNT_COLUMN)
+        if not compare_outputs.same(cell.value, count):
+            differences.append(f"Checks!{cell.coordinate}: {source}={cell.value!r} ssa.py={count}")
+    return differences
+
+
+def eligibility(run: Run) -> str:
+    """Series of months under the CRR regime: the engine against the formula workbook and ssa.eligibility."""
+    lines: list[str] = []
+    for label, rows in eligibility_scenarios():
+        formula, workbook = run.folder / "months-formula.xlsx", run.folder / "months.xlsm"
+        values, output = run.folder / "months-formula-values.xlsx", run.folder / "vba-months.xlsx"
+        with_months(run.formula, formula, rows)
+        with_months(run.workbook, workbook, rows)
+        run.macro(formula, "-", values)
+        result = run.macro(workbook, RUN, output)
+        expected = ssa.eligibility(sheet_months(rows), "CRR", {})
+        # The sample positions have the CRR categories: only an invalid month makes the run incomplete.
+        invalid = any(item is not None and item["status"] != ssa.OK for item in expected["rows"])
+        if not result.startswith("RESULT=INCOMPLETE;" if invalid else "RESULT=OK;"):
+            raise Failure(f"{label}: {result}")
+        compared = run.compare(output, values)
+        differences = eligibility_differences(output, expected)
+        if differences:
+            raise Failure("\n".join([f"{label}: {len(differences)} difference(s) from ssa.eligibility",
+                                     *differences[:compare_outputs.SHOWN]]))
+        block = openpyxl.load_workbook(output, data_only=True)["Eligibility"]
+        statuses = [block.cell(RESULT_ROW + k, RESULT_COLUMN).value for k in range(len(APPROACHES))]
+        lines.append(f"{label}: {statuses[0]} and {statuses[1]}, as ssa.eligibility gives; {compared}")
+    return "\n".join(lines)
 
 
 def test_suite(run: Run) -> str:
@@ -422,8 +789,12 @@ STEPS: tuple[tuple[str, Callable[[Run], str]], ...] = (
     ("Negative scenario on both workbooks", negative_scenario),
     ("Error values typed as texts, on the formula workbook", error_values),
     ("Unusable Params values stop the run", stopped_run),
+    ("The CRR regime: the transitional factor and the stops", crr_regime),
+    ("The categories of each regime", crr_categories),
+    ("The offset between zones 1 and 3 of each regime", crr_zones),
     ("The three suites of the VBA tests", test_suite),
     ("The registered test cases on the engine", test_cases),
+    ("Eligibility under the CRR regime against the formula workbook and ssa.eligibility", eligibility),
 )
 
 

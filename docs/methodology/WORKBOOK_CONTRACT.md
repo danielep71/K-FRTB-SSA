@@ -68,17 +68,18 @@ Tab order is the order of the table. Every sheet is visible.
 | 5 | `COPositions` | `shCOPositions` | Input | No | Commodity positions, one row per position |
 | 6 | `FXPositions` | `shFXPositions` | Input | No | Net currency and gold positions |
 | 7 | `OptionCharges` | `shOptionCharges` | Input | No | Non-delta option charges per risk class, calculated outside the workbook |
-| 8 | `Results` | `shResults` | Output | Yes | Requirement per risk class, scaling, total and RWA, with the status line of the run |
-| 9 | `IR_Zones` | `shIRZones` | Output | Yes | Interest rate charges per currency, with every offset of the maturity method |
-| 10 | `IR_Ladder` | `shIRLadder` | Output | Yes | Weighted positions per currency and time band |
-| 11 | `Buckets` | `shBuckets` | Output | Yes | Equity by market, commodities by commodity and the FX net open position |
-| 12 | `IRCalc` | `shIRCalc` | Output | Yes | Every intermediate value per interest rate row |
-| 13 | `EQCalc` | `shEQCalc` | Output | Yes | Every intermediate value per equity row |
-| 14 | `COCalc` | `shCOCalc` | Output | Yes | Every intermediate value per commodity row |
-| 15 | `FXCalc` | `shFXCalc` | Output | Yes | Every intermediate value per FX row |
-| 16 | `Checks` | `shChecks` | Diagnostics | Yes | Errors, warnings and information lines, and the rejected rows with their reasons |
-| 17 | `TestCatalogue` | `shTestCatalogue` | Diagnostics | No | The test catalogue: the published example and the re-calculation, with each result |
-| 18 | `README` | `shREADME` | Reference | Build only | Methodology, conventions, scope and limitations, and the build stamp |
+| 8 | `Eligibility` | `shEligibility` | Input | In its calculated columns | The size of the business at each month end, and the finding on the simplified standardised approach and the small trading book derogation under the CRR regime |
+| 9 | `Results` | `shResults` | Output | Yes | Requirement per risk class, scaling, total and RWA, with the status line of the run |
+| 10 | `IR_Zones` | `shIRZones` | Output | Yes | Interest rate charges per currency, with every offset of the maturity method |
+| 11 | `IR_Ladder` | `shIRLadder` | Output | Yes | Weighted positions per currency and time band |
+| 12 | `Buckets` | `shBuckets` | Output | Yes | Equity by market, commodities by commodity and the FX net open position |
+| 13 | `IRCalc` | `shIRCalc` | Output | Yes | Every intermediate value per interest rate row |
+| 14 | `EQCalc` | `shEQCalc` | Output | Yes | Every intermediate value per equity row |
+| 15 | `COCalc` | `shCOCalc` | Output | Yes | Every intermediate value per commodity row |
+| 16 | `FXCalc` | `shFXCalc` | Output | Yes | Every intermediate value per FX row |
+| 17 | `Checks` | `shChecks` | Diagnostics | Yes | Errors, warnings and information lines, and the rejected rows with their reasons |
+| 18 | `TestCatalogue` | `shTestCatalogue` | Diagnostics | No | The test catalogue: the published example and the re-calculation, with each result |
+| 19 | `README` | `shREADME` | Reference | Build only | Methodology, conventions, scope and limitations, and the build stamp |
 
 - **Code name:** `sh` plus the tab name without its underscore. The
   workbook's own document module is `ThisWorkbook`.
@@ -96,6 +97,8 @@ Tab order is the order of the table. Every sheet is visible.
     it has any;
   - `Yes`: code replaces its content, and users never edit it;
   - `Append only`: code adds rows, and never changes or deletes them;
+  - `In its calculated columns`: users type in the input columns, and code
+    replaces the calculated columns and the result block;
   - `Build only`: only the build writes it.
 
   `TestCatalogue` holds formulas that compare output cells with expected
@@ -113,6 +116,10 @@ Tab order is the order of the table. Every sheet is visible.
   the row below its header to the last row with a value in its first
   column, and a table of more than 500 rows stops the run
   (`MAX_POSITION_ROWS`, rule `C14` of `Checks`).
+- `Eligibility` is formatted for 24 rows, from row 5 to row 28. Its input
+  columns are C to H, its calculated columns I to U, and its result block
+  holds a header on row 31 and one row for each approach, `325a` on row 32 and
+  `94` on row 33 (`Eligibility_Results`, D32:J33).
 - Input cells have a yellow fill, and the MAR40 constants on `Params` a grey
   one. Those cells are unlocked, every other cell is locked, and every sheet
   is protected without a password ([protection](#protection)).
@@ -152,6 +159,17 @@ The names that refer to one cell:
 | `GoldCode` | `shParams` | The currency code treated as gold | Users |
 | `COMDirectionalRate` | `shParams` | Commodity directional charge (net position per commodity) | Users |
 | `COMGrossRate` | `shParams` | Commodity charge on gross positions at spot | Users |
+| `Regime` | `shParams` | The regime: `Basel` or `CRR` | Users |
+| `TransitionalMultiplier` | `shParams` | The multiplier of the CRR's transitional treatment | Users |
+| `TransitionalEndDate` | `shParams` | The last reporting date on which the multiplier applies | Users |
+| `TotalOwnFunds` | `shParams` | The total own funds, for the de minimis of the CRR | Users |
+| `FXDeMinimisRate` | `shParams` | The share of the total own funds under which the FX requirement is waived under the CRR | Users |
+| `HorizontalZone13CRR` | `shParams` | The horizontal disallowance between zones 1 and 3 under the CRR | Users |
+| `EQIndexRateCRR` | `shParams` | The charge on the net position per index under the CRR | Users |
+| `EligibilityShare325a` | `shParams` | The share of the total assets that the size of the business may not exceed for the simplified standardised approach under the CRR | Users |
+| `EligibilityCap325a` | `shParams` | The amount in euro that the size of the business may not exceed for the simplified standardised approach under the CRR | Users |
+| `EligibilityShare94` | `shParams` | The share of the total assets that the size of the business may not exceed for the small trading book derogation under the CRR | Users |
+| `EligibilityCap94` | `shParams` | The amount in euro that the size of the business may not exceed for the small trading book derogation under the CRR | Users |
 | `IRPositions_Header` | `shIRPositions` | The first header cell of the interest rate positions | Users, in the rows below it |
 | `EQPositions_Header` | `shEQPositions` | The first header cell of the equity positions | Users, in the rows below it |
 | `COPositions_Header` | `shCOPositions` | The first header cell of the commodity positions | Users, in the rows below it |
@@ -160,6 +178,7 @@ The names that refer to one cell:
 | `OptionsEQ` | `shOptionCharges` | The non-delta option charge of equity risk | Users |
 | `OptionsCO` | `shOptionCharges` | The non-delta option charge of commodity risk | Users |
 | `OptionsFX` | `shOptionCharges` | The non-delta option charge of FX and gold | Users |
+| `Eligibility_Header` | `shEligibility` | The first header cell of the size of the business by month | Users, in the rows below it |
 | `IRCalc_Header` | `shIRCalc` | The first header cell of the rows calculated per interest rate position | `RunSSA`, below it |
 | `EQCalc_Header` | `shEQCalc` | The first header cell of the rows calculated per equity position | `RunSSA`, below it |
 | `COCalc_Header` | `shCOCalc` | The first header cell of the rows calculated per commodity position | `RunSSA`, below it |
@@ -178,11 +197,12 @@ The names that refer to one cell:
 | `Buckets_FX_Header` | `shBuckets` | The first header cell of the currencies | `RunSSA`, below it |
 | `FX_ONOP` | `shBuckets` | The overall net open position | `RunSSA` |
 | `FX_Charge` | `shBuckets` | The FX and gold requirement | `RunSSA` |
-| `SSA_Requirement` | `shResults` | The requirement after scaling, on the total row | `RunSSA` |
+| `SSA_RequirementBeforeTransition` | `shResults` | The requirement after scaling, on the total row | `RunSSA` |
+| `SSA_Requirement` | `shResults` | The requirement after scaling and the transitional multiplier, on the row below the total | `RunSSA` |
 | `Results_Header` | `shResults` | The first header cell of the requirement per risk class | `RunSSA`, in the rows below it |
 | `Results_Status` | `shResults` | The status line of the last run | `RunSSA`, `ClearOutputs` and `CheckStatus` |
 | `Results_Fingerprint` | `shResults` | The fingerprint of the inputs of the last run | `RunSSA`; cleared by `ClearOutputs` and by a run that fails |
-| `SSA_RWA` | `shResults` | The risk-weighted assets, on the total row | `RunSSA` |
+| `SSA_RWA` | `shResults` | The risk-weighted assets, on the row below the total | `RunSSA` |
 | `Checks_Header` | `shChecks` | The first header cell of the rules | `RunSSA`, in the count and result columns |
 | `Checks_Errors` | `shChecks` | The number of errors of the last run | `RunSSA` |
 | `Checks_Warnings` | `shChecks` | The number of warnings of the last run | `RunSSA` |
@@ -211,36 +231,38 @@ build stops when the template defines one elsewhere.
 
 ## Range names
 
-Twelve names refer to one column of a table. The template defines them, and
-the build copies them unchanged; `tools/devbuild/workbook.json` lists
+Thirteen names refer to one column of a table or to a block of cells. The
+template defines them, and the build copies them unchanged; `tools/devbuild/workbook.json` lists
 one-cell names only, so it does not check them
 ([decisions](#decisions)).
 
 | Name | Sheet | Refers to | Holds |
 | --- | --- | --- | --- |
-| `SR_Key` | `shParams` | `C31:C48` | The keys of the specific-risk table: category, rating grade and residual maturity |
-| `SR_Charge` | `shParams` | `G31:G48` | The charge of each specific-risk key |
-| `Ladder_Band` | `shParams` | `C53:C67` | The number of each time band |
-| `Ladder_Zone` | `shParams` | `D53:D67` | The zone of each time band |
-| `Ladder_UpperHigh` | `shParams` | `E53:E67` | The upper bound of each time band in years, coupon at or above `CouponThreshold` |
-| `Ladder_UpperLow` | `shParams` | `F53:F67` | The upper bound of each time band in years, coupon below `CouponThreshold` |
-| `Ladder_LabelHigh` | `shParams` | `G53:G67` | The label of each time band, coupon at or above `CouponThreshold` |
-| `Ladder_LabelLow` | `shParams` | `H53:H67` | The label of each time band, coupon below `CouponThreshold` |
-| `Ladder_RW` | `shParams` | `I53:I67` | The risk weight of each time band |
-| `FX_Ccy` | `shParams` | `C72:C91` | The currency codes of the FX table |
-| `FX_Rate` | `shParams` | `E72:E91` | The rate of each currency to the reporting currency |
+| `SR_Key` | `shParams` | `C42:C72` | The keys of the specific-risk table: category, rating grade and residual maturity |
+| `SR_Charge` | `shParams` | `G42:G72` | The charge of each specific-risk key |
+| `Ladder_Band` | `shParams` | `C77:C91` | The number of each time band |
+| `Ladder_Zone` | `shParams` | `D77:D91` | The zone of each time band |
+| `Ladder_UpperHigh` | `shParams` | `E77:E91` | The upper bound of each time band in years, coupon at or above `CouponThreshold` |
+| `Ladder_UpperLow` | `shParams` | `F77:F91` | The upper bound of each time band in years, coupon below `CouponThreshold` |
+| `Ladder_LabelHigh` | `shParams` | `G77:G91` | The label of each time band, coupon at or above `CouponThreshold` |
+| `Ladder_LabelLow` | `shParams` | `H77:H91` | The label of each time band, coupon below `CouponThreshold` |
+| `Ladder_RW` | `shParams` | `I77:I91` | The risk weight of each time band |
+| `FX_Ccy` | `shParams` | `C96:C115` | The currency codes of the FX table |
+| `FX_Rate` | `shParams` | `E96:E115` | The rate of each currency to the reporting currency |
+| `Eligibility_Results` | `shEligibility` | `D32:J33` | The status, the last month, the size, the share, the run, the count and the restart condition of each approach, `325a` on row 32 and `94` on row 33 |
 | `Tests_Result` | `shTestCatalogue` | `M7:M25` | The result of each test, `PASS` or `FAIL` |
 
-Users write the eleven names on `Params`; `Tests_Result` is a column of
-formulas. `M_Main` reads every range name but two: no code reads
-`Ladder_Band`, and the test suite reads `Tests_Result`.
+Users write the eleven names on `Params`; `RunSSA` writes
+`Eligibility_Results`; `Tests_Result` is a column of formulas. `M_Main` reads
+every range name but two: no code reads `Ladder_Band`, and the test suite
+reads `Tests_Result`.
 
 ## Areas
 
 | Area | Sheet | Kind | Written by | Holds |
 | --- | --- | --- | --- | --- |
-| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `COMGrossRate`: code, description, value, reference, MAR40 value and a *Changed* flag |
-| Specific-risk table | `shParams` | Input | Users | 18 rows: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
+| Parameters | `shParams` | Input | Users, in the *Value* column | One row per parameter, from `AsOfDate` to `EligibilityCap94`: code, description, value, reference, MAR40 value and a *Changed* flag |
+| Specific-risk table | `shParams` | Input | Users | 31 rows, 18 of MAR40 and 13 of the CRR: key, category, rating grade, residual maturity and charge (`SR_Key`, `SR_Charge`) |
 | Maturity ladder | `shParams` | Input | Users | 15 time bands: zone, upper bounds and labels by coupon, and risk weight (the `Ladder_` names) |
 | FX table | `shParams` | Input | Users | Up to 20 currencies with their rate to the reporting currency (`FX_Ccy`, `FX_Rate`) |
 | `IRPositions_Header` | `shIRPositions` | Input | Users | One row per debt position or derivative leg; the rows vary |
@@ -248,7 +270,9 @@ formulas. `M_Main` reads every range name but two: no code reads
 | `COPositions_Header` | `shCOPositions` | Input | Users | One row per commodity position; the rows vary |
 | `FXPositions_Header` | `shFXPositions` | Input | Users | One row per net currency or gold position; the rows vary |
 | Option charges | `shOptionCharges` | Input | Users, in the *Charge* column | Four rows, one per risk class (the `Options` names) |
-| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes and a total row; below them a headline of four formulas |
+| `Eligibility_Header` | `shEligibility` | Input | Users, in columns C to H | One row per month end, up to 24; `RunSSA` writes the calculated columns I to U of each row |
+| `Eligibility_Results` | `shEligibility` | Result | `RunSSA` | One row per approach, `325a` and `94`, below the rows of the months |
+| `Results_Header` | `shResults` | Result | `RunSSA` | Four risk classes, a total row and a row for the transitional multiplier; below them a headline of five formulas: the requirement, the risk-weighted assets, the reporting currency, the reporting date and the regime |
 | `Results_Fingerprint` | `shResults` | Parameter | `RunSSA` | One cell: the fingerprint of the inputs of the last run, which `CheckStatus` reads |
 | `IR_Zones_Header` | `shIRZones` | Result | `RunSSA` | One row per currency of the FX table, and a total row |
 | `IR_Ladder_Header` | `shIRLadder` | Result | `RunSSA` | One block of 15 time bands per currency of the FX table |
@@ -256,7 +280,7 @@ formulas. `M_Main` reads every range name but two: no code reads
 | `Buckets_CO_Header` | `shBuckets` | Result | `RunSSA` | Up to 30 commodities, and a total row |
 | `Buckets_FX_Header` | `shBuckets` | Result | `RunSSA` | One row per currency of the FX table, a total row, `FX_ONOP` and `FX_Charge` |
 | `IRCalc_Header`, `EQCalc_Header`, `COCalc_Header`, `FXCalc_Header` | The four calculation sheets | Result | `RunSSA` | One row per input row, on the same row number, with its status and every intermediate value |
-| `Checks_Header` | `shChecks` | Diagnostics | `RunSSA`, in the count and result columns | 14 rules, `C01` to `C14`, with severity, sheet, reference and message |
+| `Checks_Header` | `shChecks` | Diagnostics | `RunSSA`, in the count and result columns | 17 rules, `C01` to `C17`, with severity, sheet, reference and message |
 | `Checks_Findings_Header` | `shChecks` | Diagnostics | `RunSSA` | One row per rejected row or unusable parameter, with the reason |
 | Test catalogue | `shTestCatalogue` | Diagnostics | Formulas | 19 tests: an output cell, its expected value, the difference, the tolerance and the result (`Tests_Result`) |
 
@@ -267,7 +291,7 @@ for that table.
 
 - **Input** areas hold what users type. The
   [data contract](DATA_CONTRACT.md) defines each as a dataset, `DS-02` to
-  `DS-10`, with every field's type, unit and allowed values, and says how a
+  `DS-11`, with every field's type, unit and allowed values, and says how a
   cell is read. A row that fails validation is rejected: it contributes
   nothing, its calculation row says why and `Checks` lists it. An unusable
   parameter stops the run. No value is corrected.
@@ -349,8 +373,9 @@ cleared, because its name is missing, is named on the `FAILED` line. When
 
 **An input changed after a run.** `RunSSA` stores in `Results_Fingerprint`
 a fingerprint of everything it read: the parameters, the specific-risk
-table, the ladder, the FX table, the option charges and the four position
-tables. The check reads the same inputs again and compares:
+table, the ladder, the FX table, the option charges, the months of
+`Eligibility` and the four position tables. The check reads the same inputs
+again and compares:
 
 - It runs on request, as `CheckStatus`; when the workbook is opened; and
   before it is saved. A change is therefore reported at the next of these
@@ -446,10 +471,10 @@ constants on `Params`, are unlocked. Two entries of the matrix:
         "formatRows": false
       },
       "input": [
-        "C5:P504"
+        "C5:Q504"
       ],
       "output": [
-        "A1:P4",
+        "A1:Q4",
         "A5:B504"
       ]
     },
@@ -460,7 +485,7 @@ constants on `Params`, are unlocked. Two entries of the matrix:
         "formatRows": false
       },
       "output": [
-        "A1:P23"
+        "A1:P24"
       ]
     }
   }
@@ -476,7 +501,7 @@ constants on `Params`, are unlocked. Two entries of the matrix:
   the standard's default: `false` for `sheet`, `objects`, `scenarios`,
   `selectLockedCells` and `selectUnlockedCells`, `true` for the others. `{}`
   is an unprotected sheet. Never put a password in the matrix.
-- **`input`:** the cells and ranges, such as `E6` or `C5:P504`, that users
+- **`input`:** the cells and ranges, such as `E6` or `C5:Q504`, that users
   type in. They must be unlocked.
 - **`output`:** the cells and ranges that users must not change, such as
   results and labels. They must be locked. An input range never overlaps an
@@ -498,8 +523,9 @@ the tool writes.
 width of a column and the height of a row, and type in the unlocked cells,
 which hold the inputs: the parameters of `Params`, the MAR40 constants among
 them, the specific-risk charges, the ladder, the FX table, the four position
-tables, and the option charges. They cannot change a label, a header, a
-formula or a result, insert or delete a row or a column, sort or filter. A
+tables, the option charges and the months of `Eligibility`. They cannot change
+a label, a header, a formula or a result, insert or delete a row or a column,
+sort or filter. A
 position table is the 500 rows of its input range, and its data validation
 stays. There is no password, so a user who needs to change a locked cell
 chooses **Review → Unprotect Sheet**: the protection prevents accidents, and
@@ -507,9 +533,10 @@ is no security.
 
 **How code writes a protected sheet.** A write to a locked cell by code fails
 on a protected sheet, error 1004. Each operation of `M_Main` applies
-`UserInterfaceOnly` to the nine output sheets before it reads or writes
-anything, through `M_Main.AllowWriting`: the sheet stays protected for users,
-with the options above, and code may write it. The setting is not saved with
+`UserInterfaceOnly` to the nine output sheets, and to `Eligibility`, whose
+calculated columns it writes, before it reads or writes anything, through
+`M_Main.AllowWriting`: the sheet stays protected for users, with the options
+above, and code may write it. The setting is not saved with
 the workbook, so each operation applies it again, and none depends on
 `Workbook_Open`. The test modules call `AllowWriting` for every sheet they
 write. A sheet that someone protected with a password cannot be protected
@@ -535,6 +562,7 @@ sheet with a password too. How Excel treats `UserInterfaceOnly` is
 | 2026-11-15 | A date is a serial from 1 January 1900 to 31 December 9999, and no shorter limit applies to a final maturity | A number above that range, such as a date typed as `20311231`, is not a date in Excel or VBA. A long maturity is valid, and the last time band has no upper bound | [29](https://github.com/danielep71/K-FRTB-SSA/issues/29) |
 | 2026-11-15 | A changed input is found by a fingerprint of the inputs, which a check compares on request, when the workbook is opened and before it is saved | A change event would mark the results at once, but its first write after a run empties Excel's undo history, it does not fire while events are off, and it cannot be exercised outside Excel | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
 | 2026-11-15 | Every output sheet repeats the status line of `Results` with a formula, in `E1` | A reader of one sheet can tell whether it belongs to the last run, and one written cell holds the state | [25](https://github.com/danielep71/K-FRTB-SSA/issues/25) |
+| 2026-11-23 | The headline of `Results` shows the regime of the run, below the reporting date, as `Basel` or `CRR` | A reader of a requirement sees which rules produced it, and the transitional multiplier row alone does not say so under the `Basel` regime. The cell is a formula that repeats the `Regime` parameter, and the input fingerprint moves to `E19` | [87](https://github.com/danielep71/K-FRTB-SSA/issues/87) |
 | 2026-11-14 | No sheet is protected and no cell is unlocked yet | The prototype is brought in as received; the change is tracked | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
 | 2026-11-19 | Every sheet is protected, without a password, and only the input cells are unlocked: the cells with the input fill, and the MAR40 constants of `Params` | Users cannot overwrite a label, a header, a formula or a result by accident, and keep the means to try a what-if. A password would have to be stored, or lost, and would add no security to a workbook whose code a user can read | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |
 | 2026-11-19 | The options of the protection are those of the standard's default but for two: users may change the width of a column and the height of a row | A user who cannot read a column cannot use the sheet; inserting, deleting, sorting and filtering would break a fixed table | [26](https://github.com/danielep71/K-FRTB-SSA/issues/26) |

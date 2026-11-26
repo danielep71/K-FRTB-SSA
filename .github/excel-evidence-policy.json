@@ -14,8 +14,8 @@
       "name": "core",
       "source": "tests/modules/TEST_Suite.bas",
       "certification_entry_point": "CertifyCore",
-      "expected_cases": 12,
-      "expected_assertions": 99,
+      "expected_cases": 17,
+      "expected_assertions": 230,
       "log": "core.log",
       "certification_log": "core-certification.log"
     },
@@ -23,8 +23,8 @@
       "name": "workbook",
       "source": "tests/modules/TEST_Workbook.bas",
       "certification_entry_point": "CertifyWorkbook",
-      "expected_cases": 4,
-      "expected_assertions": 41,
+      "expected_cases": 5,
+      "expected_assertions": 56,
       "log": "workbook.log",
       "certification_log": "workbook-certification.log"
     },
@@ -32,8 +32,8 @@
       "name": "probes",
       "source": "tests/modules/TEST_Probes.bas",
       "certification_entry_point": "CertifyProbes",
-      "expected_cases": 7,
-      "expected_assertions": 49,
+      "expected_cases": 8,
+      "expected_assertions": 54,
       "log": "probes.log",
       "certification_log": "probes-certification.log"
     },
@@ -41,8 +41,8 @@
       "name": "cases",
       "source": "tests/modules/TEST_Cases.bas",
       "certification_entry_point": "CertifyCases",
-      "expected_cases": 20,
-      "expected_assertions": 386,
+      "expected_cases": 47,
+      "expected_assertions": 874,
       "log": "cases.log",
       "certification_log": "cases-certification.log",
       "results": "cases-results.json"

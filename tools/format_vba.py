@@ -9,7 +9,7 @@ style states (*Source representation*):
 3. four spaces for each tab of a line's indentation;
 4. procedure declarations, their End statements and labels at the outer
    level;
-5. two blank lines after each procedure's End statement.
+5. after each procedure's End statement, one blank line.
 
 It never changes a string literal: every rule works on indentation, on the
 end of a line, or on whole lines it recognises outside literals, and a
@@ -97,8 +97,8 @@ def format_body(lines: Sequence[str]) -> list[str]:
                 out.append(line)
             continue
         if pending_end:
-            # Two blank lines between a procedure's End and what follows it.
-            out.extend(["", ""])
+            # One blank line between a procedure's End and what follows it.
+            out.append("")
             pending_end = False
         if not continued and outer_level(line):
             line = line.lstrip()

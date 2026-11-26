@@ -182,9 +182,29 @@ class FixtureTest(FindingTest):
         self.assertFinding(run(lambda f, e: f.pop("datasets")), "missing datasets")
         self.assertFinding(run(lambda f, e: f.update(extra=1)), "unknown extra")
 
+    def test_parameters_are_optional_inputs(self) -> None:
+        self.assertEqual(run(lambda f, e: f.update(parameters={
+            "regime_code": "CRR", "total_own_funds_amount": 1e9})), [])
+        for value, text in (({}, "parameters is not a non-empty object"),
+                            ([1], "parameters is not a non-empty object"),
+                            ({"Regime": "CRR"}, "parameter 'Regime' is not lower snake case"),
+                            ({"regime": "CRR"}, "parameter 'regime' has no unit suffix"),
+                            ({"own_funds_amount": "1"}, "invalid value for its suffix _amount")):
+            with self.subTest(value=value):
+                def edit(f: dict[str, Any], e: dict[str, Any], v: object = value) -> None:
+                    f["parameters"] = v
+                self.assertFinding(run(edit), text)
+        # An invalid case may break them, as any other calculation input.
+        def invalid(f: dict[str, Any], e: dict[str, Any]) -> None:
+            f.update(category="invalid", parameters="none")
+            output(e).update(quantity="run_status", text="REJECTED")
+            for key in ("value", "unit", "tolerance"):
+                output(e).pop(key, None)
+        self.assertEqual(run(invalid), [])
+
     def test_calculation_and_datasets_are_declared(self) -> None:
-        self.assertFinding(run(lambda f, e: f.update(calculation="CALC-09")),
-                           "calculation CALC-09 is not declared")
+        self.assertFinding(run(lambda f, e: f.update(calculation="CALC-10")),
+                           "calculation CALC-10 is not declared")
         self.assertFinding(run(lambda f, e: f.update(calculation="calc-2")),
                            "is not an ID of the form")
         self.assertFinding(run(lambda f, e: f.update(datasets={"DS-09": FIXTURE["datasets"]
@@ -439,7 +459,7 @@ class TraceabilityTest(FindingTest):
                 ("Source", "`SRC-09`", "is not one SRC- ID of the register"),
                 ("Source", "`IMPL-01`", "is not one SRC- ID of the register"),
                 ("Paragraph", "", "names no paragraph"),
-                ("Calculation step", "`CALC-09.1`", "is not a step of a declared calculation"),
+                ("Calculation step", "`CALC-10.1`", "is not a step of a declared calculation"),
                 ("Calculation step", "`CALC-02`", "is not a step of a declared calculation"),
                 ("Calculation step", "`CALC-02.9`",
                  "rule CALC-02.9 is not a step that the Rules table of CALC-02 lists"),
@@ -714,7 +734,7 @@ class FileBasedCaseTest(FindingTest):
             (lambda m, e: m.update(datasets=["DS-02", "DS-04"]),
              "dataset DS-04 names no file in the Datasets table"),
             (lambda m, e: m.update(datasets=["DS-01", "DS-03"]), "DS-01 is illustrative"),
-            (lambda m, e: m.update(calculation="CALC-09"), "calculation CALC-09 is not"),
+            (lambda m, e: m.update(calculation="CALC-10"), "calculation CALC-10 is not"),
             (lambda m, e: m.pop("reporting_date"), "missing reporting_date"),
         ]
         for edit, text in cases:

@@ -79,14 +79,19 @@ class RuleTest(unittest.TestCase):
                            ["Private Sub Run()", "    Debug.Print _",
                             "        Done:", "End Sub"])
 
-    def test_two_blank_lines_between_procedures(self) -> None:
+    def test_one_blank_line_between_procedures(self) -> None:
         self.assertFormats(["Private Sub One()", "End Sub", "'Header of Two",
                             "Private Sub Two()", "End Sub"],
-                           ["Private Sub One()", "End Sub", "", "", "'Header of Two",
+                           ["Private Sub One()", "End Sub", "", "'Header of Two",
                             "Private Sub Two()", "End Sub"])
         self.assertFormats(["Private Sub One()", "End Sub", "", "", "", "",
                             "Private Sub Two()", "End Sub"],
-                           ["Private Sub One()", "End Sub", "", "",
+                           ["Private Sub One()", "End Sub", "",
+                            "Private Sub Two()", "End Sub"])
+        # No blank line is added where a group banner follows one already.
+        self.assertFormats(["Private Sub One()", "End Sub", "", "'",
+                            "Private Sub Two()", "End Sub"],
+                           ["Private Sub One()", "End Sub", "", "'",
                             "Private Sub Two()", "End Sub"])
 
     def test_other_lines_are_not_moved(self) -> None:

@@ -1,91 +1,114 @@
 Attribute VB_Name = "CORE_InterestRate"
-'==============================================================================
+
+Option Explicit
+Option Private Module
+
+'
+'------------------------------------------------------------------------------
 ' MODULE: CORE_InterestRate
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Interest rate risk under the MAR40 simplified standardised approach:
-'   validate each position row, slot it in the maturity ladder of its
-'   currency, weight it, net specific risk per issue, and apply the
-'   vertical and horizontal disallowances of the maturity method per
-'   currency. Returns the IRCalc, IR_Ladder and IR_Zones tables as arrays.
+'   validate each position row, slot it in the maturity ladder of its currency,
+'   weight it, net specific risk per issue, and apply the vertical and
+'   horizontal disallowances of the maturity method per currency. Returns the
+'   IRCalc, IR_Ladder and IR_Zones tables as arrays
 '
-' PUBLIC SURFACE
-'   None outside this VBA project (Option Private Module).
-'     CalculateInterestRate, TimeBand, LadderCharges.
+' WHY THIS EXISTS
+'   It keeps the whole interest rate calculation in one module that depends
+'   only on its arguments, holds no state and never touches the Excel object
+'   model
 '
-' DEPENDENCIES
-'   CORE_Config, CORE_Util.
+' INPUTS
+'   None at module level
 '
-' STATE OWNERSHIP
-'   None. Every procedure depends only on its arguments.
+' RETURNS
+'   Nothing at module level
+'
+' BEHAVIOR
+'   The public procedures, which Option Private Module keeps inside this VBA
+'   project:
+'     - CalculateInterestRate: validates and slots every row, nets specific
+'       risk per issue and builds the row, ladder and zone tables with the
+'       totals
+'     - TimeBand: the maturity-method time band of a position
+'     - LadderCharges: the vertical and horizontal disallowances of one
+'       currency's weighted positions
+'   The private helpers RowStatus, IsKnownInstrument, SpecificRiskBand,
+'   SpecificRiskKey, IsHighCoupon, Offset and SmallerOf support them
 '
 ' ERROR POLICY
 '   Cell content never raises: an unusable row gets an INVALID status and
-'   contributes nothing. ERR_ARGUMENT is raised for arrays of the wrong
-'   shape.
+'   contributes nothing, and a non-trading book row an EXCLUDED status.
+'   ERR_ARGUMENT is raised for arrays of the wrong shape
 '
-' COMPATIBILITY
-'   Excel VBA; no references beyond the defaults. Never touches the Excel
-'   object model.
+' DEPENDENCIES
+'   CORE_Config and CORE_Util
 '
-' REFERENCE
-'   BCBS MAR40.4-40.8 (specific risk, Table 1), MAR40.24-40.28 (maturity
-'   method, Tables 4 and 5).
+'   Reference: BCBS MAR40.4-40.8 (specific risk, Table 1) and MAR40.24-40.28
+'   (maturity method, Tables 4 and 5)
+'
+' NOTES
+'   Option Explicit requires explicit declarations and Option Private Module
+'   keeps the procedures inside this project
+'
+'   State ownership: none. Every procedure depends only on its arguments
+'
+'   Compatibility: Excel VBA; no references beyond the defaults. Never touches
+'   the Excel object model
+'
+'   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-15
+'   2026-11-21
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' PRIVATE CONSTANTS
+'------------------------------------------------------------------------------
+    'Columns of the IRCalc output, counted from column C
+    Private Const OC_ID             As Long = 1             'PositionID
+    Private Const OC_STATUS         As Long = 2             'Status
+    Private Const OC_CCY            As Long = 3             'Currency code
+    Private Const OC_FX             As Long = 4             'FX rate
+    Private Const OC_SIGNED         As Long = 5             'Signed value, reporting currency
+    Private Const OC_SLOT_DATE      As Long = 6             'Slotting date
+    Private Const OC_MATURITY       As Long = 7             'Residual maturity, years
+    Private Const OC_COUPON_TBL     As Long = 8             'High or Low coupon table
+    Private Const OC_BAND           As Long = 9             'Time band
+    Private Const OC_ZONE           As Long = 10            'Zone
+    Private Const OC_WEIGHT         As Long = 11            'Risk weight
+    Private Const OC_WEIGHTED       As Long = 12            'Weighted position
+    Private Const OC_CATEGORY       As Long = 13            'SR category
+    Private Const OC_SR_BAND        As Long = 14            'SR maturity band
+    Private Const OC_SR_KEY         As Long = 15            'SR key
+    Private Const OC_SR_RATE        As Long = 16            'SR rate
+    Private Const OC_ISSUE          As Long = 17            'Issue key
+    Private Const OC_ISSUE_NET      As Long = 18            'Issue net value
+    Private Const OC_ISSUE_FIRST    As Long = 19            'First row of issue
+    Private Const OC_SR_CHARGE      As Long = 20            'Specific risk charge
+    Private Const OC_MIXED          As Long = 21            'MIXED flag
+    Private Const OC_ERROR_NO       As Long = 22            'Running number of rejected rows
+
+    'Specific-risk maturity bands (MAR40.6 Table 1)
+    Private Const SRB_SHORT         As String = "<=6m"      'Six months or less
+    Private Const SRB_MEDIUM        As String = "6m-24m"    'Over 6 to 24 months
+    Private Const SRB_LONG          As String = ">24m"      'Over 24 months
+    Private Const SRB_ANY           As String = "Any"       'Any maturity
+
+    'Netting keys of the issue pass: an entered Issue ID and a row without one
+    'have keys in separate namespaces, so that they can never be equal
+    Private Const KEY_ISSUE         As String = "ISSUE:"    'Entered Issue ID
+    Private Const KEY_POSITION      As String = "POS:"      'Row without an Issue ID
+
+
 '
-' AUTHOR
-'   Daniele Penza
-'==============================================================================
-
 '------------------------------------------------------------------------------
-' MODULE SETTINGS
+'
+'                                 CALCULATION
+'
 '------------------------------------------------------------------------------
-    'Require explicit declarations; keep the procedures inside this project.
-    Option Explicit
-    Option Private Module
-
-'------------------------------------------------------------------------------
-' MODULE CONSTANTS
-'------------------------------------------------------------------------------
-    'Columns of the IRCalc output, counted from column C.
-        Private Const OC_ID          As Long = 1     'PositionID
-        Private Const OC_STATUS      As Long = 2     'Status
-        Private Const OC_CCY         As Long = 3     'Currency code
-        Private Const OC_FX          As Long = 4     'FX rate
-        Private Const OC_SIGNED      As Long = 5     'Signed value, reporting currency
-        Private Const OC_SLOT_DATE   As Long = 6     'Slotting date
-        Private Const OC_MATURITY    As Long = 7     'Residual maturity, years
-        Private Const OC_COUPON_TBL  As Long = 8     'High or Low coupon table
-        Private Const OC_BAND        As Long = 9     'Time band
-        Private Const OC_ZONE        As Long = 10    'Zone
-        Private Const OC_WEIGHT      As Long = 11    'Risk weight
-        Private Const OC_WEIGHTED    As Long = 12    'Weighted position
-        Private Const OC_CATEGORY    As Long = 13    'SR category
-        Private Const OC_SR_BAND     As Long = 14    'SR maturity band
-        Private Const OC_SR_KEY      As Long = 15    'SR key
-        Private Const OC_SR_RATE     As Long = 16    'SR rate
-        Private Const OC_ISSUE       As Long = 17    'Issue key
-        Private Const OC_ISSUE_NET   As Long = 18    'Issue net value
-        Private Const OC_ISSUE_FIRST As Long = 19    'First row of issue
-        Private Const OC_SR_CHARGE   As Long = 20    'Specific risk charge
-        Private Const OC_MIXED       As Long = 21    'MIXED flag
-        Private Const OC_ERROR_NO    As Long = 22    'Running number of rejected rows
-    'Specific-risk maturity bands (MAR40.6 Table 1).
-        Private Const SRB_SHORT      As String = "<=6m"      'Six months or less
-        Private Const SRB_MEDIUM     As String = "6m-24m"    'Over 6 to 24 months
-        Private Const SRB_LONG       As String = ">24m"      'Over 24 months
-        Private Const SRB_ANY        As String = "Any"       'Any maturity
-    'Netting keys of the issue pass. An entered Issue ID and a row without one
-    'have keys in separate namespaces, so that they can never be equal.
-        Private Const KEY_ISSUE      As String = "ISSUE:"    'Entered Issue ID
-        Private Const KEY_POSITION   As String = "POS:"      'Row without an Issue ID
-
-
-'------------------------------------------------------------------------------
-'                                  CALCULATION
-'------------------------------------------------------------------------------
+'
 
 Public Sub CalculateInterestRate( _
     ByRef InputRows() As Variant, _
@@ -103,96 +126,166 @@ Public Sub CalculateInterestRate( _
     ByRef ZoneOutput() As Variant, _
     ByRef Totals() As Double)
 '
-'==============================================================================
-'                             CalculateInterestRate
+'------------------------------------------------------------------------------
+'                         CALCULATE INTEREST RATE RISK
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Calculate interest rate specific and general market risk for all
-'   positions and return every intermediate.
+'   Calculate interest rate specific and general market risk for all positions
+'   and return every intermediate
+'
+' WHY THIS EXISTS
+'   It turns the interest rate position rows into the IRCalc, IR_Ladder and
+'   IR_Zones tables and the totals in one call, and returns every intermediate
+'   figure as an array
 '
 ' INPUTS
-'   InputRows           IRPositions cells (1 To n, 1 To IR_INPUT_WIDTH); a row
-'                  whose PositionID is blank is ignored.
-'   AsOfDate       Reporting date, date serial.
-'   Parameters     Vector (1 To PI_COUNT) from CORE_Parameters.
-'   FxCodes        FX table codes (1 To m), upper case, "" for an empty slot.
-'   FxRates        Units of reporting currency per unit, > 0.
-'   GoldCode       Gold code, upper case; gold is not an IR currency.
-'   SrKeys         Specific-risk keys, upper case; SrCharges their decimals.
-'   Ladder         (1 To BAND_COUNT, 1 To LD_WIDTH) from BuildLadder.
-'   LadderLabels   (1 To BAND_COUNT, 1 To 2): band labels, coupon >= and <
-'                  threshold; "" when the band does not exist.
+'   InputRows
+'     IRPositions cells (1 To n, 1 To IR_INPUT_WIDTH); a row whose PositionID
+'     is blank is ignored
+'
+'   AsOfDate
+'     Reporting date, date serial
+'
+'   Parameters
+'     Vector (1 To PI_COUNT) from CORE_Parameters
+'
+'   FxCodes
+'     FX table codes (1 To m), upper case, "" for an empty slot
+'
+'   FxRates
+'     Units of reporting currency per unit, > 0
+'
+'   GoldCode
+'     Gold code, upper case; gold is not an IR currency
+'
+'   SrKeys
+'     Specific-risk keys, upper case
+'
+'   SrCharges
+'     Specific-risk charges as decimals, one per key of SrKeys
+'
+'   Ladder
+'     (1 To BAND_COUNT, 1 To LD_WIDTH) from BuildLadder
+'
+'   LadderLabels
+'     (1 To BAND_COUNT, 1 To 2): band labels, coupon >= and < threshold; ""
+'     when the band does not exist
+'
+'   RowOutput
+'     Output; resized and filled here, see RETURNS
+'
+'   LadderOutput
+'     Output; resized and filled here, see RETURNS
+'
+'   ZoneOutput
+'     Output; resized and filled here, see RETURNS
+'
+'   Totals
+'     Output; resized and filled here, see RETURNS
 '
 ' RETURNS
-'   RowOutput      (1 To n, 1 To IR_CALC_WIDTH): IRCalc columns C:X.
-'   LadderOutput   (1 To m * BAND_COUNT, 1 To LADDER_WIDTH): IR_Ladder C:O,
-'                  one block of bands per FX table slot.
-'   ZoneOutput     (1 To m + 1, 1 To ZONES_WIDTH): IR_Zones C:AF, one row
-'                  per FX table slot and a total row.
-'   Totals         (1 To TOT_COUNT): TOT_SPECIFIC, TOT_GENERAL (reporting
-'                  currency), TOT_USED, TOT_REJECTED, TOT_MIXED.
+'   Nothing; the results are written to the output arguments:
+'     - RowOutput: (1 To n, 1 To IR_CALC_WIDTH), the IRCalc columns C:X
+'     - LadderOutput: (1 To m * BAND_COUNT, 1 To LADDER_WIDTH), the IR_Ladder
+'       columns C:O, one block of bands per FX table slot
+'     - ZoneOutput: (1 To m + 1, 1 To ZONES_WIDTH), the IR_Zones columns C:AF,
+'       one row per FX table slot and a total row
+'     - Totals: (1 To TOT_COUNT) with TOT_SPECIFIC and TOT_GENERAL (reporting
+'       currency), TOT_USED, TOT_REJECTED, TOT_EXCLUDED (non-trading book
+'       rows) and TOT_MIXED
+'
+' BEHAVIOR
+'   Checks the width of InputRows and sizes the outputs, then:
+'     - counts each PositionID, ignoring case, to find duplicates
+'     - row pass: status, slotting and weighting of each row
+'     - issue pass: net per issue, with the specific risk charge on the first
+'       row of the issue
+'     - ladder: accumulates the longs and shorts per FX slot and band
+'     - zones: calls LadderCharges for each FX slot, then adds the total row,
+'       which sums the columns except the signed nets
+'   Netting: rows with the same Issue ID, ignoring case, net for specific risk.
+'   A row without an Issue ID is an issue of its own: it nets with no other
+'   row, whatever the Issue IDs of the others, and its Issue key is "POS:" and
+'   its PositionID
 '
 ' ERROR POLICY
-'   Raises ERR_ARGUMENT when InputRows is not IR_INPUT_WIDTH wide.
+'   Raises ERR_ARGUMENT when InputRows is not IR_INPUT_WIDTH wide. Cell content
+'   never raises: an unusable row gets an INVALID status and contributes
+'   nothing; a non-trading book row gets an EXCLUDED status and contributes
+'   nothing
 '
-' NETTING
-'   Rows with the same Issue ID, ignoring case, net for specific risk. A row
-'   without an Issue ID is an issue of its own: it nets with no other row,
-'   whatever the Issue IDs of the others, and its Issue key is "POS:" and
-'   its PositionID.
+' DEPENDENCIES
+'   RowStatus, SpecificRiskBand, SpecificRiskKey, IsHighCoupon, TimeBand,
+'   LadderCharges and SmallerOf; CORE_Util (KeyPosition, CodeText, PlainText,
+'   FindCode, DirectionSign, NumberValue and IsInvalidStatus); CORE_Config
+'   constants
 '
-' REFERENCE
-'   MAR40.6 (specific risk on the net position per issue), MAR40.24 (one
-'   ladder per currency), MAR40.25 (fixed by residual maturity, floating by
-'   next repricing), MAR40.26-40.28.
+'   Reference: MAR40.6 (specific risk on the net position per issue), MAR40.24
+'   (one ladder per currency), MAR40.25 (fixed by residual maturity, floating
+'   by next repricing) and MAR40.26-40.28
+'
+' NOTES
+'   The procedure owns no state; it depends only on its arguments
 '
 ' UPDATED
-'   2026-11-15
-'==============================================================================
-'
-    Dim RowCount      As Long        'Input rows
-    Dim SlotCount     As Long        'FX table slots
-    Dim Ids()         As String      'Normalised PositionIDs, for duplicates
-    Dim IdCount       As Long        'Distinct PositionIDs
-    Dim IdUses()      As Long        'InputRows per distinct PositionID
-    Dim RowSlot()     As Long        'FX slot of each OK row, 0 otherwise
-    Dim RowIssue()    As String      'Netting key of each row with specific risk
-    Dim Issues()      As String      'Distinct issue keys
-    Dim IssueCount    As Long        'Distinct issue keys in use
-    Dim IssueNet()    As Double      'Net signed value per issue
-    Dim IssueFirst()  As Long        'First row of each issue
-    Dim IssueMixed()  As Boolean     'Issue rows with different SR key or currency
-    Dim WeightedLong()  As Double    'Per slot and band, weighted long
-    Dim WeightedShort() As Double    'Per slot and band, weighted short
-    Dim PlainLong()   As Double      'Per slot and band, long before weighting
-    Dim PlainShort()  As Double      'Per slot and band, short before weighting
-    Dim SlotUsed()    As Long        'OK rows per slot
-    Dim SlotSpecific() As Double     'Specific risk charge per slot
-    Dim BandLong()    As Double      'One slot's weighted longs (1 To BAND_COUNT)
-    Dim BandShort()   As Double      'One slot's weighted shorts
-    Dim Components()  As Double      'LadderCharges result
-    Dim Status        As String      'Row status
-    Dim CurrencyCode  As String      'Row currency code
-    Dim Category      As String      'Row SR category
-    Dim SrBand        As String      'Row SR maturity band
-    Dim SrKey         As String      'Row SR key
-    Dim Grade         As String      'Row rating grade, trimmed
-    Dim IsFloating    As Boolean     'Rate type Floating
-    Dim SlotDate      As Double      'Slotting date serial
-    Dim Residual      As Double      'Residual maturity, years
-    Dim Signed        As Double      'Signed value, reporting currency
-    Dim Band          As Long        'Time band
-    Dim Position      As Long        'Position in a lookup
-    Dim ErrorNumber   As Long        'Running number of rejected rows
-    Dim r             As Long        'Input row
-    Dim s             As Long        'FX slot
-    Dim b             As Long        'Time band
-    Dim c             As Long        'Output column
+'   2026-11-21
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim RowCount        As Long     'Input rows
+    Dim SlotCount       As Long     'FX table slots
+    Dim Ids()           As String   'Normalised PositionIDs, for duplicates
+    Dim IdCount         As Long     'Distinct PositionIDs
+    Dim IdUses()        As Long     'InputRows per distinct PositionID
+    Dim RowSlot()       As Long     'FX slot of each OK row, 0 otherwise
+    Dim RowIssue()      As String   'Netting key of each row with specific risk
+    Dim Issues()        As String   'Distinct issue keys
+    Dim IssueCount      As Long     'Distinct issue keys in use
+    Dim IssueNet()      As Double   'Net signed value per issue
+    Dim IssueFirst()    As Long     'First row of each issue
+    Dim IssueMixed()    As Boolean  'Issue rows with different SR key or currency
+    Dim WeightedLong()  As Double   'Per slot and band, weighted long
+    Dim WeightedShort() As Double   'Per slot and band, weighted short
+    Dim PlainLong()     As Double   'Per slot and band, long before weighting
+    Dim PlainShort()    As Double   'Per slot and band, short before weighting
+    Dim SlotUsed()      As Long     'OK rows per slot
+    Dim SlotSpecific()  As Double   'Specific risk charge per slot
+    Dim BandLong()      As Double   'One slot's weighted longs (1 To BAND_COUNT)
+    Dim BandShort()     As Double   'One slot's weighted shorts
+    Dim Components()    As Double   'LadderCharges result
+    Dim Status          As String   'Row status
+    Dim CurrencyCode    As String   'Row currency code
+    Dim Category        As String   'Row SR category
+    Dim SrBand          As String   'Row SR maturity band
+    Dim SrKey           As String   'Row SR key
+    Dim Grade           As String   'Row rating grade, trimmed
+    Dim IsFloating      As Boolean  'Rate type Floating
+    Dim SlotDate        As Double   'Slotting date serial
+    Dim Residual        As Double   'Residual maturity, years
+    Dim Signed          As Double   'Signed value, reporting currency
+    Dim Band            As Long     'Time band
+    Dim Position        As Long     'Position in a lookup
+    Dim ErrorNumber     As Long     'Running number of rejected rows
+    Dim r               As Long     'Input row
+    Dim s               As Long     'FX slot
+    Dim b               As Long     'Time band
+    Dim c               As Long     'Output column
+
+'------------------------------------------------------------------------------
+' VALIDATE INPUTS
+'------------------------------------------------------------------------------
+    'Reject an input table narrower than the columns the calculation reads
         If UBound(InputRows, 2) < IR_INPUT_WIDTH Then
             Err.Raise ERR_ARGUMENT, "CORE_InterestRate.CalculateInterestRate", _
                 "InputRows must be " & IR_INPUT_WIDTH & " columns wide."
         End If
+
+'------------------------------------------------------------------------------
+' SIZE OUTPUT ARRAYS
+'------------------------------------------------------------------------------
+    'Take the row and slot counts from the inputs and size the outputs
         RowCount = UBound(InputRows, 1)
         SlotCount = UBound(FxCodes)
         ReDim RowOutput(1 To RowCount, 1 To IR_CALC_WIDTH)
@@ -200,7 +293,10 @@ Public Sub CalculateInterestRate( _
         ReDim RowIssue(1 To RowCount)
         ReDim Totals(1 To TOT_COUNT)
 
-        'Count each PositionID, ignoring case, to find duplicates.
+'------------------------------------------------------------------------------
+' COUNT POSITION IDS
+'------------------------------------------------------------------------------
+    'Count each PositionID, ignoring case, to find duplicates
         For r = 1 To RowCount
             Position = KeyPosition(Ids, IdCount, CodeText(InputRows(r, IR_ID)), True)
         Next r
@@ -210,19 +306,25 @@ Public Sub CalculateInterestRate( _
             If Position > 0 Then IdUses(Position) = IdUses(Position) + 1
         Next r
 
-        '--- Row pass: status, slotting and weighting --------------------------
+'------------------------------------------------------------------------------
+' ROW PASS
+'------------------------------------------------------------------------------
+    'Validate, slot and weight each input row
         For r = 1 To RowCount
+            'Ignore a row whose PositionID is blank
             If Len(PlainText(InputRows(r, IR_ID))) > 0 Then
+                'Normalise the row fields and derive its specific-risk key and its status
                 CurrencyCode = CodeText(InputRows(r, IR_CCY))
                 Category = CodeText(InputRows(r, IR_CATEGORY))
                 Grade = PlainText(InputRows(r, IR_GRADE))
                 IsFloating = (CodeText(InputRows(r, IR_RATE_TYPE)) = "FLOATING")
                 SrBand = SpecificRiskBand(InputRows(r, IR_MATURITY), AsOfDate, Parameters(PI_DAYS_PER_YEAR))
                 SrKey = SpecificRiskKey(Category, Grade, SrBand, SrKeys)
-                Status = RowStatus(InputRows, r, CurrencyCode, Category, SrKey, IsFloating, AsOfDate, _
+                Status = RowStatus(InputRows, r, CurrencyCode, Category, _
+                                   (Parameters(PI_REGIME_FLAG) = 1#), SrKey, IsFloating, AsOfDate, _
                                    FxCodes, GoldCode, _
                                    IdUses(KeyPosition(Ids, IdCount, CodeText(InputRows(r, IR_ID)), False)))
-
+                'Write the identification, the FX rate and the zero defaults of the output row
                 RowOutput(r, OC_ID) = PlainText(InputRows(r, IR_ID))
                 RowOutput(r, OC_STATUS) = Status
                 RowOutput(r, OC_CCY) = CurrencyCode
@@ -236,36 +338,44 @@ Public Sub CalculateInterestRate( _
                 RowOutput(r, OC_SR_RATE) = 0#
                 RowOutput(r, OC_ISSUE_FIRST) = False
                 RowOutput(r, OC_SR_CHARGE) = 0#
-
+                'Slot and weight a usable row, or number a rejected one
                 If Status = ST_OK Then
+                    'Convert the position value to the reporting currency, with its sign
                     Signed = DirectionSign(InputRows(r, IR_DIRECTION)) * NumberValue(InputRows(r, IR_VALUE)) _
                              * FxRates(Position)
+                    'Slot a floating-rate row by its next repricing date, any other by its final maturity
                     If IsFloating Then
                         SlotDate = NumberValue(InputRows(r, IR_REPRICING))
                     Else
                         SlotDate = NumberValue(InputRows(r, IR_MATURITY))
                     End If
+                    'Find the residual maturity in years and the time band
                     Residual = (SlotDate - AsOfDate) / Parameters(PI_DAYS_PER_YEAR)
                     Band = TimeBand(Residual, IsHighCoupon(InputRows, r, IsFloating, Parameters), Ladder)
+                    'Write the slotting results
                     RowSlot(r) = Position
                     RowOutput(r, OC_SIGNED) = Signed
                     RowOutput(r, OC_SLOT_DATE) = CDate(SlotDate)
                     RowOutput(r, OC_MATURITY) = Residual
+                    'Record which coupon table slotted the row
                     If IsHighCoupon(InputRows, r, IsFloating, Parameters) Then
                         RowOutput(r, OC_COUPON_TBL) = "High"
                     Else
                         RowOutput(r, OC_COUPON_TBL) = "Low"
                     End If
+                    'Write the band, the zone, the risk weight and the weighted position
                     RowOutput(r, OC_BAND) = Band
                     RowOutput(r, OC_ZONE) = Ladder(Band, LD_ZONE)
                     RowOutput(r, OC_WEIGHT) = Ladder(Band, LD_WEIGHT)
                     RowOutput(r, OC_WEIGHTED) = Signed * Ladder(Band, LD_WEIGHT)
+                    'Look up the specific-risk rate when the row has a specific-risk key
                     If SrKey <> SR_NONE Then
                         RowOutput(r, OC_SR_RATE) = SrCharges(FindCode(SrKeys, SrKey))
                     End If
+                    'Build the issue key: a row without an Issue ID is an issue of its own
                     If Category <> SR_NONE Then
                         If Len(PlainText(InputRows(r, IR_ISSUE))) = 0 Then
-                            'No Issue ID: the position is an issue of its own.
+                            'No Issue ID: the position is an issue of its own
                             RowIssue(r) = KEY_POSITION & PlainText(InputRows(r, IR_ID))
                             RowOutput(r, OC_ISSUE) = RowIssue(r)
                         Else
@@ -273,20 +383,28 @@ Public Sub CalculateInterestRate( _
                             RowOutput(r, OC_ISSUE) = CodeText(InputRows(r, IR_ISSUE))
                         End If
                     End If
+                    'Count the used row
                     Totals(TOT_USED) = Totals(TOT_USED) + 1
                 ElseIf IsInvalidStatus(Status) Then
+                    'Number the rejected row and count it
                     ErrorNumber = ErrorNumber + 1
                     RowOutput(r, OC_ERROR_NO) = ErrorNumber
                     Totals(TOT_REJECTED) = Totals(TOT_REJECTED) + 1
+                Else
+                    'Count the excluded row
+                    Totals(TOT_EXCLUDED) = Totals(TOT_EXCLUDED) + 1
                 End If
             End If
         Next r
 
-        '--- Issue pass: net per issue, charge on the first row ----------------
-        'There are at most RowCount distinct issues.
+'------------------------------------------------------------------------------
+' NET SPECIFIC RISK PER ISSUE
+'------------------------------------------------------------------------------
+    'There are at most RowCount distinct issues
         ReDim IssueNet(1 To RowCount)
         ReDim IssueFirst(1 To RowCount)
         ReDim IssueMixed(1 To RowCount)
+    'Net the signed values per issue and flag issues of mixed SR key or currency
         For r = 1 To RowCount
             If Len(RowIssue(r)) > 0 Then
                 Position = KeyPosition(Issues, IssueCount, RowIssue(r), True)
@@ -302,6 +420,7 @@ Public Sub CalculateInterestRate( _
                 IssueNet(Position) = IssueNet(Position) + RowOutput(r, OC_SIGNED)
             End If
         Next r
+    'Charge the net of each issue on its first row and flag mixed issues
         ReDim SlotSpecific(1 To SlotCount)
         For r = 1 To RowCount
             If Len(RowIssue(r)) > 0 Then
@@ -322,12 +441,16 @@ Public Sub CalculateInterestRate( _
             End If
         Next r
 
-        '--- Ladder: accumulate per FX slot and band ---------------------------
+'------------------------------------------------------------------------------
+' ACCUMULATE LADDER
+'------------------------------------------------------------------------------
+    'Size the per-slot and per-band accumulators
         ReDim WeightedLong(1 To SlotCount, 1 To BAND_COUNT)
         ReDim WeightedShort(1 To SlotCount, 1 To BAND_COUNT)
         ReDim PlainLong(1 To SlotCount, 1 To BAND_COUNT)
         ReDim PlainShort(1 To SlotCount, 1 To BAND_COUNT)
         ReDim SlotUsed(1 To SlotCount)
+    'Add each used row to the long or short side of its slot and band
         For r = 1 To RowCount
             s = RowSlot(r)
             If s > 0 Then
@@ -343,10 +466,15 @@ Public Sub CalculateInterestRate( _
             End If
         Next r
 
+'------------------------------------------------------------------------------
+' BUILD LADDER AND ZONE OUTPUT
+'------------------------------------------------------------------------------
+    'Size the ladder, zone and one-slot band arrays
         ReDim LadderOutput(1 To SlotCount * BAND_COUNT, 1 To LADDER_WIDTH)
         ReDim ZoneOutput(1 To SlotCount + 1, 1 To ZONES_WIDTH)
         ReDim BandLong(1 To BAND_COUNT)
         ReDim BandShort(1 To BAND_COUNT)
+    'Write the ladder rows of each FX slot and its zone charges
         For s = 1 To SlotCount
             CurrencyCode = FxCodes(s)
             If CurrencyCode = GoldCode Then CurrencyCode = vbNullString
@@ -379,8 +507,7 @@ Public Sub CalculateInterestRate( _
                 LadderOutput(r, 12) = Parameters(PI_VERTICAL) * LadderOutput(r, 11)
                 LadderOutput(r, 13) = BandLong(b) - BandShort(b)
             Next b
-
-            '--- Zones of this currency (IR_Zones row s) ------------------------
+            'Compute the zones of this currency (IR_Zones row s)
             LadderCharges BandLong, BandShort, Ladder, Parameters, Components
             ZoneOutput(s, 1) = CurrencyCode
             If Len(CurrencyCode) > 0 Then
@@ -397,7 +524,10 @@ Public Sub CalculateInterestRate( _
             Totals(TOT_GENERAL) = Totals(TOT_GENERAL) + Components(ZC_GENERAL)
         Next s
 
-        '--- Total row: sums, except the signed nets that do not add up -------
+'------------------------------------------------------------------------------
+' BUILD TOTAL ROW
+'------------------------------------------------------------------------------
+    'Write the total row: sums, except the signed nets that do not add up
         ZoneOutput(SlotCount + 1, 1) = LBL_TOTAL_ZONES
         For c = 2 To ZONES_WIDTH
             Select Case c
@@ -413,51 +543,88 @@ Public Sub CalculateInterestRate( _
 
 End Sub
 
-
 Public Function TimeBand( _
     ByVal ResidualMaturity As Double, _
     ByVal HighCoupon As Boolean, _
     ByRef Ladder() As Double) _
     As Long
 '
-'==============================================================================
-'                                   TimeBand
+'------------------------------------------------------------------------------
+'                               RETURN TIME BAND
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Return the maturity-method time band of a position.
+'   Return the maturity-method time band of a position
+'
+' WHY THIS EXISTS
+'   It slots a residual maturity in the ladder column of its coupon group, the
+'   way Table 4 of MAR40.26 does
 '
 ' INPUTS
-'   ResidualMaturity  Years to final maturity (fixed rate) or to the next
-'                     repricing date (floating rate); any value, a negative
-'                     one falls in band 1.
-'   HighCoupon        True for coupon >= threshold or floating rate.
-'   Ladder            (1 To BAND_COUNT, 1 To LD_WIDTH); upper bounds are
-'                     inclusive, OPEN_BOUND for none.
+'   ResidualMaturity
+'     Years to final maturity (fixed rate) or to the next repricing date
+'     (floating rate); any value, a negative one falls in band 1
+'
+'   HighCoupon
+'     True for coupon >= threshold or floating rate
+'
+'   Ladder
+'     (1 To BAND_COUNT, 1 To LD_WIDTH); upper bounds are inclusive, OPEN_BOUND
+'     for none
 '
 ' RETURNS
-'   Band 1 to BAND_COUNT: 1 + the number of upper bounds below the maturity.
+'   Band 1 to BAND_COUNT: 1 + the number of upper bounds below the maturity
 '
-' REFERENCE
-'   MAR40.26 Table 4 ("1 month or less", "1 to 3 months", ...).
+' BEHAVIOR
+'   Picks the upper-bound column of the coupon group (LD_UPPER_HIGH or
+'   LD_UPPER_LOW), counts the bounds of that column that are below the maturity
+'   and caps the band at BAND_COUNT
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   CORE_Config constants only
+'
+'   Reference: MAR40.26 Table 4 ("1 month or less", "1 to 3 months", ...)
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
-    Dim Column      As Long      'Bound column used
-    Dim Band        As Long      'Result
-    Dim b           As Long      'Band
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Column  As Long 'Bound column used
+    Dim Band    As Long 'Result
+    Dim b       As Long 'Band
+
+'------------------------------------------------------------------------------
+' SELECT BOUND COLUMN
+'------------------------------------------------------------------------------
+    'Use the high or the low coupon column of the ladder
         If HighCoupon Then Column = LD_UPPER_HIGH Else Column = LD_UPPER_LOW
+
+'------------------------------------------------------------------------------
+' FIND BAND
+'------------------------------------------------------------------------------
+    'Count the upper bounds below the maturity, starting from band 1
         Band = 1
         For b = 1 To BAND_COUNT
             If Ladder(b, Column) < ResidualMaturity Then Band = Band + 1
         Next b
+    'Cap the band at the last band of the ladder
         If Band > BAND_COUNT Then Band = BAND_COUNT
+
+'------------------------------------------------------------------------------
+' RETURN VALUE
+'------------------------------------------------------------------------------
+    'Return the band
         TimeBand = Band
 
 End Function
-
 
 Public Sub LadderCharges( _
     ByRef WeightedLong() As Double, _
@@ -466,50 +633,96 @@ Public Sub LadderCharges( _
     ByRef Parameters() As Double, _
     ByRef Components() As Double)
 '
-'==============================================================================
-'                                 LadderCharges
+'------------------------------------------------------------------------------
+'                          APPLY LADDER DISALLOWANCES
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Apply the vertical and horizontal disallowances to one currency's
-'   weighted positions and return every step of the maturity method.
+'   Apply the vertical and horizontal disallowances to one currency's weighted
+'   positions and return every step of the maturity method
+'
+' WHY THIS EXISTS
+'   It computes the general market risk charge of one currency's ladder from
+'   its weighted positions and returns every step in the Components vector
 '
 ' INPUTS
-'   WeightedLong   (1 To BAND_COUNT) weighted long positions, >= 0,
-'                  reporting currency.
-'   WeightedShort  (1 To BAND_COUNT) weighted short positions, >= 0.
-'   Ladder         (1 To BAND_COUNT, 1 To LD_WIDTH); LD_ZONE is used.
-'   Parameters     Vector (1 To PI_COUNT); PI_VERTICAL, PI_ZONE1 to 3,
-'                  PI_ADJACENT and PI_ZONE13 are used.
+'   WeightedLong
+'     (1 To BAND_COUNT) weighted long positions, >= 0, reporting currency
+'
+'   WeightedShort
+'     (1 To BAND_COUNT) weighted short positions, >= 0
+'
+'   Ladder
+'     (1 To BAND_COUNT, 1 To LD_WIDTH); LD_ZONE is used
+'
+'   Parameters
+'     Vector (1 To PI_VECTOR); PI_VERTICAL, PI_ZONE1 to 3, PI_ADJACENT and
+'     PI_ZONE13 are used, and PI_ZONE13_CRR in place of PI_ZONE13 where
+'     PI_REGIME_FLAG is 1
+'
+'   Components
+'     Output; resized and filled here, see RETURNS
 '
 ' RETURNS
-'   Components(1 To ZC_COUNT), reporting currency: ZC_VERTICAL; per zone z
-'   at ZC_ZONE_FIRST + 5 * (z - 1): net long, net short, matched, charge,
-'   net; the zone 1-2, 2-3 and 1-3 offsets with the residuals after each;
-'   ZC_BETWEEN; ZC_NET; ZC_GENERAL = the general market risk charge.
+'   Nothing; Components(1 To ZC_COUNT), reporting currency, holds:
+'     - ZC_VERTICAL
+'     - per zone z at ZC_ZONE_FIRST + 5 * (z - 1): net long, net short,
+'       matched, charge and net
+'     - the zone 1-2, 2-3 and 1-3 offsets with the residuals after each
+'     - ZC_BETWEEN and ZC_NET
+'     - ZC_GENERAL, the general market risk charge
 '
-' REFERENCE
-'   MAR40.27 (10% of the matched weighted position per band), MAR40.28 and
-'   Table 5 (40% / 30% / 30% within zones, 40% between adjacent zones,
-'   100% between zones 1 and 3, offsets in the order 1-2, 2-3, 1-3; 100%
-'   of the residual net position).
+' BEHAVIOR
+'   In order:
+'     - nets the weighted positions of each band and adds the vertical
+'       disallowance, Parameters(PI_VERTICAL) times the matched positions of
+'       the band
+'     - sums the net longs and shorts per zone and applies the within-zone rate
+'       of the zone
+'     - offsets the zone nets in the order 1-2, 2-3, 1-3 and applies the
+'       adjacent-zone and the zone 1-3 rates
+'     - adds the vertical, the within-zone and the between-zone disallowances
+'       and the absolute net position into ZC_GENERAL
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   Offset, SmallerOf and CORE_Config constants
+'
+'   Reference: MAR40.27 (10% of the matched weighted position per band),
+'   MAR40.28 and Table 5 (40% / 30% / 30% within zones, 40% between adjacent
+'   zones, 100% between zones 1 and 3, offsets in the order 1-2, 2-3, 1-3; 100%
+'   of the residual net position). Under the CRR regime, Article 339(9), points
+'   (e) and (f): 40% between adjacent zones and 150% between zones 1 and 3
+'
+' NOTES
+'   None
 '
 ' UPDATED
-'   2026-11-14
-'==============================================================================
-'
-    Dim ZoneLong(1 To ZONE_COUNT)  As Double    'Net long band positions per zone
-    Dim ZoneShort(1 To ZONE_COUNT) As Double    'Net short band positions per zone
-    Dim ZoneNet(1 To ZONE_COUNT)   As Double    'Net position per zone
-    Dim WithinRate  As Double      'Within-zone disallowance of the zone
-    Dim BlockStart  As Long        'First component of the zone block
-    Dim BandNet     As Double      'Net weighted position of a band
-    Dim Matched     As Double      'An offset
-    Dim Zone1       As Double      'Zone 1 net, updated by the offsets
-    Dim Zone2       As Double      'Zone 2 net, updated by the offsets
-    Dim Zone3       As Double      'Zone 3 net, updated by the offsets
-    Dim b           As Long        'Band
-    Dim z           As Long        'Zone
+'   2026-11-20
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim ZoneLong(1 To ZONE_COUNT)   As Double   'Net long band positions per zone
+    Dim ZoneShort(1 To ZONE_COUNT)  As Double   'Net short band positions per zone
+    Dim ZoneNet(1 To ZONE_COUNT)    As Double   'Net position per zone
+    Dim WithinRate                  As Double   'Within-zone disallowance of the zone
+    Dim BlockStart                  As Long     'First component of the zone block
+    Dim BandNet                     As Double   'Net weighted position of a band
+    Dim Matched                     As Double   'An offset
+    Dim Rate13                      As Double   'Disallowance between zones 1 and 3 of the regime
+    Dim Zone1                       As Double   'Zone 1 net, updated by the offsets
+    Dim Zone2                       As Double   'Zone 2 net, updated by the offsets
+    Dim Zone3                       As Double   'Zone 3 net, updated by the offsets
+    Dim b                           As Long     'Band
+    Dim z                           As Long     'Zone
+
+'------------------------------------------------------------------------------
+' ACCUMULATE BAND POSITIONS
+'------------------------------------------------------------------------------
+    'Size the result, then add the vertical disallowance and the band nets
         ReDim Components(1 To ZC_COUNT)
         For b = 1 To BAND_COUNT
             Components(ZC_VERTICAL) = Components(ZC_VERTICAL) + Parameters(PI_VERTICAL) _
@@ -523,6 +736,10 @@ Public Sub LadderCharges( _
             End If
         Next b
 
+'------------------------------------------------------------------------------
+' COMPUTE ZONE CHARGES
+'------------------------------------------------------------------------------
+    'Write the net long, net short, matched, charge and net of each zone
         For z = 1 To ZONE_COUNT
             Select Case z
                 Case 1: WithinRate = Parameters(PI_ZONE1)
@@ -538,7 +755,10 @@ Public Sub LadderCharges( _
             Components(BlockStart + 4) = ZoneNet(z)
         Next z
 
-        'Offsets between zones, in the order of MAR40.28.
+'------------------------------------------------------------------------------
+' OFFSET BETWEEN ZONES
+'------------------------------------------------------------------------------
+    'Offset the zone nets in the order of MAR40.28
         Zone1 = ZoneNet(1)
         Zone2 = ZoneNet(2)
         Zone3 = ZoneNet(3)
@@ -555,26 +775,39 @@ Public Sub LadderCharges( _
         Components(ZC_Z2_AFTER23) = Zone2
         Components(ZC_Z3_AFTER23) = Zone3
         Components(ZC_MATCHED13) = Offset(Zone1, Zone3)
+    'Use the CRR rate between zones 1 and 3 under the CRR regime
+        Rate13 = Parameters(PI_ZONE13)
+        If Parameters(PI_REGIME_FLAG) = 1# Then Rate13 = Parameters(PI_ZONE13_CRR)
+
+'------------------------------------------------------------------------------
+' COMPUTE GENERAL CHARGE
+'------------------------------------------------------------------------------
+    'Weight the between-zone offsets and add the net position
         Components(ZC_BETWEEN) = Parameters(PI_ADJACENT) _
             * (Components(ZC_MATCHED12) + Components(ZC_MATCHED23)) _
-            + Parameters(PI_ZONE13) * Components(ZC_MATCHED13)
+            + Rate13 * Components(ZC_MATCHED13)
         Components(ZC_NET) = Abs(ZoneNet(1) + ZoneNet(2) + ZoneNet(3))
+    'Add every disallowance and the net position into the general charge
         Components(ZC_GENERAL) = Components(ZC_VERTICAL) _
             + Components(ZC_ZONE_FIRST + 3) + Components(ZC_ZONE_FIRST + 8) _
             + Components(ZC_ZONE_FIRST + 13) + Components(ZC_BETWEEN) + Components(ZC_NET)
 
 End Sub
 
-
+'
 '------------------------------------------------------------------------------
-'                                    HELPERS
+'
+'                                   HELPERS
+'
 '------------------------------------------------------------------------------
+'
 
 Private Function RowStatus( _
     ByRef InputRows() As Variant, _
     ByVal r As Long, _
     ByVal CurrencyCode As String, _
     ByVal Category As String, _
+    ByVal CrrRegime As Boolean, _
     ByVal SrKey As String, _
     ByVal IsFloating As Boolean, _
     ByVal AsOfDate As Double, _
@@ -583,42 +816,115 @@ Private Function RowStatus( _
     ByVal IdUses As Long) _
     As String
 '
-'==============================================================================
-'                                   RowStatus
+'------------------------------------------------------------------------------
+'                              RETURN ROW STATUS
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Return the status of one interest rate row: "OK" or the first reason
-'   it is rejected, in a fixed order.
+'   Return the status of one interest rate row: "OK" or the first reason it is
+'   rejected, in a fixed order
+'
+' WHY THIS EXISTS
+'   The calculation uses a row only when it passes every check, and the first
+'   failing check is the reason shown for a rejected row
 '
 ' INPUTS
-'   InputRows, r      Input cells and the row index.
-'   CurrencyCode     Normalised currency code.
-'   Category     Normalised SR category.
-'   SrKey        SR key from SpecificRiskKey.
-'   IsFloating   True when Rate type is Floating.
-'   AsOfDate     Reporting date serial.
-'   FxCodes      FX table codes; GoldCode the gold code.
-'   IdUses       InputRows sharing this PositionID (1 = unique).
+'   InputRows
+'     Input cells (1 To n, 1 To IR_INPUT_WIDTH)
+'
+'   r
+'     Row index in InputRows
+'
+'   CurrencyCode
+'     Normalised currency code
+'
+'   Category
+'     Normalised SR category
+'
+'   CrrRegime
+'     True under the CRR regime: the category is CRR or NONE; under the Basel
+'     regime it is GOV, QUAL, OTHER or NONE
+'
+'   SrKey
+'     SR key from SpecificRiskKey
+'
+'   IsFloating
+'     True when Rate type is Floating
+'
+'   AsOfDate
+'     Reporting date serial
+'
+'   FxCodes
+'     FX table codes
+'
+'   GoldCode
+'     Gold code
+'
+'   IdUses
+'     InputRows sharing this PositionID (1 = unique)
 '
 ' RETURNS
-'   "OK" or "INVALID: reason". An instrument that is not one of the values
-'   the data contract allows (IsKnownInstrument) is a reason. A final
-'   maturity, or the next repricing date of a floating-rate row, that is a
-'   number but not the serial of a date (CORE_Util.IsDateSerial) is a reason.
+'   "OK", "INVALID: reason" or "EXCLUDED: reason". An instrument that is not one of the values the
+'   data contract allows (IsKnownInstrument) is a reason. A final maturity, or
+'   the next repricing date of a floating-rate row, that is a number but not
+'   the serial of a date (CORE_Util.IsDateSerial) is a reason
+'
+' BEHAVIOR
+'   Tests the row in this order and returns the reason of the first check that
+'   fails:
+'     - duplicate PositionID, then the book (BookStatus: a value that is not
+'       Trading, Non-trading or blank is invalid, and the non-trading book is
+'       EXCLUDED)
+'     - unknown instrument, currency not in the FX table, gold currency
+'     - direction, position value (a number, >= 0), rate type
+'     - final maturity (present, a date, not before AsOfDate)
+'     - coupon of a fixed-rate row
+'     - next repricing date of a floating-rate row (present, a date, from
+'       AsOfDate to the final maturity)
+'     - SR category for the regime, then the SR key match
+'   Returns ST_OK when none fails
+'
+' ERROR POLICY
+'   Raises no error of its own; a problem with the row is returned as the
+'   status text
+'
+' DEPENDENCIES
+'   IsKnownInstrument; CORE_Util (CodeText, FindCode, DirectionSign,
+'   BookStatus, IsNumberValue, NumberValue and IsDateSerial); CORE_Config
+'   constants
+'
+'   Reference: MAR40.6 and Article 336 of the CRR for the specific risk charge,
+'   as named in the status texts; DS-06 for the instrument values
+'
+' NOTES
+'   None
 '
 ' UPDATED
-'   2026-11-19
-'==============================================================================
-'
-    Dim Maturity    As Variant   'Final maturity cell
-    Dim Repricing   As Variant   'Next repricing cell
-    Dim RateType    As String    'Normalised rate type
+'   2026-11-21
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Maturity    As Variant  'Final maturity cell
+    Dim Repricing   As Variant  'Next repricing cell
+    Dim RateType    As String   'Normalised rate type
+
+'------------------------------------------------------------------------------
+' READ ROW CELLS
+'------------------------------------------------------------------------------
+    'Read the maturity, the repricing date and the normalised rate type of the row
         Maturity = InputRows(r, IR_MATURITY)
         Repricing = InputRows(r, IR_REPRICING)
         RateType = CodeText(InputRows(r, IR_RATE_TYPE))
+
+'------------------------------------------------------------------------------
+' DETERMINE STATUS
+'------------------------------------------------------------------------------
+    'Return the first reason the row is rejected, or OK
         If IdUses > 1 Then
             RowStatus = ST_INVALID & "duplicate PositionID"
+        ElseIf Len(BookStatus(InputRows(r, IR_BOOK), False)) > 0 Then
+            RowStatus = BookStatus(InputRows(r, IR_BOOK), False)
         ElseIf Not IsKnownInstrument(InputRows(r, IR_INSTRUMENT)) Then
             RowStatus = ST_INVALID & "Instrument must be Bond, FRN, Swap leg, Future leg, " & _
                         "FRA leg, Forward leg or Other"
@@ -649,9 +955,13 @@ Private Function RowStatus( _
         ElseIf IsFloating And (NumberValue(Repricing) < AsOfDate _
                                Or NumberValue(Repricing) > NumberValue(Maturity)) Then
             RowStatus = ST_INVALID & "repricing date outside AsOfDate to final maturity"
-        ElseIf InStr(1, SR_CATEGORIES, "|" & Category & "|", vbBinaryCompare) = 0 _
-               Or Len(Category) = 0 Then
+        ElseIf CrrRegime And Category <> SR_CRR And Category <> SR_NONE Then
+            RowStatus = ST_INVALID & "SR category must be CRR or NONE under the CRR"
+        ElseIf Not CrrRegime And (InStr(1, SR_CATEGORIES, "|" & Category & "|", vbBinaryCompare) = 0 _
+               Or Len(Category) = 0 Or Category = SR_CRR) Then
             RowStatus = ST_INVALID & "SR category must be GOV, QUAL, OTHER or NONE"
+        ElseIf SrKey = SR_NO_MATCH And CrrRegime Then
+            RowStatus = ST_INVALID & "no Article 336 charge for this risk weight"
         ElseIf SrKey = SR_NO_MATCH Then
             RowStatus = ST_INVALID & "no MAR40.6 charge for this category and rating grade"
         Else
@@ -660,31 +970,53 @@ Private Function RowStatus( _
 
 End Function
 
-
 Private Function IsKnownInstrument( _
     ByVal Value As Variant) _
     As Boolean
 '
-'==============================================================================
-'                              IsKnownInstrument
+'------------------------------------------------------------------------------
+'                               CHECK INSTRUMENT
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Tell whether an Instrument cell holds one of the seven values that
-'   DS-06 allows, without regard to case and to the blanks at its ends.
+'   Tell whether an Instrument cell holds one of the seven values that DS-06
+'   allows, without regard to case and to the blanks at its ends
+'
+' WHY THIS EXISTS
+'   The status check rejects a row whose Instrument value is not one the data
+'   contract allows
 '
 ' INPUTS
-'   Value   Instrument cell of any type.
+'   Value
+'     Instrument cell of any type
 '
 ' RETURNS
-'   True for Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg and
-'   Other; False for anything else, a blank cell and an error value
-'   included. The workbook calculates every instrument alike: the value
-'   cannot make it recognise one that is entered under a supported name.
+'   True for Bond, FRN, Swap leg, Future leg, FRA leg, Forward leg and Other;
+'   False for anything else, a blank cell and an error value included. The
+'   workbook calculates every instrument alike: the value cannot make it
+'   recognise one that is entered under a supported name
+'
+' BEHAVIOR
+'   Normalises the cell with CodeText and compares it with the seven values
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   CORE_Util.CodeText
+'
+'   Reference: DS-06
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-19
-'==============================================================================
-'
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' CHECK INSTRUMENT
+'------------------------------------------------------------------------------
+    'Accept only the seven instrument values of the data contract
         Select Case CodeText(Value)
             Case "BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"
                 IsKnownInstrument = True
@@ -694,41 +1026,76 @@ Private Function IsKnownInstrument( _
 
 End Function
 
-
 Private Function SpecificRiskBand( _
     ByVal Maturity As Variant, _
     ByVal AsOfDate As Double, _
     ByVal DaysPerYear As Double) _
     As String
 '
-'==============================================================================
-'                               SpecificRiskBand
+'------------------------------------------------------------------------------
+'                          RETURN SPECIFIC RISK BAND
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Return the residual-maturity band of MAR40.6 Table 1.
+'   Return the residual-maturity band of MAR40.6 Table 1
+'
+' WHY THIS EXISTS
+'   The specific risk charge depends on the residual maturity band of the
+'   position, so the band is derived once per row
 '
 ' INPUTS
-'   Maturity     Final maturity cell; a blank cell reads as 0 (as in Excel).
-'   AsOfDate     Reporting date serial.
-'   DaysPerYear  Days per year, > 0.
+'   Maturity
+'     Final maturity cell; a blank cell reads as 0 (as in Excel)
+'
+'   AsOfDate
+'     Reporting date serial
+'
+'   DaysPerYear
+'     Days per year, > 0
 '
 ' RETURNS
-'   "<=6m", "6m-24m", ">24m", or "" when Maturity is text.
+'   "<=6m", "6m-24m", ">24m", or "" when Maturity is text
 '
-' REFERENCE
-'   MAR40.6 Table 1 (6 months or less; over 6 and up to 24 months; over 24).
+' BEHAVIOR
+'   Returns "" for a text maturity, converts the maturity to years from
+'   AsOfDate with DaysPerYear and returns SRB_SHORT up to 0.5 years, SRB_MEDIUM
+'   up to 2 years and SRB_LONG above
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   CORE_Util (IsNumberValue and NumberValue)
+'
+'   Reference: MAR40.6 Table 1 (6 months or less; over 6 and up to 24 months;
+'   over 24)
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
-    Dim Years       As Double    'Residual maturity to final maturity
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Years   As Double   'Residual maturity to final maturity
+
+'------------------------------------------------------------------------------
+' VALIDATE INPUTS
+'------------------------------------------------------------------------------
+    'Return no band when the maturity is text
         If Not IsNumberValue(Maturity) And Not IsEmpty(Maturity) Then
             SpecificRiskBand = vbNullString
             Exit Function
         End If
+
+'------------------------------------------------------------------------------
+' SELECT BAND
+'------------------------------------------------------------------------------
+    'Convert the maturity to years from the reporting date
         Years = (NumberValue(Maturity) - AsOfDate) / DaysPerYear
+    'Pick the band of Table 1 for the residual maturity
         If Years <= 0.5 Then
             SpecificRiskBand = SRB_SHORT
         ElseIf Years <= 2 Then
@@ -739,7 +1106,6 @@ Private Function SpecificRiskBand( _
 
 End Function
 
-
 Private Function SpecificRiskKey( _
     ByVal Category As String, _
     ByVal Grade As String, _
@@ -747,38 +1113,82 @@ Private Function SpecificRiskKey( _
     ByRef SrKeys() As String) _
     As String
 '
-'==============================================================================
-'                                SpecificRiskKey
+'------------------------------------------------------------------------------
+'                           RETURN SPECIFIC RISK KEY
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Return the key of the Table 1 row that applies to a position: first the
-'   maturity-specific key, then the "Any" key of the category and grade.
+'   maturity-specific key, then the "Any" key of the category and grade
+'
+' WHY THIS EXISTS
+'   The specific risk rate of a row is looked up by this key in the Table 1
+'   keys
 '
 ' INPUTS
-'   Category   Normalised SR category.
-'   Grade      Rating grade, trimmed.
-'   SrBand     Band from SpecificRiskBand.
-'   SrKeys     Table keys, upper case.
+'   Category
+'     Normalised SR category
+'
+'   Grade
+'     Rating grade, trimmed
+'
+'   SrBand
+'     Band from SpecificRiskBand
+'
+'   SrKeys
+'     Table keys, upper case
 '
 ' RETURNS
-'   "NONE" for category NONE; the matching key as built (category upper
-'   case, grade as entered); or "NO MATCH".
+'   "NONE" for category NONE; the matching key as built (category upper case,
+'   grade as entered); or "NO MATCH"
+'
+' BEHAVIOR
+'   Returns SR_NONE for category SR_NONE, then tries the key built from
+'   category, grade and band, then the key built with SRB_ANY, and returns
+'   SR_NO_MATCH when neither is in SrKeys
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   CORE_Util.FindCode
+'
+'   Reference: MAR40.6 Table 1
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
-    Dim Candidate   As String    'Key tried
+'------------------------------------------------------------------------------
 
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Candidate   As String   'Key tried
+
+'------------------------------------------------------------------------------
+' HANDLE NO SPECIFIC RISK
+'------------------------------------------------------------------------------
+    'Return the none key for a category without specific risk
         If Category = SR_NONE Then
             SpecificRiskKey = SR_NONE
             Exit Function
         End If
+
+'------------------------------------------------------------------------------
+' TRY MATURITY-SPECIFIC KEY
+'------------------------------------------------------------------------------
+    'Use the key of the maturity band when the table holds it
         Candidate = Category & "|" & Grade & "|" & SrBand
         If FindCode(SrKeys, Candidate) >= 1 Then
             SpecificRiskKey = Candidate
             Exit Function
         End If
+
+'------------------------------------------------------------------------------
+' TRY ANY-MATURITY KEY
+'------------------------------------------------------------------------------
+    'Fall back to the any-maturity key, or report that no key matches
         Candidate = Category & "|" & Grade & "|" & SRB_ANY
         If FindCode(SrKeys, Candidate) >= 1 Then
             SpecificRiskKey = Candidate
@@ -788,7 +1198,6 @@ Private Function SpecificRiskKey( _
 
 End Function
 
-
 Private Function IsHighCoupon( _
     ByRef InputRows() As Variant, _
     ByVal r As Long, _
@@ -796,27 +1205,55 @@ Private Function IsHighCoupon( _
     ByRef Parameters() As Double) _
     As Boolean
 '
-'==============================================================================
-'                                 IsHighCoupon
+'------------------------------------------------------------------------------
+'                             SELECT COUPON TABLE
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Tell which column of Table 4 slots a valid row.
+'   Tell which column of Table 4 slots a valid row
+'
+' WHY THIS EXISTS
+'   The time band of a row depends on whether it uses the coupon >= threshold
+'   column or the other one
 '
 ' INPUTS
-'   InputRows, r      Input cells and the row index (status OK).
-'   IsFloating   True for a floating-rate row.
-'   Parameters   Vector; PI_COUPON_THRESHOLD is used.
+'   InputRows
+'     Input cells (1 To n, 1 To IR_INPUT_WIDTH)
+'
+'   r
+'     Row index in InputRows (status OK)
+'
+'   IsFloating
+'     True for a floating-rate row
+'
+'   Parameters
+'     Vector; PI_COUPON_THRESHOLD is used
 '
 ' RETURNS
-'   True for a floating-rate row or a coupon >= threshold.
+'   True for a floating-rate row or a coupon >= threshold
 '
-' REFERENCE
-'   MAR40.26 Table 4.
+' BEHAVIOR
+'   Returns True for a floating-rate row, otherwise compares the coupon of the
+'   row with the threshold
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   CORE_Util.NumberValue
+'
+'   Reference: MAR40.26 Table 4
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' SELECT COUPON TABLE
+'------------------------------------------------------------------------------
+    'A floating-rate row always uses the high-coupon column, a fixed-rate one by its coupon
         If IsFloating Then
             IsHighCoupon = True
         Else
@@ -825,28 +1262,52 @@ Private Function IsHighCoupon( _
 
 End Function
 
-
 Private Function Offset( _
     ByVal FirstNet As Double, _
     ByVal SecondNet As Double) _
     As Double
 '
-'==============================================================================
-'                                    Offset
+'------------------------------------------------------------------------------
+'                             COMPUTE ZONE OFFSET
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Return the amount two zone nets of opposite sign can offset.
+'   Return the amount two zone nets of opposite sign can offset
+'
+' WHY THIS EXISTS
+'   The between-zone disallowances are computed from the amounts two zone nets
+'   offset against each other
 '
 ' INPUTS
-'   FirstNet, SecondNet   Signed zone nets, reporting currency.
+'   FirstNet
+'     Signed zone net, reporting currency
+'
+'   SecondNet
+'     Signed zone net, reporting currency
 '
 ' RETURNS
-'   min(|FirstNet|, |SecondNet|) when the signs differ, else 0.
+'   min(|FirstNet|, |SecondNet|) when the signs differ, else 0
+'
+' BEHAVIOR
+'   Compares the signs of the two nets and returns the smaller absolute value
+'   when they differ
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   SmallerOf
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' COMPUTE OFFSET
+'------------------------------------------------------------------------------
+    'Offset only nets of opposite sign, by the smaller absolute value
         If FirstNet * SecondNet < 0 Then
             Offset = SmallerOf(Abs(FirstNet), Abs(SecondNet))
         Else
@@ -855,25 +1316,51 @@ Private Function Offset( _
 
 End Function
 
-
 Private Function SmallerOf( _
     ByVal ValueA As Double, _
     ByVal ValueB As Double) _
     As Double
 '
-'==============================================================================
-'                                SmallerOf
+'------------------------------------------------------------------------------
+'                             SELECT SMALLER VALUE
 '------------------------------------------------------------------------------
 ' PURPOSE
-'   Smaller of two numbers, without the Excel object model.
+'   Smaller of two numbers, without the Excel object model
+'
+' WHY THIS EXISTS
+'   It gives the core modules a smaller-of function that needs no Excel object
+'   model
+'
+' INPUTS
+'   ValueA
+'     First number
+'
+'   ValueB
+'     Second number
 '
 ' RETURNS
-'   min(ValueA, ValueB).
+'   min(ValueA, ValueB)
+'
+' BEHAVIOR
+'   Compares the two numbers and returns the smaller
+'
+' ERROR POLICY
+'   Raises no error of its own
+'
+' DEPENDENCIES
+'   None
+'
+' NOTES
+'   None
 '
 ' UPDATED
 '   2026-11-14
-'==============================================================================
-'
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' SELECT SMALLER VALUE
+'------------------------------------------------------------------------------
+    'Return ValueA when it is the smaller, else ValueB
         If ValueA < ValueB Then SmallerOf = ValueA Else SmallerOf = ValueB
 
 End Function

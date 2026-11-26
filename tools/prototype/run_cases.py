@@ -4,9 +4,9 @@
 Usage: python3 tools/prototype/run_cases.py [--uno-python PYTHON] [--keep FOLDER] [CASE ...]
 
 For each JSON fixture of tests/fixtures/ whose calculation is one of the
-project's, CALC-02 to CALC-08, it writes the fixture's records to the input
-sheets of the development workbook that tools/devbuild/build_workbook.py
-builds, runs RunSSA through tools/devbuild/lo_macro.py, and compares every
+project's, CALC-02 to CALC-09, it writes the fixture's parameters and
+records to the input sheets of the development workbook that
+tools/devbuild/build_workbook.py builds, runs RunSSA through tools/devbuild/lo_macro.py, and compares every
 output of the expected file of tests/expected/ with the cell that holds it:
 a number within the output's tolerance, a text exactly. With CASE arguments
 it runs those cases only.
@@ -43,7 +43,7 @@ import verify  # noqa: E402
 ROOT = verify.ROOT
 FIXTURES = ROOT / "tests" / "fixtures"
 EXPECTED = ROOT / "tests" / "expected"
-CALCULATIONS = frozenset(f"CALC-0{number}" for number in range(2, 9))
+CALCULATIONS = frozenset(f"CALC-0{number}" for number in range(2, 10))
 FIRST_ROW, FIRST_COLUMN, CAPACITY, FX_ROWS = verify.FIRST_ROW, verify.FIRST_COLUMN, 500, 20
 # Dataset: its sheet and, in column order, the fixture key of each column
 # (None: a column the engine does not read, left empty).
@@ -51,12 +51,13 @@ POSITIONS: dict[str, tuple[str, tuple[str | None, ...]]] = {
     "DS-06": ("IRPositions", (None, "instrument_code", "currency_code", "direction_code",
                               "position_value_amount", "rate_type_code", "coupon_rate",
                               "final_maturity_date", "next_repricing_date", "sr_category_code",
-                              "rating_grade_code", "issue_id", None)),
+                              "rating_grade_code", "issue_id", "book_code", None)),
     "DS-07": ("EQPositions", (None, "market_code", "type_code", "identifier_code", "currency_code",
-                              "direction_code", "market_value_amount", None)),
+                              "direction_code", "market_value_amount", "book_code", None)),
     "DS-08": ("COPositions", (None, "commodity_code", "direction_code", "quantity_count", None,
-                              "spot_price_amount", "currency_code", None, None)),
-    "DS-09": ("FXPositions", (None, "currency_code", "direction_code", "net_position_amount", None)),
+                              "spot_price_amount", "currency_code", None, "book_code", None)),
+    "DS-09": ("FXPositions", (None, "currency_code", "direction_code", "net_position_amount",
+                              "book_code", None)),
 }
 # A quantity of one position row: its calculation sheet and column.
 ROW_OUTPUTS = {"ir_position_status": ("IRCalc", 4), "ir_time_band": ("IRCalc", 11),
@@ -76,8 +77,27 @@ TOTALS = {"ir_specific_risk_charge": ("IR", 5), "ir_general_market_risk_charge":
 BY_CLASS = {"option_charge": 8, "requirement_before_scaling": 9, "requirement_after_scaling": 11}
 NAMED = {"fx_overall_net_open_position": "FX_ONOP", "own_funds_requirement": "SSA_Requirement",
          "risk_weighted_assets": "SSA_RWA"}
+# A quantity of the whole calculation in a cell of Results without a name: its row and column.
+RESULTS_CELLS = {"transitional_factor": (12, 10)}
+# The status line of the run: the quantity, the workbook name of its cell, and the words
+# that start the time of the run, which the line ends with and no case compares.
+RUN_STATUS, STATUS_NAME, RUN_TIME = "run_status", "Results_Status", " Run "
 # The currencies of the FX block of Buckets: the column of the code and of the net position.
 FX_BLOCK_CODE, FX_BLOCK_NET = 4, 8
+# A parameter a fixture may set: the workbook name of its cell, and its value when the
+# fixture does not set it (the regime's reference value; no total own funds).
+PARAMETERS = {"regime_code": ("Regime", "Basel"), "total_own_funds_amount": ("TotalOwnFunds", None)}
+# The Eligibility sheet (DS-11): its rows, the fixture keys of its input columns in their
+# order, the column of the status of a month and, for each approach, the column of each
+# figure; the result block, one row per approach, and the column of each of its outputs.
+MONTH_ROWS = 24
+MONTH_KEYS = ("month_end_date", "total_assets_amount", "long_325a_amount", "short_325a_amount",
+              "long_94_amount", "short_94_amount")
+MONTH_STATUS_COLUMN = 9
+APPROACHES = ("325a", "94")
+MONTH_FIGURES = ("size", "share", "month_result", "run", "count", "event")
+BLOCK_ROW, BLOCK_COLUMN = 32, 4
+BLOCK_OUTPUTS = {"status": 0, "restart": 6}
 
 
 def cases(names: list[str]) -> list[dict[str, Any]]:
@@ -88,6 +108,20 @@ def cases(names: list[str]) -> list[dict[str, Any]]:
         if (not names and fixture.get("calculation") in CALCULATIONS) or fixture["id"] in names:
             found.append(fixture)
     return found
+
+
+def eligibility_cell(quantity: str) -> tuple[int, int] | None:
+    """The cell of an output of CALC-09: the column on the row of its month, or the cell of the
+    result block (row, column); None for a quantity of another calculation."""
+    if not quantity.startswith("eligibility_"):
+        return None
+    if quantity == "eligibility_month_status":
+        return 0, MONTH_STATUS_COLUMN
+    name, approach = quantity[len("eligibility_"):].rsplit("_", 1)
+    k = APPROACHES.index(approach)
+    if name in BLOCK_OUTPUTS:
+        return BLOCK_ROW + k, BLOCK_COLUMN + BLOCK_OUTPUTS[name]
+    return 0, MONTH_STATUS_COLUMN + 1 + len(MONTH_FIGURES) * k + MONTH_FIGURES.index(name)
 
 
 def cell_value(key: str, value: object) -> object:
@@ -105,6 +139,7 @@ def write_inputs(workbook: Any, fixture: dict[str, Any]) -> None:
     datasets = fixture["datasets"]
     verify.named_cell(workbook, "AsOfDate").value = datetime.date.fromisoformat(fixture["reporting_date"])
     verify.named_cell(workbook, "ReportingCcy").value = fixture["reporting_currency_code"]
+    write_parameters(workbook, fixture)
     codes, rates = verify.first_cell(workbook, "FX_Ccy"), verify.first_cell(workbook, "FX_Rate")
     for offset in range(FX_ROWS):
         codes.offset(offset).value = rates.offset(offset).value = None
@@ -127,6 +162,27 @@ def write_inputs(workbook: Any, fixture: dict[str, Any]) -> None:
                 if key is not None:
                     target.cell(FIRST_ROW + offset, column).value = cell_value(
                         key, record["inputs"].get(key))
+    write_months(workbook, fixture)
+
+
+def write_parameters(workbook: Any, fixture: dict[str, Any]) -> None:
+    """Set each parameter a fixture may set: its value in the fixture, or its default."""
+    parameters = fixture.get("parameters", {})
+    for key in parameters.keys() - PARAMETERS.keys():
+        raise ValueError(f"{fixture['id']}: no cell for the parameter {key}")
+    for key, (name, default) in PARAMETERS.items():
+        verify.named_cell(workbook, name).value = parameters.get(key, default)
+
+
+def write_months(workbook: Any, fixture: dict[str, Any]) -> None:
+    """Replace the rows of Eligibility with the records of DS-11, from the first row."""
+    months, records = workbook["Eligibility"], fixture["datasets"].get("DS-11", [])
+    if len(records) > MONTH_ROWS:
+        raise ValueError(f"{fixture['id']}: more than {MONTH_ROWS} months")
+    for offset in range(MONTH_ROWS):
+        for column, key in enumerate(MONTH_KEYS, FIRST_COLUMN):
+            months.cell(FIRST_ROW + offset, column).value = (
+                cell_value(key, records[offset]["inputs"].get(key)) if offset < len(records) else None)
 
 
 def row_of(sheet: Any, column: int, wanted: str, first: int = 1) -> int | None:
@@ -137,12 +193,29 @@ def row_of(sheet: Any, column: int, wanted: str, first: int = 1) -> int | None:
     return None
 
 
+def run_line(value: object) -> str:
+    """A status line without the time of the run at its end."""
+    line = "" if value is None else str(value).strip()
+    cut = line.rfind(RUN_TIME)
+    return line if cut < 0 else line[:cut]
+
+
 def actual(workbook: Any, fixture: dict[str, Any], output: dict[str, Any]) -> object:
     """The value the workbook holds for an expected output; a text that says so when it has none."""
     quantity, scope = output["quantity"], output["scope"]
+    if (cell := eligibility_cell(quantity)) is not None:
+        month_row, column = cell
+        if scope is not None:
+            month_row = FIRST_ROW + [item["id"] for item in fixture["datasets"]["DS-11"]].index(
+                scope["record"])
+        return workbook["Eligibility"].cell(month_row, column).value
     if scope is None:
+        if quantity == RUN_STATUS:
+            return run_line(verify.named_cell(workbook, STATUS_NAME).value)
         if quantity in NAMED:
             return verify.named_cell(workbook, NAMED[quantity]).value
+        if quantity in RESULTS_CELLS:
+            return workbook["Results"].cell(*RESULTS_CELLS[quantity]).value
         name, column = TOTALS[quantity]
         return workbook["Results"].cell(RESULTS_ROW[name], column).value
     dataset, record = scope["dataset"], scope["record"]

@@ -24,14 +24,29 @@ FIXTURES = ROOT / "tests" / "fixtures"
 CORE = ROOT / "src" / "core"
 # The contract whose Failure behaviour lists the statuses of a module's rows.
 ROW_MODULES = {"CALC-03": "CORE_InterestRate.bas", "CALC-04": "CORE_Equity.bas",
-               "CALC-05": "CORE_Commodity.bas", "CALC-06": "CORE_ForeignExchange.bas"}
+               "CALC-05": "CORE_Commodity.bas", "CALC-06": "CORE_ForeignExchange.bas",
+               "CALC-09": "CORE_Eligibility.bas"}
 PREFIXES = {"ST_INVALID": "INVALID: ", "ST_EXCLUDED": "EXCLUDED: "}
 STATUS_IN_SOURCE = re.compile(r'\b(ST_INVALID|ST_EXCLUDED) & "([^"]+)"')
 STATUS_IN_CONTRACT = re.compile(r"^- `((?:INVALID|EXCLUDED): [^`]+)`$", re.M)
+# A call of CORE_Util.BookStatus, with whether the class takes in its non-trading book.
+BOOK_CALL = re.compile(r"\bBookStatus\(InputRows\([^)]*\), (True|False)\)")
 
 
 def vba(name: str) -> str:
     return (CORE / name).read_bytes().decode("cp1252").replace("\r\n", "\n")
+
+
+def book_statuses(source: str) -> set[str]:
+    """The statuses that the calls of CORE_Util.BookStatus in a module's source give: the
+    invalid book always, and the excluded non-trading book where the class leaves it out."""
+    util = re.search(r"Public Function BookStatus\(.*?^End Function", vba("CORE_Util.bas"), re.M | re.S)
+    assert util is not None
+    texts = {PREFIXES[prefix] + text for prefix, text in STATUS_IN_SOURCE.findall(util.group(0))}
+    scopes = set(BOOK_CALL.findall(source))
+    if not scopes:
+        return set()
+    return {text for text in texts if text.startswith("INVALID") or "False" in scopes}
 
 
 def contract(calculation: str) -> str:
@@ -58,7 +73,7 @@ class StatusTexts(unittest.TestCase):
                 # A text that the source continues on the next line is one text.
                 source = re.sub(r'"\s*&\s*_\s*\n\s*"', "", vba(module))
                 given = {PREFIXES[prefix] + text
-                         for prefix, text in STATUS_IN_SOURCE.findall(source)}
+                         for prefix, text in STATUS_IN_SOURCE.findall(source)} | book_statuses(source)
                 listed = set(STATUS_IN_CONTRACT.findall(contract(calculation)))
                 self.assertTrue(given)
                 self.assertEqual(listed, given)
@@ -100,7 +115,7 @@ class Parameters(unittest.TestCase):
         self.reference = dict(zip(codes, map(float, values), strict=True))
 
     def test_every_numeric_parameter_is_traced(self) -> None:
-        self.assertEqual(len(self.reference), 19)
+        self.assertEqual(len(self.reference), 27)
         for code in self.reference:
             with self.subTest(code=code):
                 self.assertIn(f"`{code}`", self.section)
@@ -114,7 +129,8 @@ class Parameters(unittest.TestCase):
             codes = re.findall(r"`([A-Za-z0-9]+)`", cells[0])
             if not all(code in self.reference for code in codes):
                 continue  # A table of Params, or a parameter that is a text.
-            values = [float(value) for value in cells[1].split(", ")]
+            # An amount is written with its currency and thousands separators: EUR 500,000,000.
+            values = [float(value.removeprefix("EUR ").replace(",", "")) for value in cells[1].split(", ")]
             self.assertEqual(len(values), len(codes), line)
             for code, value in zip(codes, values, strict=True):
                 with self.subTest(code=code):
@@ -169,7 +185,7 @@ class DataContract(unittest.TestCase):
         sources = {dataset["source"] for dataset in self.datasets.values()
                    if not dataset["illustrative"]}
         self.assertEqual(sources, {"Params", "IRPositions", "EQPositions", "COPositions",
-                                   "FXPositions", "OptionCharges"})
+                                   "FXPositions", "OptionCharges", "Eligibility"})
 
     def test_the_fields_of_a_position_dataset_are_the_columns_of_its_sheet(self) -> None:
         config = vba("CORE_Config.bas")
@@ -186,6 +202,18 @@ class DataContract(unittest.TestCase):
                     assert read is not None
                     self.assertEqual(int(read.group(1)), len(fields))
 
+    def test_the_fields_of_the_size_of_the_business_are_the_input_columns_of_eligibility(self) -> None:
+        fields = self.datasets["DS-11"]["fields"]
+        headers = self.headers("Eligibility")
+        # Columns C to H are typed; the 13 columns right of them are calculated.
+        self.assertEqual(len(headers), len(fields) + 13)
+        for field, header in zip(fields, headers, strict=False):
+            self.assertRegex(field["notes"], rf"^Column {re.escape(header)}(\.|,|$)", field["name"])
+        self.assertIn("24 rows", self.datasets["DS-11"]["granularity"].replace("up to ", ""))
+        names = self.template.defined_names
+        self.assertEqual(names["Eligibility_Header"].attr_text, "Eligibility!$C$4")
+        self.assertEqual(names["Eligibility_Results"].attr_text, "Eligibility!$D$32:$J$33")
+
     def test_the_parameters_are_those_of_the_template_in_its_order(self) -> None:
         sheet = self.template["Params"]
         codes = []
@@ -196,7 +224,8 @@ class DataContract(unittest.TestCase):
         fields = self.datasets["DS-02"]["fields"]
         self.assertEqual([workbook_name(field) for field in fields], codes)
         numeric = constant("PRM_NUMERIC_CODES").split("|")
-        self.assertEqual(set(codes), {"AsOfDate", "ReportingCcy", "GoldCode", *numeric})
+        self.assertEqual(set(codes), {"AsOfDate", "ReportingCcy", "GoldCode", "Regime",
+                                      "TransitionalEndDate", "TotalOwnFunds", *numeric})
         # A rate, by the engine's own test, lies from 0 to 1.
         domains = dict(zip(numeric, constant("PRM_DOMAINS"), strict=True))
         by_code = {workbook_name(field): field for field in fields}
@@ -222,8 +251,8 @@ class DataContract(unittest.TestCase):
             first, last = names[name].attr_text.split("!")[1].replace("$", "").split(":")
             return int(re.sub(r"\D", "", last)) - int(re.sub(r"\D", "", first)) + 1
 
-        self.assertEqual((rows("SR_Key"), rows("Ladder_RW"), rows("FX_Ccy")), (18, 15, 20))
-        for dataset, count in (("DS-03", "18 rows"), ("DS-04", "15 rows"), ("DS-05", "20 rows")):
+        self.assertEqual((rows("SR_Key"), rows("Ladder_RW"), rows("FX_Ccy")), (31, 15, 20))
+        for dataset, count in (("DS-03", "31 rows"), ("DS-04", "15 rows"), ("DS-05", "20 rows")):
             with self.subTest(dataset=dataset):
                 self.assertIn(count, self.datasets[dataset]["granularity"])
 

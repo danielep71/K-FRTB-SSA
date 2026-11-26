@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-maturity-method-c2",
+  "synthetic": true,
+  "description": "The positions of the worked example C.2 of SRC-03 under the CRR regime, each debt security in the category of Article 336 whose rates are those of its Basel category: the offset between zones 1 and 3 is charged at 150%",
+  "category": "nominal",
+  "calculation": "CALC-03",
+  "reporting_date": "2026-09-30",
+  "reporting_currency_code": "USD",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 10000000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "USD", "inputs": {"fx_rate": 1.0}}
+    ],
+    "DS-06": [
+      {"id": "C2-QUAL", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 13330000, "rate_type_code": "Fixed", "coupon_rate": 0.08, "final_maturity_date": "2034-09-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 20%", "issue_id": null}},
+      {"id": "C2-GOV", "inputs": {"instrument_code": "Bond", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 75000000, "rate_type_code": "Fixed", "coupon_rate": 0.07, "final_maturity_date": "2026-11-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": null}},
+      {"id": "C2-SWAP-FLOAT", "inputs": {"instrument_code": "Swap leg", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 150000000, "rate_type_code": "Floating", "coupon_rate": null, "final_maturity_date": "2034-09-30", "next_repricing_date": "2027-06-30", "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "C2-SWAP-FIXED", "inputs": {"instrument_code": "Swap leg", "currency_code": "USD", "direction_code": "Short", "position_value_amount": 150000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2034-09-30", "next_repricing_date": null, "sr_category_code": "NONE", "rating_grade_code": null, "issue_id": null}},
+      {"id": "C2-FUT-LONG", "inputs": {"instrument_code": "Future leg", "currency_code": "USD", "direction_code": "Long", "position_value_amount": 50000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2030-03-31", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": null}},
+      {"id": "C2-FUT-SHORT", "inputs": {"instrument_code": "Future leg", "currency_code": "USD", "direction_code": "Short", "position_value_amount": 50000000, "rate_type_code": "Fixed", "coupon_rate": 0.05, "final_maturity_date": "2027-03-30", "next_repricing_date": null, "sr_category_code": "CRR", "rating_grade_code": "RW 0%", "issue_id": null}}
+    ]
+  }
+}

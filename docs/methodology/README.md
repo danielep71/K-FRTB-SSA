@@ -13,6 +13,7 @@ and the evidence they require, show that the figures are right.
 | [✅ Validation plan](VALIDATION_PLAN.md) | Who checks what, the reference values and cross-checks for each calculation, how each rule traces to its procedure, cases and status, what an evidence record contains, and which Excel host behaviour has been measured. |
 | [🧪 Numerical test cases](TEST_CASES.md) | The format of the synthetic inputs and expected results, with their provenance and tolerances, that the checks enforce. |
 | [📊 Workbook contract](WORKBOOK_CONTRACT.md) | The workbook's sheets, code names, defined names and areas, what each operation writes, and how a failure marks earlier results. |
+| [🔍 CRR comparison](CRR_COMPARISON.md) | For the CRR regime, each rule of the calculation contracts compared with Article 325(2) of the CRR and the articles it points to: what is the same, what differs, what the CRR adds, and the task that takes each. |
 | [🧪 VBA test harness](TEST_HARNESS.md) | The harness that runs the VBA suites in Excel, its outcomes, the log and certification formats, and the evidence an Excel run leaves. |
 
 Read the first five in that order: a rule cites a source, consumes the data
@@ -33,6 +34,9 @@ The workbook's scope, feature by feature:
 | Commodities risk by the simplified approach | Supported | `CALC-05` | Per commodity |
 | Foreign exchange risk, gold included, by the shorthand method | Supported | `CALC-06` | From the net position entered per currency |
 | The requirement with its scaling factors, and the risk-weighted assets | Supported | `CALC-08` | |
+| Under the `CRR` regime, the size conditions of the simplified standardised approach (Article 325a) and of the small trading book derogation (Article 94) | Supported | `CALC-09`; `DS-11` | From the monthly totals entered; a finding that changes no requirement |
+| The book of a position: the non-trading book positions subject to foreign exchange or commodity risk, calculated as trading book ones | Supported | `CALC-05`, `CALC-06`; `DS-06.book` to `DS-09.book` | At the value entered, an assumption: the technical standards of Article 325(9) cover the alternative approaches only |
+| Non-trading book interest rate and equity positions | Not supported | `CALC-03`, `CALC-04`; `DS-06.book`, `DS-07.book` | Outside the scope of the market risk requirement: excluded, with a warning of `Checks` (`C17`) |
 | Non-delta charges for options: the simplified approach, the gamma and vega charges of the delta-plus method, the scenario approach | Entered by the user | `CALC-07`; `DS-10.charge` | One value per risk class, added before scaling |
 | Conversion of derivatives into positions in the underlying, and the delta-equivalent of an option | Entered by the user | The rows of `DS-06` to `DS-09` | The workbook converts nothing: each leg is a row |
 | The category and the rating grade of an issuer | Entered by the user | `DS-06.sr_category` and `DS-06.rating_grade` | The workbook does not apply the qualifying criteria |
@@ -41,7 +45,10 @@ The workbook's scope, feature by feature:
 | Securitisation positions, credit derivatives and the correlation trading portfolio | Not supported | `CALC-02` | No input identifies one: entered as a debt position, it is calculated as one. Do not enter it |
 | Commodities risk by the maturity ladder approach | Not supported | `CALC-05` | The maturity date of a commodity position is not used |
 | National discretions, the equity arbitrage treatments, the offset of depository receipts and the exemption for insignificant FX business | Not supported | `CALC-02` to `CALC-06` | Each contract's *Limits and non-goals* names them |
-| A jurisdiction's own implementation, such as the European Union's | Not supported | [Sources](SOURCES.md#decisions) | The basis is the Basel Framework's chapter MAR40 |
+| The regime: Basel MAR40, or the simplified standardised approach of Article 325(2) of the CRR | Supported | `CALC-02` to `CALC-09`; `DS-02.regime` | Selected by the `Regime` parameter. The differences are in the [comparison](CRR_COMPARISON.md). No value of the CRR regime is validated |
+| Under the `CRR` regime: the transitional multiplier of Article 495s(2), the specific risk of Article 336, 150% between zones 1 and 3, no index charge and the de minimis of Article 351 | Supported | `CALC-02`, `CALC-03`, `CALC-04`, `CALC-06`, `CALC-08` | Values are `illustrative` |
+| Under the `CRR` regime: the cap of Article 335, the reversal of the first two offsets, the duration method, the collective investment undertakings, the commodity maturity ladders, ancillary agricultural business, the closely correlated currencies and the exclusions of Article 104c | Not supported | `CALC-02` to `CALC-06` | Each contract's *Limits and non-goals* names them |
+| A jurisdiction's own implementation other than the Basel Framework's and the CRR | Not supported | [Sources](SOURCES.md#decisions) | |
 
 - **Supported:** in scope. The workbook calculates it, as the named
   [calculation contract](CALCULATION_CONTRACTS.md) states, once that

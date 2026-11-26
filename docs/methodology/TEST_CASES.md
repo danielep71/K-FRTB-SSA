@@ -45,8 +45,8 @@ the example suite of the test harness reads them, and I keep that suite as
 the test of the harness itself
 ([the project's suites](TEST_HARNESS.md#the-projects-suites)).
 
-The project's cases are 20 JSON fixtures, on the calculations `CALC-02` to
-`CALC-08`:
+The project's cases are 42 JSON fixtures, on the calculations `CALC-02` to
+`CALC-09`:
 
 | Cases | Category | Expected values |
 | --- | --- | --- |
@@ -55,7 +55,17 @@ The project's cases are 20 JSON fixtures, on the calculations `CALC-02` to
 | `mar40-27-vertical-disallowance` | `nominal` | `published`: the two weighted positions and the vertical disallowance of the example of MAR40.27 of `SRC-02`. Its other values are `illustrative` |
 | `illustrative-sample-…`, six cases, and `illustrative-option-charges` | `nominal` | `illustrative`: the template's sample portfolio, one case per calculation |
 | `illustrative-ir-time-band-limits`, `illustrative-ir-specific-risk-maturity-limits`, `illustrative-eq-matched-positions`, `illustrative-co-matched-positions`, `illustrative-fx-one-sided-positions`, `illustrative-requirement-fx-and-options-only` | `boundary` | `illustrative`: the limits of the bands, positions that offset in full, a zero amount, a risk class without positions |
-| `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break |
+| `illustrative-ir-book`, `illustrative-eq-book`, `illustrative-co-book` and `illustrative-fx-book` | `boundary` | `illustrative`: a trading book row, a row with no book and non-trading book rows in each risk class: excluded for interest rate and equity, calculated for commodities and FX |
+| `illustrative-invalid-ir-positions`, `-eq-`, `-co-` and `-fx-positions` | `invalid` | `illustrative`: the status of a row for each input rule a JSON value can break, a book that is neither value and the category `CRR` under the Basel regime among them, and of a non-trading book row that breaks a later rule |
+| `illustrative-crr-ir-specific-risk`, `illustrative-crr-maturity-method-c2`, `illustrative-crr-sample-equity` and `illustrative-crr-sample-requirement` | `nominal` | `illustrative`: under the `CRR` regime, a row at each risk weight of Article 336, `CALC-02`; and the positions of `bcbs119-c2-maturity-method`, `illustrative-sample-equity` and `illustrative-sample-requirement`, each debt security in the risk weight whose rates are those of its Basel category, so that each value that differs from that of the Basel case is the effect of a rule of the CRR: 150% between zones 1 and 3, no charge on an index, the transitional multiplier |
+| `illustrative-crr-fx-de-minimis-limit`, `illustrative-crr-fx-above-de-minimis`, `illustrative-crr-transitional-end-date` and `illustrative-crr-after-transitional-end-date` | `boundary` | `illustrative`: under the `CRR` regime, the positions of `mar40-61-table-9` with total own funds whose 2% equals the overall net open position and is just below it; and the positions of `illustrative-requirement-fx-and-options-only` on the last date of the transitional multiplier and the day after it |
+| `illustrative-invalid-crr-ir-positions` | `invalid` | `illustrative`: under the `CRR` regime, the status of a row for each test of the category and the risk weight, and of a row that fails an earlier test |
+| `illustrative-crr-regime-in-lower-case` and `illustrative-crr-zero-own-funds` | `boundary` | `illustrative`: the positions of `mar40-61-table-9` with the regime written `crr`, which is read as `CRR` and gives the values of `illustrative-crr-fx-de-minimis-limit`; and under the `CRR` regime with total own funds of 0, which stop the run |
+| `illustrative-invalid-fx-rate-not-positive`, `-rate-not-a-number`, `-currency-listed-twice`, `-reporting-currency-missing` and `-reporting-currency-rate` | `invalid` | `illustrative`: the positions of `mar40-61-table-9` with one unusable row of the FX table: a rate of 0, a rate that is text, JPY listed twice, no row for the reporting currency and the reporting currency at rate 2; each run stops, under rule `C07`, `C06` or `C05`, and expects the status line alone |
+| `illustrative-invalid-regime` and `illustrative-invalid-crr-own-funds` | `invalid` | `illustrative`: the positions of `mar40-61-table-9` with a regime that is neither `Basel` nor `CRR`, and under the `CRR` regime with no total own funds; each run stops. A stopped case expects one output, `run_status`: the status line of `Results` without the time of the run that ends it |
+| `illustrative-eligibility-sample-months` and `illustrative-eligibility-basel-regime` | `nominal` | `illustrative`: under the `CRR` regime, the template's 24 sample months, `CALC-09`, with the status of every month, the figures of the last and the status and restart condition of each approach; under the Basel regime, the status that assesses nothing |
+| `illustrative-eligibility-limits` and `illustrative-eligibility-events` | `boundary` | `illustrative`: a size of the business equal to the share of the total assets or to the amount, and one euro above it; a run of two and of three months, and a count of six and of seven |
+| `illustrative-invalid-eligibility-months` | `invalid` | `illustrative`: the status of a month for each test of a row of `DS-11` a JSON value can break, and the status of each approach while a row is invalid |
 
 `tests/derivations/ssa.py` computes every expected value from the
 calculation contracts. Two runners compare the workbook with them: the
@@ -68,7 +78,7 @@ validates a rule: the derivation is the project's own, LibreOffice is not a
 supported host, and the suite has not run in Excel
 ([issue 22](https://github.com/danielep71/K-FRTB-SSA/issues/22)).
 
-Two [accuracy contracts](#accuracy-contracts) cover a calculation of the
+Three [accuracy contracts](#accuracy-contracts) cover a calculation of the
 project. `ACC-02` is on the overall net open position and the requirement of
 the FX calculation, `CALC-06`: its calibration case is `illustrative-sample-fx`
 and its holdout case `mar40-61-table-9`, whose two values are published.
@@ -77,10 +87,19 @@ disallowances, the net position charge and the charge of the maturity
 method, `CALC-03`: its calibration case is
 `illustrative-sample-ir-general-market-risk` and its holdout cases
 `bcbs119-c2-maturity-method` and `mar40-27-vertical-disallowance`, whose
-values are published. Both are drafts and cannot be frozen yet: a frozen
+values are published. `ACC-04` is on the transitional factor, the
+requirement and the risk-weighted assets of `CALC-08` under the `CRR` regime:
+its calibration case is `illustrative-crr-sample-requirement` and its holdout
+cases `illustrative-crr-transitional-end-date` and
+`illustrative-crr-after-transitional-end-date`, whose values are all
+`illustrative`. All three are drafts and cannot be frozen yet: a frozen
 contract needs three holdout cases whose values are `published` or
-`independent`, and the project has one for `CALC-06` and two for `CALC-03`
-([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47)). Their
+`independent`, and the project has one for `CALC-06`, two for `CALC-03` and
+none under the `CRR` regime, for which no published worked example and no
+independent implementation was found
+([issue 47](https://github.com/danielep71/K-FRTB-SSA/issues/47),
+[issue 86](https://github.com/danielep71/K-FRTB-SSA/issues/86);
+[the search](SOURCES.md#published-examples-of-the-crr-regime)). Their
 results are those the `cases` suite records in an Excel run, in
 `cases-results.json`.
 
@@ -110,10 +129,11 @@ results are those the `cases` suite records in an Excel run, in
 
 | Rule | Detail |
 | --- | --- |
-| Envelope | `schema_version` (1), `kind` (`test-fixture`), `id`, `synthetic` (`true`), `description`, `category`, `calculation`, `reporting_date`, `reporting_currency_code` and `datasets` are required, and no other key is allowed. An `invalid` case relaxes this for the calculation inputs ([invalid inputs](#invalid-inputs)) |
+| Envelope | `schema_version` (1), `kind` (`test-fixture`), `id`, `synthetic` (`true`), `description`, `category`, `calculation`, `reporting_date`, `reporting_currency_code` and `datasets` are required, and `parameters` is optional; no other key is allowed. An `invalid` case relaxes this for the calculation inputs ([invalid inputs](#invalid-inputs)) |
+| Parameters | A non-empty object of the parameters the case sets, keyed as `inputs` are; an `_amount` is in `reporting_currency_code`. The data contract says which parameters a fixture may set ([in a test fixture](DATA_CONTRACT.md#in-a-test-fixture)); every other has its reference value |
 | Calculation | A `CALC-` ID declared by a heading of the [calculation contracts](CALCULATION_CONTRACTS.md) |
 | Datasets | A non-empty object whose keys are `DS-` IDs declared in the *Datasets* table of the [data contract](DATA_CONTRACT.md); each holds a non-empty list of records |
-| Records | Each record has an `id`, unique in the fixture, and an `inputs` object. The `id` is the value of the dataset's identifier field, its required `text` field whose name ends in `_id`, such as the illustrative `position_id` ([fields](DATA_CONTRACT.md#fields)), so `inputs` leaves that field out; it holds every other field the case needs |
+| Records | Each record has an `id`, unique in the fixture, and an `inputs` object. The `id` is the value of the dataset's identifier field, its required `text` field whose name ends in `_id`, such as the illustrative `position_id` ([fields](DATA_CONTRACT.md#fields)), so `inputs` leaves that field out; it holds every other field the case needs. A dataset without an identifier field, whose rows are read in their order, takes its records in that order, and its `id` names the row ([in a test fixture](DATA_CONTRACT.md#in-a-test-fixture)) |
 | Inputs | Keys are lower snake case and end in a unit suffix (below). The field tables of the data contract decide which fields exist; a key is the field's name with the suffix of its unit, unless the name already ends in one, so the illustrative `notional` and `currency` are `notional_amount` and `currency_code`. Input files of a [file-based case](#file-based-cases) keep the field names of the data contract |
 | Currencies | `reporting_currency_code` is the currency of results. A record whose `inputs` hold an `_amount` key also holds `currency_code`, the currency of all its amounts, so a currency mismatch is always visible |
 | Illustrative entries | A `CALC-` or `DS-` ID marked *Illustrative* in its guide may be used only by an `illustrative-` case |
@@ -492,8 +512,8 @@ Each fixture declares one `category`:
   - **Always valid:** `schema_version`, `kind`, `id`, `synthetic`,
     `description`, `category` and `reporting_date`, and the expected file.
   - **May be invalid, missing or unknown:** `calculation`,
-    `reporting_currency_code` and `datasets`, with their records, keys, unit
-    suffixes and values.
+    `reporting_currency_code`, `parameters` and `datasets`, with their
+    records, keys, unit suffixes and values.
   - The `description` names the input rule the case breaks.
 - The `_status` quantities and their texts are fixed by the calculation
   contract, under its *Failure behaviour*. A rejection never substitutes a
@@ -514,13 +534,70 @@ Three kinds of VBA test complement the cases. Each is described in the
 | [End-to-end case runner](TEST_HARNESS.md#end-to-end-case-runner) | A case's fixture and expected file, written to the input sheets | That the workbook, run through its public entry point, gives the case's expected values within its tolerance |
 | [Volume benchmark](TEST_HARNESS.md#volume-benchmarks) | A large synthetic input built in memory, never committed | How long the calculation takes on one host; never a reference value and never certification evidence |
 
+<a id="generated-cases"></a>
+
+## Generated cases
+
+`tests/test_generated_cases.py` generates cases from the registered fixtures of
+`CALC-02` to `CALC-08` and checks properties of the derivation script
+`tests/derivations/ssa.py` that a list of cases cannot. It uses the standard
+library only: every draw comes from a fixed seed, so a failure repeats, and the
+message names the fixture and the draw. `python tools/run_tests.py` runs it, in
+under a second.
+
+| Property | Generated input | Fails when |
+| --- | --- | --- |
+| Order | The records of every dataset shuffled | A result depends on the order of the rows |
+| Sign | A charge of any fixture | A charge is negative or not finite |
+| Scale | Every amount and quantity multiplied by 0.5, 3 or 1000, under the Basel regime | A charge does not scale by the same factor |
+| Direction | Every `Long` turned into `Short` and the reverse | A charge changes |
+| Unusable value | One to three position fields set to an empty cell, text, a wrong type, zero, a negative number or an edge, in `DS-05` to `DS-09` | The script raises, a charge is negative or not finite, or a run that stops gives more than its status line, where the contracts' *Failure behaviour* answers with a row status or stops the run |
+
+A corruption check, as in the relation tests, shows that the comparison fails on
+a shifted charge. I also ran the test on three injected defects, an asymmetric sign, a charge
+offset by 1 and a script that raises on an empty text; each was caught.
+
+**What it found.** The positions never made the script fail. The FX rates did:
+a rate that is text raises `TypeError`, and a rate of 0, a negative rate, a
+reporting currency missing or at another rate and a currency listed twice are
+calculated, where the contract stops the run with rules `C05` to `C07`. The
+script did not implement those rules and no registered case covered them, which
+[issue 119](https://github.com/danielep71/K-FRTB-SSA/issues/119) recorded. The script
+implements them now, five registered `invalid` cases cover them, and the test mutates
+the `fx_rate` field with the other fields.
+
+**Limits.**
+
+- It runs the derivation script, not the VBA engine. The engine runs in Excel or,
+  as `tools/prototype/run_cases.py` does, in LibreOffice, so a property holds for
+  the engine only where a case shows it.
+- A property validates no value. The values stay `illustrative`, and a generated
+  case never counts for a rule in the [completeness policy](#completeness-policy).
+- The inputs are the registered fixtures with the values above, not a search guided
+  by coverage. `CALC-09` is out because it reads its months in order, `CALC-01`
+  because it is an illustrative stand-in, and `DS-10` because the workbook checks
+  no option charge.
+
+**Fuzzers.** I did not add a fuzzer. A coverage-guided fuzzer for Python, Atheris,
+needs a native libFuzzer build and a third-party dependency that this repository
+does not otherwise have, and it would test a Python script that is not what the
+workbook ships. The VBA engine, which is, takes cell values that JSON cannot express,
+and [its tests](#case-categories) belong in a VBA test module. The OpenSSF Scorecard
+*Fuzzing* check does not detect the approach above: its
+[source](https://github.com/ossf/scorecard/blob/main/checks/raw/fuzzing.go)
+recognizes OSS-Fuzz, ClusterFuzzLite and, for Python, the text `import atheris` in a
+`*.py` file, and its
+[documentation](https://github.com/ossf/scorecard/blob/main/docs/checks.md)
+lists no Python library. The score of that check stays at its lowest value, and
+I accept that.
+
 <a id="completeness-policy"></a>
 
 ## Completeness policy
 
 - A rule is **validated** only when at least one `published` or
-  `independent` case passes for it. `illustrative` cases, relation tests and
-  volume benchmarks never count.
+  `independent` case passes for it. `illustrative` cases, relation tests,
+  generated cases and volume benchmarks never count.
 - Each implemented rule also needs at least one `boundary` case, and each
   input domain at least one `invalid` case, as a fixture or a VBA test.
 - A run that does not execute every expected case and assertion is

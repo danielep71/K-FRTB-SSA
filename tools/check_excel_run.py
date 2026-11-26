@@ -124,6 +124,7 @@ import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from typing import Any
 from xml.etree import ElementTree
@@ -407,13 +408,62 @@ def git(root: Path, *args: str) -> bytes:
     return completed.stdout
 
 
+def blobs(root: Path, objects: Sequence[bytes]) -> list[bytes]:
+    """The contents of the Git blobs ``objects``, in order, read by one process."""
+    if not objects:
+        return []
+    completed = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"],
+                               input=b"".join(item + b"\n" for item in objects),
+                               capture_output=True, check=False)
+    if completed.returncode:
+        raise RuntimeError(completed.stderr.decode("utf-8", errors="replace").strip())
+    output, position, contents = completed.stdout, 0, []
+    for item in objects:
+        end = output.index(b"\n", position)
+        header = output[position:end].split(b" ")
+        if len(header) != 3:
+            raise RuntimeError(f"git cat-file: {item.decode('ascii', errors='replace')} missing")
+        start = end + 1
+        size = int(header[2])
+        contents.append(output[start:start + size])
+        position = start + size + 1
+    return contents
+
+
+def tree_files(root: Path, commit: str, *paths: str) -> tuple[tuple[str, bytes], ...]:
+    """The files of the commit (below ``paths``, if any), in Git's order, with their
+    bytes as ``git show <commit>:<path>`` gives them, read by two processes. The
+    files of a full commit SHA never change, so they are read once per process."""
+    if check_accuracy.SHA.fullmatch(commit):
+        return commit_files(root, commit, paths)
+    return read_tree(root, commit, paths)
+
+
+@lru_cache(maxsize=32)
+def commit_files(root: Path, commit: str, paths: tuple[str, ...]
+                 ) -> tuple[tuple[str, bytes], ...]:
+    """``read_tree`` for a full commit SHA, cached: the result is a tuple of bytes."""
+    return read_tree(root, commit, paths)
+
+
+def read_tree(root: Path, commit: str, paths: tuple[str, ...]) -> tuple[tuple[str, bytes], ...]:
+    listed = git(root, "ls-tree", "-r", "-z", commit, *(("--", *paths) if paths else ()))
+    entries = []
+    for item in filter(None, listed.split(b"\0")):
+        meta, _, name = item.partition(b"\t")
+        kind, object_id = meta.split(b" ")[1:3]
+        if kind == b"blob":
+            entries.append((name.decode("utf-8"), object_id))
+    return tuple(zip((name for name, _ in entries), blobs(root, [item for _, item in entries]),
+                     strict=True))
+
+
 def components(root: Path, commit: str) -> dict[str, bytes]:
     """The commit's VBA components and form resources, by file name, as Git stores
     them: text components with LF line ends, resources byte for byte."""
-    listed = git(root, "ls-tree", "-r", "-z", "--name-only", commit).split(b"\0")
-    paths = [item.decode("utf-8") for item in listed
-             if item.decode("utf-8").lower().endswith(VBA_SUFFIXES + RESOURCE_SUFFIXES)]
-    return {Path(path).name: git(root, "show", f"{commit}:{path}") for path in paths}
+    suffixes = VBA_SUFFIXES + RESOURCE_SUFFIXES
+    return {Path(path).name: data for path, data in tree_files(root, commit)
+            if path.lower().endswith(suffixes)}
 
 
 def source_at(root: Path, commit: str, path: str, evidence: Evidence) -> bytes:
@@ -463,7 +513,21 @@ def read_suite(source: bytes, office: str = "64-bit", runner: str = "RunSuite") 
     """The suite as a host of ``office`` bitness compiles it: lines inside an #If
     branch that is inactive there are blank. Its cases are the Case procedures
     that ``runner`` calls, each alone on its line, in that order; a case's id and
-    its assertions' names are the literals of its BeginCase and Assert calls."""
+    its assertions' names are the literals of its BeginCase and Assert calls.
+    Each call returns a new Suite, so a caller may change its lists."""
+    (cases, assertions, last_case, injected, expected_cases, expected_assertions,
+     injected_expected) = suite_fields(source, office, runner)
+    return Suite(list(cases), list(assertions), list(last_case), list(injected),
+                 expected_cases, expected_assertions, injected_expected)
+
+
+# A check reads the same suite many times; the arguments are immutable, and the
+# result holds tuples, so the cache cannot be changed through it.
+@lru_cache(maxsize=64)
+def suite_fields(source: bytes, office: str, runner: str
+                 ) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...],
+                            tuple[str, ...], int, int, str]:
+    """The fields of the Suite that ``read_suite`` returns, as tuples."""
     text = source.decode("ascii", errors="replace").replace("\r\n", "\n")
     environment = BITNESS_ENVIRONMENT.get(office, BITNESS_ENVIRONMENT["64-bit"])
     text = check_vba_conditionals.reachable_sources("suite.bas", text)[0][environment]
@@ -485,8 +549,9 @@ def read_suite(source: bytes, office: str = "64-bit", runner: str = "RunSuite") 
             injected += names
             value = INJECTED_VALUE.search(body)
             injected_expected = value.group(1) if value else ""
-    return Suite(cases, assertions, last_case, injected, constants.get("EXPECTED_CASES", -1),
-                 constants.get("EXPECTED_ASSERTIONS", -1), injected_expected)
+    return (tuple(cases), tuple(assertions), tuple(last_case), tuple(injected),
+            constants.get("EXPECTED_CASES", -1), constants.get("EXPECTED_ASSERTIONS", -1),
+            injected_expected)
 
 
 def document_modules(root: Path, commit: str) -> set[str]:
@@ -498,7 +563,7 @@ def document_modules(root: Path, commit: str) -> set[str]:
             if item.decode("utf-8").lower().endswith(".cls")}
 
 
-@dataclass
+@dataclass(frozen=True)
 class SourceLine:
     """One line of a module: its number, its text, and its text with the letters
     of code outside strings and comments in lower case."""
@@ -508,7 +573,10 @@ class SourceLine:
     key: str
 
 
-def source_lines(data: bytes, document: bool) -> list[SourceLine]:
+# A check compares the same modules many times; the arguments are immutable, and
+# the result is a tuple of frozen lines, so the cache cannot be changed through it.
+@lru_cache(maxsize=256)
+def source_lines(data: bytes, document: bool) -> tuple[SourceLine, ...]:
     """The lines of a module (LF line ends) as they are compared, without the
     attributes Excel writes for a document module. A string literal, a [...]
     expression and a comment, continued or not, keep their letter case."""
@@ -530,7 +598,7 @@ def source_lines(data: bytes, document: bool) -> list[SourceLine]:
         key = "".join(char.lower() if "A" <= char <= "Z" and index < len(code)
                       and code[index] == char else char for index, char in enumerate(text))
         lines.append(SourceLine(number, text, key))
-    return lines
+    return tuple(lines)
 
 
 def source_difference(actual: bytes, expected: bytes, document: bool
@@ -539,6 +607,8 @@ def source_difference(actual: bytes, expected: bytes, document: bool
     where it first differs other than in the letter case of code (0 when it does
     not), the identifiers re-cased, as "commit spelling -> exported spelling",
     and the document-module attributes that differ."""
+    if actual == expected:
+        return 0, [], []
     left, right = source_lines(actual, document), source_lines(expected, document)
     recased: dict[str, None] = {}
     for line, other in zip(left, right, strict=False):
@@ -1153,14 +1223,13 @@ def workbook_findings(root: Path, commit: str, workbook: Path, digest: str,
 
 def copy_cases(root: Path, commit: str, target: Path) -> None:
     """The commit's files under CASE_PATHS, written below ``target``."""
-    listed = git(root, "ls-tree", "-r", "-z", "--name-only", commit, "--", *CASE_PATHS)
-    for name in filter(None, listed.decode("utf-8").split("\0")):
+    for name, data in tree_files(root, commit, *CASE_PATHS):
         path = PurePosixPath(name)
         if path.is_absolute() or ".." in path.parts:
             continue
         destination = target.joinpath(*path.parts)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(git(root, "show", f"{commit}:{name}"))
+        destination.write_bytes(data)
 
 
 def results_files(policy: Policy) -> list[str]:

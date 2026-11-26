@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-eligibility-events",
+  "outputs": [
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.3", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.4", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.3", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.4", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2025-11"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.4", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2025-12"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.3", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.4", "value": 3.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-01"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.3", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.4", "value": 4.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-02"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.4", "value": 4.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-03"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.3", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.4", "value": 5.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-04"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.4", "value": 5.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-05"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.3", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.4", "value": 6.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-06"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.3", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.4", "value": 1.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.3", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.4", "value": 7.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-07"}, "rule": "CALC-09.5", "text": "YES",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.3", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.4", "value": 2.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.4", "value": 7.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-08"}, "rule": "CALC-09.5", "text": "YES",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.3", "value": 3.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.4", "value": 3.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.2", "text": "NOT MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.5", "text": "YES",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.4", "value": 7.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2026-09"}, "rule": "CALC-09.5", "text": "YES",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_status_325a", "scope": null, "rule": "CALC-09.6", "text": "CEASE",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_restart_325a", "scope": null, "rule": "CALC-09.7", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_status_94", "scope": null, "rule": "CALC-09.6", "text": "CEASE",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_restart_94", "scope": null, "rule": "CALC-09.7", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

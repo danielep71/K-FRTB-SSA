@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-crr-after-transitional-end-date",
+  "outputs": [
+    {
+      "quantity": "requirement_before_scaling", "scope": {"dataset": "DS-10", "record": "IR"}, "rule": "CALC-08.1", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_after_scaling", "scope": {"dataset": "DS-10", "record": "IR"}, "rule": "CALC-08.2", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_before_scaling", "scope": {"dataset": "DS-10", "record": "EQ"}, "rule": "CALC-08.1", "value": 10000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_after_scaling", "scope": {"dataset": "DS-10", "record": "EQ"}, "rule": "CALC-08.2", "value": 35000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_before_scaling", "scope": {"dataset": "DS-10", "record": "CO"}, "rule": "CALC-08.1", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_after_scaling", "scope": {"dataset": "DS-10", "record": "CO"}, "rule": "CALC-08.2", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_before_scaling", "scope": {"dataset": "DS-10", "record": "FX"}, "rule": "CALC-08.1", "value": 146500.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "requirement_after_scaling", "scope": {"dataset": "DS-10", "record": "FX"}, "rule": "CALC-08.2", "value": 175800.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "transitional_factor", "scope": null, "rule": "CALC-08.5", "value": 1.0, "unit": "1", "tolerance": {"absolute": 1e-12, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "own_funds_requirement", "scope": null, "rule": "CALC-08.5", "value": 210800.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "risk_weighted_assets", "scope": null, "rule": "CALC-08.4", "value": 2635000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

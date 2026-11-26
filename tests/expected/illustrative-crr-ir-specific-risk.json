@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-crr-ir-specific-risk",
+  "outputs": [
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-01"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-02"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-03"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-04"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-05"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-06"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-07"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-08"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-09"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-10"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-11"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-12"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-13"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-14"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-15"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "S-16"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_specific_risk_charge", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-02.5", "value": 648000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_specific_risk_charge", "scope": null, "rule": "CALC-02.5", "value": 648000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract under the CRR regime, with the reference values of the parameters and the total own funds of the fixture. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

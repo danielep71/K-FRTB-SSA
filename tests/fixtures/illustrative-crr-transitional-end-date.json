@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "test-fixture",
+  "id": "illustrative-crr-transitional-end-date",
+  "synthetic": true,
+  "description": "The FX position and the option charges of illustrative-requirement-fx-and-options-only under the CRR regime, with total own funds of 50 million, whose 2% is below the FX position, on the last date of the transitional multiplier, 2029-12-31: the factor is 0.9",
+  "category": "boundary",
+  "calculation": "CALC-08",
+  "reporting_date": "2029-12-31",
+  "reporting_currency_code": "EUR",
+  "parameters": {"regime_code": "CRR", "total_own_funds_amount": 50000000},
+  "datasets": {
+    "DS-05": [
+      {"id": "EUR", "inputs": {"fx_rate": 1.0}},
+      {"id": "USD", "inputs": {"fx_rate": 0.9}}
+    ],
+    "DS-09": [
+      {"id": "R-1", "inputs": {"currency_code": "USD", "direction_code": "Long", "net_position_amount": 2000000}}
+    ],
+    "DS-10": [
+      {"id": "IR", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "EQ", "inputs": {"charge_amount": 10000, "currency_code": "EUR"}},
+      {"id": "CO", "inputs": {"charge_amount": 0, "currency_code": "EUR"}},
+      {"id": "FX", "inputs": {"charge_amount": 2500, "currency_code": "EUR"}}
+    ]
+  }
+}

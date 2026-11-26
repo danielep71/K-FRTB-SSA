@@ -17,6 +17,7 @@ Prints the re-calculation of the sample data as JSON.
 
 from __future__ import annotations
 
+import calendar
 import json
 import sys
 from datetime import date
@@ -32,6 +33,9 @@ EqRow = tuple[str, str, str, str, str, str, str, float, str]
 CoRow = tuple[str, str, str, str, float, str, float, str, date, str]
 # (ID, portfolio, currency, direction, amount, comment)
 FxRow = tuple[str, str, str, str, float, str]
+# (month end, total assets, long and short totals of Article 325a, long and
+#  short totals of Article 94), all amounts in EUR
+EligibilityRow = tuple[date, float, float, float, float, float]
 
 
 class IrCurrency(TypedDict):
@@ -157,6 +161,37 @@ FXPOS: list[FxRow] = [
     ("FX-006", "FX", "XAU", "Short", 10_000, "-35m EUR (Table 9: gold -35)"),
 ]
 
+# ---- Monthly size of the business (Articles 325a and 94 of the CRR) -----
+# 24 month ends, the last in the month of AS_OF, and the size of the business
+# of each month in EUR millions. The size of Article 325a is its long total
+# plus the absolute value of its short total, split 60% and 40% here, the
+# short entered with a minus sign; that of Article 94 is split 70% and 30%,
+# the short entered with a plus sign: the workbook reads both the same way.
+# With total assets of 8 billion and more, the amounts of EUR 500 million and
+# EUR 50 million bind, not the shares of 10% and 5%. Counting the months from
+# 1, the size of Article 325a is above its amount in months 6 to 8 (a run of
+# three, an event), 20 and 24 (the last), and exactly at it in month 19; the
+# size of Article 94 is above its amount in month 3 only.
+ELIGIBILITY_SIZE_325A = (410, 425, 440, 455, 490, 505, 520, 530, 480, 470, 465, 450,
+                         440, 430, 445, 460, 485, 495, 500, 502, 470, 455, 460, 515)
+ELIGIBILITY_SIZE_94 = (31, 33, 52, 36, 38, 40, 41, 43, 44, 42, 40, 38,
+                       37, 39, 41, 43, 45, 47, 46, 44, 42, 40, 41, 43)
+
+
+def month_end(last: date, back: int) -> date:
+    """The last day of the month that lies back months before the month of last."""
+    index = last.year * 12 + last.month - 1 - back
+    year, month = divmod(index, 12)
+    return date(year, month + 1, calendar.monthrange(year, month + 1)[1])
+
+
+ELIGIBILITY: list[EligibilityRow] = [
+    (month_end(AS_OF, len(ELIGIBILITY_SIZE_325A) - 1 - k), 8_000_000_000 + 25_000_000 * k,
+     600_000 * ELIGIBILITY_SIZE_325A[k], -400_000 * ELIGIBILITY_SIZE_325A[k],
+     700_000 * ELIGIBILITY_SIZE_94[k], 300_000 * ELIGIBILITY_SIZE_94[k])
+    for k in range(len(ELIGIBILITY_SIZE_325A))
+]
+
 # ---- Regulatory constants -------------------------------------------------
 SCALING: dict[str, float] = {"IR": 1.30, "EQ": 3.50, "CO": 1.90, "FX": 1.20}
 # Band, zone, upper bound in years for a coupon of 3% or more, upper bound
@@ -198,6 +233,22 @@ SR: dict[tuple[str, str, str], float] = {
     ("OTHER", "B+ to B-", "Any"): 0.12,
     ("OTHER", "Below B-", "Any"): 0.12,
     ("OTHER", "Unrated", "Any"): 0.08,
+    # CRR Article 336, table 1, by the risk weight of the credit risk standardised approach. A weight of 10%
+    # (Article 336(3)) is half of the second category; a weight of 75%, which the table does not name, is read
+    # as the category of 100%, by decision (#79).
+    ("CRR", "RW 0%", "Any"): 0.0,
+    ("CRR", "RW 10%", "<=6m"): 0.00125,
+    ("CRR", "RW 10%", "6m-24m"): 0.005,
+    ("CRR", "RW 10%", ">24m"): 0.008,
+    ("CRR", "RW 20%", "<=6m"): 0.0025,
+    ("CRR", "RW 20%", "6m-24m"): 0.01,
+    ("CRR", "RW 20%", ">24m"): 0.016,
+    ("CRR", "RW 50%", "<=6m"): 0.0025,
+    ("CRR", "RW 50%", "6m-24m"): 0.01,
+    ("CRR", "RW 50%", ">24m"): 0.016,
+    ("CRR", "RW 75%", "Any"): 0.08,
+    ("CRR", "RW 100%", "Any"): 0.08,
+    ("CRR", "RW 150%", "Any"): 0.12,
 }
 
 
@@ -235,8 +286,11 @@ def issue_key(position_id: str, issue: str) -> str:
     return KEY_ISSUE + issue.upper() if issue else KEY_POSITION + position_id
 
 
-def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int]) -> dict[str, float]:
-    """Vertical and horizontal disallowances and the net position of one currency's ladder."""
+def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int],
+                   zone13: float = 1.00) -> dict[str, float]:
+    """Vertical and horizontal disallowances and the net position of one currency's ladder.
+
+    ``zone13`` is the disallowance between zones 1 and 3: 1.00 under MAR40.28, 1.50 under the CRR."""
     vertical = 0.0
     longs = {1: 0.0, 2: 0.0, 3: 0.0}
     shorts = {1: 0.0, 2: 0.0, 3: 0.0}
@@ -254,13 +308,13 @@ def ladder_charges(weighted: dict[int, list[float]], zone: dict[int, int]) -> di
     matched12, left1, left2 = offset(zone1, zone2)
     matched23, _, left3 = offset(left2, zone3)
     matched13, _, _ = offset(left1, left3)
-    between = 0.40 * (matched12 + matched23) + 1.00 * matched13
+    between = 0.40 * (matched12 + matched23) + zone13 * matched13
     net_position = abs(zone1 + zone2 + zone3)
     return {"vd": vertical, "within": within, "between": between, "net": net_position,
             "gmr": vertical + within + between + net_position}
 
 
-def calc_ir() -> dict[str, IrCurrency]:
+def calc_ir(zone13: float = 1.00) -> dict[str, IrCurrency]:
     weight = {band: w for band, _, _, _, w in LADDER}
     zone = {band: z for band, z, _, _, _ in LADDER}
     ladder: dict[str, dict[int, list[float]]] = {}   # currency -> band -> [long, short]
@@ -287,7 +341,7 @@ def calc_ir() -> dict[str, IrCurrency]:
             issues[key] = (net + signed, first_rate, first_ccy)
     out: dict[str, IrCurrency] = {}
     for ccy in sorted(ladder):
-        charges = ladder_charges(ladder[ccy], zone)
+        charges = ladder_charges(ladder[ccy], zone, zone13)
         specific = sum(abs(net) * rate for net, rate, issue_ccy in issues.values()
                        if issue_ccy == ccy)
         out[ccy] = {"vd": charges["vd"], "within": charges["within"],
@@ -296,7 +350,7 @@ def calc_ir() -> dict[str, IrCurrency]:
     return out
 
 
-def calc_eq() -> Equity:
+def calc_eq(index_rate: float = 0.02) -> Equity:
     nets: dict[tuple[str, str, str], float] = {}
     markets: dict[str, float] = {}
     for (_, _, market, kind, identifier, ccy, direction, value, _) in EQ:
@@ -305,7 +359,7 @@ def calc_eq() -> Equity:
         nets[key] = nets.get(key, 0.0) + signed
         markets[market] = markets.get(market, 0.0) + signed
     specific = sum(abs(net) * 0.08 for (_, kind, _), net in nets.items() if kind == "Single name")
-    index = sum(abs(net) * 0.02 for (_, kind, _), net in nets.items() if kind == "Index")
+    index = sum(abs(net) * index_rate for (_, kind, _), net in nets.items() if kind == "Index")
     general = sum(0.08 * abs(net) for net in markets.values())
     return {"specific": specific, "general": general, "index": index}
 
@@ -335,9 +389,9 @@ def calc_fx() -> ForeignExchange:
     return {"longs": longs, "shorts": shorts, "gold": gold, "onop": onop, "charge": 0.08 * onop}
 
 
-def calc_all() -> Requirement:
-    ir = calc_ir()
-    eq = calc_eq()
+def calc_all(zone13: float = 1.00, index_rate: float = 0.02) -> Requirement:
+    ir = calc_ir(zone13)
+    eq = calc_eq(index_rate)
     co = calc_co()
     fx = calc_fx()
     k_ir = sum(currency["gmr"] + currency["sr"] for currency in ir.values())

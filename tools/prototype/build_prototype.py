@@ -79,6 +79,8 @@ LAST = FIRST + CAP - 1
 NFX = 20  # FX_Table capacity
 NBANDS = 15
 NBKT = 30  # Buckets capacity per block
+ELIGIBILITY_ROWS = 24  # Eligibility capacity: month ends
+ELIGIBILITY_LAST = FIRST + ELIGIBILITY_ROWS - 1
 
 # First and last row of IR_Ladder (one block of NBANDS rows per FX_Table row)
 # and first, last and total row of IR_Zones (one row per FX_Table row).
@@ -87,8 +89,8 @@ ZF, ZL = 6, 6 + NFX - 1
 ZT = ZL + 1
 
 # Sheet order: home, inputs, outputs, tests, readme.
-SHEET_ORDER = ["Home", "Params", "IRPositions", "EQPositions", "COPositions", "FXPositions", "OptionCharges", "Results",
-               "IR_Zones", "IR_Ladder", "Buckets", "IRCalc", "EQCalc", "COCalc", "FXCalc", "Checks", "TestCatalogue", "README"]
+SHEET_ORDER = ["Home", "Params", "IRPositions", "EQPositions", "COPositions", "FXPositions", "OptionCharges", "Eligibility",
+               "Results", "IR_Zones", "IR_Ladder", "Buckets", "IRCalc", "EQCalc", "COCalc", "FXCalc", "Checks", "TestCatalogue", "README"]
 
 # ---------------------------------------------------------------- styles
 NAVY, BLUE, BAND2, GOLD = "1F3864", "2E75B6", "265A99", "FFC000"
@@ -103,7 +105,7 @@ RED: dict[str, Any] = dict(font=Font(color="FF9C0006"), fill=PatternFill(bgColor
 GREEN: dict[str, Any] = dict(font=Font(color="FF375623"), fill=PatternFill(bgColor="FFE2EFDA"))
 AMBER: dict[str, Any] = dict(font=Font(color="FF9C5700"), fill=PatternFill(bgColor="FFFFEB9C"))
 
-GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated"'
+GRADES = '"AAA to AA-,A+ to BBB-,BB+ to BB-,B+ to B-,Below B-,Unrated,RW 0%,RW 10%,RW 20%,RW 50%,RW 75%,RW 100%,RW 150%"'
 # Status test shared by the four calculation sheets; {r} is the row number.
 # The PositionIDs are compared as the engine compares them, as text without
 # regard to case. COUNTIF would read "*", "?" and "~" in a PositionID as a
@@ -365,6 +367,26 @@ def neither(cell: str, first: str, second: str) -> str:
 # IRPositions column offers them.
 INSTRUMENTS = ("Bond", "FRN", "Swap leg", "Future leg", "FRA leg", "Forward leg", "Other")
 INSTRUMENT_REASON = "INVALID: Instrument must be " + ", ".join(INSTRUMENTS[:-1]) + " or " + INSTRUMENTS[-1]
+# The books of a position that DS-06 to DS-09 allow, as the list of the Book column
+# offers them; a blank cell is the trading book.
+BOOKS = '"Trading,Non-trading"'
+BOOK_REASON = "INVALID: Book must be Trading or Non-trading"
+NON_TRADING_REASON = "EXCLUDED: non-trading book position outside the market risk scope"
+
+
+def with_book(position: Sequence[object]) -> list[object]:
+    """A sample position as the cells of its sheet: a blank Book, the trading book, before the Comment."""
+    return [*position[:-1], None, position[-1]]
+
+
+def book_tests(cell: str, in_scope: bool) -> tuple[str, str]:
+    """The tests of the Book column of a status formula, after the duplicate PositionID, and
+    the brackets that close them: a book that is neither blank, Trading nor Non-trading is
+    rejected, and the non-trading book of a class outside the scope is excluded."""
+    tests = (f'IF(AND({text(cell)}<>"",{neither(cell, "Trading", "Non-trading")}),"{BOOK_REASON}",')
+    if in_scope:
+        return tests, ")"
+    return tests + f'IF({text(cell)}="Non-trading","{NON_TRADING_REASON}",', "))"
 
 
 def listed_instrument(cell: str) -> str:
@@ -443,7 +465,7 @@ def build_params(ctx: Context) -> None:
 
 def params_list(wb: Book, ws: Sheet) -> int:
     """Write the parameter list from row 6 and return its last row."""
-    params: list[tuple[str, str, date | str | float, str, str, str, str | float | None]] = [
+    params: list[tuple[str, str, date | str | float | None, str, str, str, date | str | float | None]] = [
         ("AsOfDate", "Reporting (calculation) date", D.AS_OF, "input", NF_DATE, "", None),
         ("ReportingCcy", "Reporting currency (all amounts converted into it)", D.REPORTING_CCY, "input", "@", "", None),
         ("DaysPerYear", "Calendar days per year for residual maturities", 365, "const", "0", "Workbook convention (Act/365)", 365),
@@ -466,6 +488,27 @@ def params_list(wb: Book, ws: Sheet) -> int:
         ("GoldCode", "Currency code treated as gold", "XAU", "const", "@", "MAR40.60", "XAU"),
         ("COMDirectionalRate", "Commodity directional charge (net position per commodity)", 0.15, "const", NF_PCT, "MAR40.72", 0.15),
         ("COMGrossRate", "Commodity charge on gross positions at spot", 0.03, "const", NF_PCT, "MAR40.73", 0.03),
+        ("Regime", "Regime: Basel (MAR40) or CRR (Article 325(2) of Regulation (EU) No 575/2013)", "Basel", "input", "@", "", None),
+        ("TransitionalMultiplier", "CRR: multiplier on the requirement until the last date below", 0.9, "const", "0.00",
+         "CRR Art. 495s(2), Reg. (EU) 2026/1221", 0.9),
+        ("TransitionalEndDate", "CRR: last reporting date on which the multiplier applies", date(2029, 12, 31), "const", NF_DATE,
+         "CRR Art. 495s(2), Reg. (EU) 2026/1221", date(2029, 12, 31)),
+        ("TotalOwnFunds", "CRR: total own funds in the reporting currency, for the de minimis of Article 351", None, "input", NF_AMT,
+         "CRR Art. 351", None),
+        ("FXDeMinimisRate", "CRR: no FX requirement unless the overall net open position exceeds this share of the total own funds",
+         0.02, "const", NF_PCT, "CRR Art. 351", 0.02),
+        ("HorizontalZone13CRR", "CRR: horizontal disallowance between zones 1 and 3", 1.50, "const", NF_PCT,
+         "CRR Art. 339(9)(f)", 1.50),
+        ("EQIndexRateCRR", "CRR: charge on the net position per index future, whose specific risk Article 344 ignores", 0.0,
+         "const", NF_PCT, "CRR Art. 344", 0.0),
+        ("EligibilityShare325a", "CRR: share of the total assets that the size of the business may not exceed, simplified "
+         "standardised approach", 0.10, "const", NF_PCT, "CRR Art. 325a(1)", 0.10),
+        ("EligibilityCap325a", "CRR: amount that the size of the business may not exceed, simplified standardised approach (EUR)",
+         500_000_000, "const", NF_AMT, "CRR Art. 325a(1)", 500_000_000),
+        ("EligibilityShare94", "CRR: share of the total assets that the size of the business may not exceed, small trading book "
+         "derogation", 0.05, "const", NF_PCT, "CRR Art. 94(1)", 0.05),
+        ("EligibilityCap94", "CRR: amount that the size of the business may not exceed, small trading book derogation (EUR)",
+         50_000_000, "const", NF_AMT, "CRR Art. 94(1)", 50_000_000),
     ]
     r = 6
     for code, desc, val, kind, nf, ref, mar in params:
@@ -478,6 +521,8 @@ def params_list(wb: Book, ws: Sheet) -> int:
             put(ws, f"H{r}", f'=IF(E{r}=G{r},"","CHANGED")', kind="calc", align="center")
         name(wb, code, f"Params!$E${r}")
         ws.row_dimensions[r].height = 20.1
+        if code == "Regime":
+            dv_list(ws, f"E{r}", '"Basel,CRR"')
         r += 1
     return r - 1
 
@@ -495,14 +540,16 @@ def params_sr_table(wb: Book, ws: Sheet, r: int) -> int:
         put(ws, f"E{r}", grd, kind=None, align="center")
         put(ws, f"F{r}", {"Any": "Any", "<=6m": "6 months or less", "6m-24m": "over 6 to 24 months", ">24m": "over 24 months"}[mb], kind=None, align="center")
         put(ws, f"G{r}", ch, NF_PCT, "const", align="center")
-        put(ws, f"H{r}", "MAR40.6", kind=None, color=GREY_TXT)
+        put(ws, f"H{r}", "CRR Art. 336" if cat == "CRR" else "MAR40.6", kind=None, color=GREY_TXT)
         r += 1
     sr_last = r - 1
     name(wb, "SR_Key", f"Params!$C${sr_first}:$C${sr_last}")
     name(wb, "SR_Charge", f"Params!$G${sr_first}:$G${sr_last}")
     put(ws, f"C{r}", "GOV = central governments and central banks; QUAL = qualifying (investment-grade PSEs, MDBs, corporates); "
         "OTHER = all other issuers; NONE = derivative legs and positions without issuer risk. A category / grade pair not in "
-        "this table is rejected (for example OTHER with an investment-grade rating: use QUAL).", kind=None, color=GREY_TXT)
+        "this table is rejected (for example OTHER with an investment-grade rating: use QUAL). CRR = the category of the CRR regime, "
+        "where the grade is the risk weight of the credit risk standardised approach: under the CRR a position is CRR or NONE, "
+        "and under Basel it is GOV, QUAL, OTHER or NONE.", kind=None, color=GREY_TXT)
     return r + 2
 
 
@@ -575,12 +622,12 @@ def params_fx_table(wb: Book, ws: Sheet, r: int) -> None:
 # ============================================================ input sheets
 def input_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[tuple[str, float]],
                 rows: Sequence[Sequence[object]], lastcol: str, dvs: Mapping[str, str],
-                numfmts: Mapping[str, str], freeze: str = "D5") -> Sheet:
+                numfmts: Mapping[str, str], freeze: str = "D5", capacity: int = CAP) -> Sheet:
     widths = {c: w for c, (_, w) in zip([COL(3 + k) for k in range(len(cols))], cols)}
     ws = new_sheet(wb, name_, title, subtitle, lastcol, "input", widths)
     header(ws, 4, "C", [lab for lab, _ in cols], "input", 11, 50.1, 2)
     name(wb, f"{name_}_Header", f"{name_}!$C$4")
-    for i in range(CAP):
+    for i in range(capacity):
         rr = FIRST + i
         vals: Sequence[object] = rows[i] if i < len(rows) else [None] * len(cols)
         for k, v in enumerate(vals):
@@ -592,7 +639,7 @@ def input_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[
                 c.alignment = Alignment(horizontal="center")
         ws.row_dimensions[rr].height = 20.1 if i < 60 else None
     for cl, items in dvs.items():
-        dv_list(ws, f"{cl}{FIRST}:{cl}{LAST}", items)
+        dv_list(ws, f"{cl}{FIRST}:{cl}{FIRST + capacity - 1}", items)
     ws.freeze_panes = freeze
     return ws
 
@@ -601,28 +648,30 @@ def build_ir_positions(ctx: Context) -> None:
     input_sheet(
         ctx.wb, "IRPositions", "Interest rate positions",
         "One row per debt position or derivative leg (MAR40.24-40.40). Swaps, futures, FRAs and forwards are entered as two "
-        "notional legs. Position value is positive; Direction gives the sign. Floating legs are slotted by the next repricing date.",
+        "notional legs. Position value is positive; Direction gives the sign. Floating legs are slotted by the next repricing date. "
+        "A Non-trading row is outside the scope and excluded.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Instrument", 12.6), ("Currency", 9.6), ("Direction", 9.6),
          ("Position value (ccy)", 15.6), ("Rate type", 10.6), ("Coupon (decimal)", 10.6), ("Final maturity date", 12.6),
          ("Next repricing date (floating)", 12.6), ("SR category", 10.6), ("Rating grade", 13.6),
-         ("Issue ID (specific-risk netting)", 22.6), ("Comment", 44)],
-        [[p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]] for p in D.IR],
-        "P", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
-              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,NONE"', "N": GRADES},
+         ("Issue ID (specific-risk netting)", 22.6), ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.IR],
+        "Q", {"E": '"' + ",".join(INSTRUMENTS) + '"', "F": "=FX_Ccy", "G": '"Long,Short"',
+              "I": '"Fixed,Floating"', "M": '"GOV,QUAL,OTHER,CRR,NONE"', "N": GRADES, "P": BOOKS},
         {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "#,##0", "I": "@", "J": "0.000%", "K": NF_DATE,
-         "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@"})
+         "L": NF_DATE, "M": "@", "N": "@", "O": "@", "P": "@", "Q": "@"})
 
 
 def build_eq_positions(ctx: Context) -> None:
     input_sheet(
         ctx.wb, "EQPositions", "Equity positions",
         "One row per equity or index position, delta-equivalent for derivatives (MAR40.41-40.50). Market groups positions "
-        "for general market risk; positions in the same stock or index in a market net before the specific charge.",
+        "for general market risk; positions in the same stock or index in a market net before the specific charge. A Non-trading "
+        "row is outside the scope and excluded.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Market", 9.6), ("Type", 12.6), ("Stock or index identifier", 20.6),
-         ("Currency", 9.6), ("Direction", 9.6), ("Market value (ccy)", 15.6), ("Comment", 44)],
-        [list(p) for p in D.EQ], "K",
-        {"E": '"Single name,Index"', "H": "=FX_Ccy", "I": '"Long,Short"'},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "@", "I": "@", "J": "#,##0", "K": "@"})
+         ("Currency", 9.6), ("Direction", 9.6), ("Market value (ccy)", 15.6), ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.EQ], "L",
+        {"E": '"Single name,Index"', "H": "=FX_Ccy", "I": '"Long,Short"', "K": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "@", "H": "@", "I": "@", "J": "#,##0", "K": "@", "L": "@"})
 
 
 def build_co_positions(ctx: Context) -> None:
@@ -630,12 +679,14 @@ def build_co_positions(ctx: Context) -> None:
         ctx.wb, "COPositions", "Commodity positions",
         "One row per commodity position, delta-equivalent for derivatives (MAR40.64-40.73). Value = quantity x spot price, "
         "converted at the FX table. Positions with the same commodity name net. The maturity date is kept for the "
-        "maturity-ladder approach, which this prototype does not implement.",
+        "maturity-ladder approach, which this prototype does not implement. A Non-trading row is calculated as a trading book one.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Commodity", 18.6), ("Direction", 9.6), ("Quantity", 12.6),
-         ("Unit", 8.6), ("Spot price (ccy per unit)", 12.6), ("Currency", 9.6), ("Maturity date", 12.6), ("Comment", 40)],
-        [list(p) for p in D.CO], "L",
-        {"F": '"Long,Short"', "J": "=FX_Ccy"},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0.##", "H": "@", "I": "#,##0.00", "J": "@", "K": NF_DATE, "L": "@"})
+         ("Unit", 8.6), ("Spot price (ccy per unit)", 12.6), ("Currency", 9.6), ("Maturity date", 12.6), ("Book", 12.6),
+         ("Comment", 40)],
+        [with_book(p) for p in D.CO], "M",
+        {"F": '"Long,Short"', "J": "=FX_Ccy", "L": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0.##", "H": "@", "I": "#,##0.00", "J": "@", "K": NF_DATE, "L": "@",
+         "M": "@"})
 
 
 def build_fx_positions(ctx: Context) -> None:
@@ -643,20 +694,21 @@ def build_fx_positions(ctx: Context) -> None:
         ctx.wb, "FXPositions", "FX and gold positions",
         "Net positions per currency from all sources (spot, forwards, delta of options, structural positions where "
         "included), in units of the currency; gold (XAU) in troy ounces (MAR40.53-40.61). Positions in the reporting "
-        "currency carry no FX risk and are excluded.",
+        "currency carry no FX risk and are excluded. A Non-trading row is calculated as a trading book one.",
         [("PositionID", 15.6), ("Portfolio", 14.6), ("Currency", 9.6), ("Direction", 9.6), ("Amount (ccy)", 17.6),
-         ("Comment", 44)],
-        [list(p) for p in D.FXPOS], "H",
-        {"E": "=FX_Ccy", "F": '"Long,Short"'},
-        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0", "H": "@"})
+         ("Book", 12.6), ("Comment", 44)],
+        [with_book(p) for p in D.FXPOS], "I",
+        {"E": "=FX_Ccy", "F": '"Long,Short"', "H": BOOKS},
+        {"C": "@", "D": "@", "E": "@", "F": "@", "G": "#,##0", "H": "@", "I": "@"})
 
 
 # --- OptionCharges
 def build_option_charges(ctx: Context) -> None:
     ws = new_sheet(ctx.wb, "OptionCharges", "Option charges",
                    "Non-delta option charges per risk class, calculated outside the workbook and entered in reporting "
-                   "currency (MAR40.74-40.84). They are added to the class before scaling (MAR40.2). Delta equivalents go on "
-                   "the position sheets.", "G", "input", {"C": 14.6, "D": 30.6, "E": 18.6, "F": 18.6, "G": 60})
+                   "currency (MAR40.74-40.84; under the CRR regime, Delegated Regulation (EU) No 528/2014). They are added to the "
+                   "class before scaling (MAR40.2). Delta equivalents go on the position sheets; under the CRR regime that holds "
+                   "for every approach, and the charge has the delta deducted.", "G", "input", {"C": 14.6, "D": 30.6, "E": 18.6, "F": 18.6, "G": 60})
     header(ws, 4, "C", ["Risk class", "Description", "Method", "Charge (rep ccy)", "Comment"], "input", 11, 42, 2)
     oc_rows = [("IR", "Interest rate options"), ("EQ", "Equity options"), ("CO", "Commodity options"),
                ("FX", "FX and gold options")]
@@ -670,6 +722,176 @@ def build_option_charges(ctx: Context) -> None:
         name(ctx.wb, f"Options{rc}", f"OptionCharges!$F${rr}")
         ws.row_dimensions[rr].height = 20.1
     dv_list(ws, "E5:E8", '"None,Simplified,Delta-plus,Scenario"')
+
+
+# --- Eligibility
+class Approach(NamedTuple):
+    """An approach of Eligibility: its label, the columns of its size, share, conditions, run,
+    count and event, those of its long and short totals, and the names of its share and amount."""
+    label: str
+    columns: tuple[str, str, str, str, str, str]
+    totals: tuple[str, str]
+    share: str
+    cap: str
+
+
+ELIGIBILITY_APPROACHES = (
+    Approach("325a", ("J", "K", "L", "M", "N", "O"), ("E", "F"), "EligibilityShare325a", "EligibilityCap325a"),
+    Approach("94", ("P", "Q", "R", "S", "T", "U"), ("G", "H"), "EligibilityShare94", "EligibilityCap94"))
+# The columns only the formula workbook has, right of the output columns: the row of
+# the last month entered down to the row, the month entered before the row, and the
+# number of the row among the valid rows.
+ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID = "V", "W", "X"
+# The header row of the result block, which holds one row for each approach below it.
+ELIGIBILITY_RESULT = ELIGIBILITY_LAST + 3
+# The reasons that reject a month, in the order of the tests, and the start of a status that assesses nothing.
+ELIGIBILITY_REASONS = ("INVALID: MonthEnd must be a date",
+                       "INVALID: MonthEnd must be the last day of a month",
+                       "INVALID: MonthEnd must be one month after the previous row",
+                       "INVALID: TotalAssets must be a number greater than 0",
+                       "INVALID: a long or short total must be a number")
+NOT_ASSESSED = "NOT ASSESSED"
+
+
+def eligibility_month_status(r: int) -> str:
+    """The formula of the Month status of row r: OK, or the first test of the contract that fails.
+
+    Nothing is read under the Basel regime, and a row without a month end is skipped."""
+    month, before = f"$C{r}", f"${ELIGIBILITY_BEFORE}{r}"
+    reasons = ELIGIBILITY_REASONS
+    # A month entered before the row, if it is a date: the row must be the month end after it.
+    # Each cell is tested with ISNUMBER before it is compared: OR and AND evaluate every
+    # argument, and an error value in a cell would make the status an error, which rule
+    # C15 would not count. An error value in the month end is entered, as the engine reads it.
+    out_of_sequence = (f"IF(ISNUMBER({before}),IF(AND({before}>=1,{before}<={DATE_SERIAL_MAX}),"
+                       f"IFERROR({month}<>EOMONTH({before},1),TRUE),FALSE),FALSE)")
+    return (f'=IF(UPPER(TRIM(Regime))<>"CRR","",IF({text(month)}="","",'
+            f'IF(NOT(ISNUMBER({month})),"{reasons[0]}",'
+            f'IF(OR({month}<1,{month}>{DATE_SERIAL_MAX}),"{reasons[0]}",'
+            f'IF({month}<>EOMONTH({month},0),"{reasons[1]}",'
+            f'IF({out_of_sequence},"{reasons[2]}",'
+            f'IF(NOT(ISNUMBER($D{r})),"{reasons[3]}",IF($D{r}<=0,"{reasons[3]}",'
+            f'IF(NOT(AND(ISNUMBER($E{r}),ISNUMBER($F{r}),ISNUMBER($G{r}),ISNUMBER($H{r}))),"{reasons[4]}",'
+            '"OK")))))))))')
+
+
+def eligibility_approach(r: int, approach: Approach) -> dict[str, str]:
+    """The formulas of one approach on row r of Eligibility, by column: size, share of the
+    total assets, conditions, run, count of the last 12 months and event."""
+    size, ratio, met, run, count, event = approach.columns
+    totals, share, cap = approach.totals, approach.share, approach.cap
+    valid, p = f"${ELIGIBILITY_VALID}{r}", r - 1
+    ok_ = f'$I{r}<>"OK"'
+    # The run of the valid row before this one, which the numbers of the valid rows find: zero for the first.
+    previous_run = sum_where(f"{run}$4:{run}{p}", f"(${ELIGIBILITY_VALID}$4:${ELIGIBILITY_VALID}{p}={valid}-1)")
+    # The months among the last 12 valid rows up to this one that miss the conditions.
+    missed = count_where(f'(${met}${FIRST}:${met}{r}="NOT MET")', f"(${ELIGIBILITY_VALID}${FIRST}:${ELIGIBILITY_VALID}{r}>={valid}-11)")
+    return {
+        size: f'=IF({ok_},"",ABS(${totals[0]}{r})+ABS(${totals[1]}{r}))',
+        ratio: f'=IF({ok_},"",${size}{r}/$D{r})',
+        met: f'=IF({ok_},"",IF(AND(${size}{r}<={share}*$D{r},${size}{r}<={cap}),"MET","NOT MET"))',
+        run: f'=IF({ok_},"",IF(${met}{r}="NOT MET",1+{previous_run},0))',
+        count: f'=IF({ok_},"",{missed})',
+        event: f'=IF({ok_},"",IF(OR(${run}{r}>=3,${count}{r}>6),"YES","NO"))',
+    }
+
+
+def eligibility_result(row: int, approach: int) -> dict[str, str]:
+    """The formulas of the result row of an approach, by column: its status and the figures of the last month."""
+    size, ratio, met, run, count, event = ELIGIBILITY_APPROACHES[approach].columns
+    last = f"${ELIGIBILITY_ENTERED}${ELIGIBILITY_LAST}"
+
+    def at_last(column: str) -> str:
+        """The cell of a column on the last row entered."""
+        return f"INDEX(${column}$1:${column}${ELIGIBILITY_LAST},{last})"
+
+    skip = f'LEFT($D{row},{len(NOT_ASSESSED)})="{NOT_ASSESSED}"'
+    rows = f"$I${FIRST}:$I${ELIGIBILITY_LAST}"
+    return {
+        "D": (f'=IF(UPPER(TRIM(Regime))<>"CRR","{NOT_ASSESSED}: Basel regime",IF({last}=0,"{NOT_ASSESSED}: no month entered",'
+              f'IF(COUNTIF({rows},"INVALID*")>0,"{NOT_ASSESSED}: a row is invalid",'
+              f'IF({at_last(event)}="YES","CEASE",IF({at_last(met)}="NOT MET","NOT MET","MET")))))'),
+        "E": f'=IF({skip},"",{at_last("C")})',
+        "F": f'=IF({skip},"",{at_last(size)})',
+        "G": f'=IF({skip},"",{at_last(ratio)})',
+        "H": f'=IF({skip},"",{at_last(run)})',
+        "I": f'=IF({skip},"",{at_last(count)})',
+        "J": f'=IF({skip},"",IF(AND(COUNTIF({rows},"OK")>=12,$I{row}=0),"YES","NO"))',
+    }
+
+
+def build_eligibility(ctx: Context) -> None:
+    ws = input_sheet(
+        ctx.wb, "Eligibility", "Eligibility",
+        "Size of the business at each month end, for the simplified standardised approach (Article 325a of the CRR) and "
+        "the small trading book derogation (Article 94). Assessed under the CRR regime only. Enter the total assets and the "
+        "aggregated long and short positions of each approach in EUR, either sign for a short total, one row per month "
+        "end, the months one after another.",
+        [("Month end", 13.6), ("Total assets (EUR)", 18.6), ("Long 325a (EUR)", 16.6), ("Short 325a (EUR)", 16.6),
+         ("Long 94 (EUR)", 16.6), ("Short 94 (EUR)", 16.6)],
+        [list(row) for row in D.ELIGIBILITY], "U", {},
+        {"C": NF_DATE, "D": NF_AMT, "E": NF_AMT, "F": NF_AMT, "G": NF_AMT, "H": NF_AMT},
+        capacity=ELIGIBILITY_ROWS)
+    labels = ["Month status"] + [f"{approach.label}: {text}" for approach in ELIGIBILITY_APPROACHES
+                                 for text in ("size (EUR)", "share of total assets", "conditions", "run",
+                                              "count in last 12", "event")]
+    header(ws, 4, "I", labels, "output", 11, 50.1, 1)
+    for column, width in zip("IJKLMNOPQRSTU", (56.6, 15.6, 12.6, 12.6, 8.6, 10.6, 8.6, 15.6, 12.6, 12.6, 8.6, 10.6, 8.6)):
+        ws.column_dimensions[column].width = width
+    for r in range(FIRST, ELIGIBILITY_LAST + 1):
+        formulas = {"I": eligibility_month_status(r)}
+        for approach in ELIGIBILITY_APPROACHES:
+            formulas.update(eligibility_approach(r, approach))
+        for column, formula in formulas.items():
+            nf = NF_PCT if column in "KQ" else NF_AMT if column in "JP" else "0" if column in "MNST" else "@"
+            put(ws, f"{column}{r}", formula, nf, "calc", align=None if column in "IJP" else "center")
+    cf_status(ws, f"C{FIRST}:U{ELIGIBILITY_LAST}", "I", FIRST)
+    for rng in (f"L{FIRST}:L{ELIGIBILITY_LAST}", f"R{FIRST}:R{ELIGIBILITY_LAST}"):
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"NOT MET"'], **AMBER))
+    for rng in (f"O{FIRST}:O{ELIGIBILITY_LAST}", f"U{FIRST}:U{ELIGIBILITY_LAST}"):
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"YES"'], **RED))
+    if not ctx.template:
+        # The columns that the formulas read the sheet through; the VBA engine reads the rows itself.
+        rows_ = "formula workbook only"
+        header(ws, 4, ELIGIBILITY_ENTERED, [f"Last row entered ({rows_})", f"Month entered before ({rows_})",
+                                            f"Valid row number ({rows_})"], "output", 11, 50.1, 0)
+        for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
+            ws.column_dimensions[column].width = 22.6
+        for r in range(FIRST, ELIGIBILITY_LAST + 1):
+            entered = f'{text(f"$C{r}")}<>""'
+            ws[f"{ELIGIBILITY_ENTERED}{r}"].value = (f'=IF({entered},ROW(),0)' if r == FIRST
+                                                    else f'=IF({entered},ROW(),${ELIGIBILITY_ENTERED}{r - 1})')
+            # An error value entered before the row is no date: the row is then not tested against it.
+            ws[f"{ELIGIBILITY_BEFORE}{r}"].value = (
+                '=""' if r == FIRST else
+                f'=IF(${ELIGIBILITY_ENTERED}{r - 1}=0,"",'
+                f'IFERROR(INDEX($C$1:$C${ELIGIBILITY_LAST},${ELIGIBILITY_ENTERED}{r - 1}),""))')
+            ws[f"{ELIGIBILITY_VALID}{r}"].value = f'=IF($I{r}="OK",COUNTIF($I${FIRST}:$I{r},"OK"),"")'
+            for column in (ELIGIBILITY_ENTERED, ELIGIBILITY_BEFORE, ELIGIBILITY_VALID):
+                cell = ws[f"{column}{r}"]
+                cell.font, cell.border = font(9, color=GREY_TXT), BOX
+                cell.alignment = Alignment(horizontal="center")
+            ws[f"{ELIGIBILITY_BEFORE}{r}"].number_format = NF_DATE
+    # The result block: the status of each approach and the figures of the last month entered.
+    section(ws, ELIGIBILITY_RESULT - 1, "Result", "C", "J")
+    header(ws, ELIGIBILITY_RESULT, "C", ["Approach", "Status", "Last month", "Size (EUR)", "Share of total assets", "Run",
+                                         "Count in last 12", "Restart condition"], "output", 11, 42.1, 1)
+    for k, approach in enumerate(ELIGIBILITY_APPROACHES):
+        row = ELIGIBILITY_RESULT + 1 + k
+        put(ws, f"C{row}", approach.label, "@", "calc", b=True, align="center", sz=10)
+        for column, formula in eligibility_result(row, k).items():
+            nf = {"E": NF_DATE, "F": NF_AMT, "G": NF_PCT, "H": "0", "I": "0"}.get(column, "@")
+            put(ws, f"{column}{row}", formula, nf, "calc", align="center" if column != "F" else None, b=column == "D")
+        ws.row_dimensions[row].height = 20.1
+    status_range = f"D{ELIGIBILITY_RESULT + 1}:D{ELIGIBILITY_RESULT + 2}"
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"CEASE"'], **RED))
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"NOT MET"'], **AMBER))
+    ws.conditional_formatting.add(status_range, CellIsRule(operator="equal", formula=['"MET"'], **GREEN))
+    put(ws, f"C{ELIGIBILITY_RESULT + 4}",
+        "The status is that of the last month entered: CEASE where its run is 3 or more months or 7 or more of the last 12 "
+        "months miss the conditions, NOT MET where only that month misses them. Checks warns of either (C16); the requirement "
+        "does not change.", kind=None, color=GREY_TXT)
+    name(ctx.wb, "Eligibility_Results", f"Eligibility!$D${ELIGIBILITY_RESULT + 1}:$J${ELIGIBILITY_RESULT + 2}")
 
 
 # ============================================================== calc sheets
@@ -695,8 +917,9 @@ def calc_sheet(wb: Book, name_: str, title: str, subtitle: str, cols: Sequence[t
 
 
 def build_ir_calc(ctx: Context) -> None:
+    book, book_close = book_tests("IRPositions!P{r}", in_scope=False)
     ir_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF(NOT(' + listed_instrument("IRPositions!E{r}") + '),"' + INSTRUMENT_REASON + '",'
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
@@ -711,9 +934,11 @@ def build_ir_calc(ctx: Context) -> None:
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",NOT(ISNUMBER(IRPositions!L{r}))),"INVALID: Next repricing date required for a floating-rate position",'
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",' + NOT_A_DATE.format(cell="IRPositions!L{r}") + '),"INVALID: Next repricing date is not a date",'
         'IF(AND(' + text("IRPositions!I{r}") + '="Floating",OR(IRPositions!L{r}<AsOfDate,IRPositions!L{r}>IRPositions!K{r})),"INVALID: repricing date outside AsOfDate to final maturity",'
-        'IF(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
+        'IF(AND(UPPER(TRIM(Regime))="CRR",$O{r}<>"CRR",$O{r}<>"NONE"),"INVALID: SR category must be CRR or NONE under the CRR",'
+        'IF(AND(UPPER(TRIM(Regime))<>"CRR",OR(AND($O{r}<>"GOV",$O{r}<>"QUAL",$O{r}<>"OTHER",$O{r}<>"NONE"),$O{r}="CRR")),"INVALID: SR category must be GOV, QUAL, OTHER or NONE",'
+        'IF(AND($Q{r}="NO MATCH",UPPER(TRIM(Regime))="CRR"),"INVALID: no Article 336 charge for this risk weight",'
         'IF($Q{r}="NO MATCH","INVALID: no MAR40.6 charge for this category and rating grade",'
-        '"OK"))))))))))))))))))')
+        '"OK"))))))))))))))))))))' + book_close)
     grd = text("IRPositions!N{r}")
     issue = text("IRPositions!O{r}")
     k1 = '$O{r}&"|"&' + grd + '&"|"&$P{r}'
@@ -773,8 +998,9 @@ def build_ir_calc(ctx: Context) -> None:
 
 def build_eq_calc(ctx: Context) -> None:
     eq_currency = text("EQPositions!H{r}")
+    book, book_close = book_tests("EQPositions!K{r}", in_scope=False)
     eq_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF($E{r}="","INVALID: Market missing",'
         'IF(AND($F{r}<>"Single name",$F{r}<>"Index"),"INVALID: Type must be Single name or Index",'
         'IF($G{r}="","INVALID: stock or index identifier missing",'
@@ -782,7 +1008,7 @@ def build_eq_calc(ctx: Context) -> None:
         'IF(' + neither("EQPositions!I{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(EQPositions!J{r})),"INVALID: Market value must be a number",'
         'IF(EQPositions!J{r}<0,"INVALID: Market value must be >= 0 (Direction gives the sign)",'
-        '"OK")))))))))')
+        '"OK")))))))))' + book_close)
     calc_sheet(
         ctx.wb, "EQCalc", "Equity position calculation",
         "Per EQPositions row: signed value, net value of the same stock or index in the market, and the specific or index "
@@ -802,15 +1028,16 @@ def build_eq_calc(ctx: Context) -> None:
          '=IF($D{r}="OK",$E{r}&"|"&$F{r}&"|"&$G{r},"")',
          '=IF($J{r}="","",' + sum_where(R("I"), same(R("J"), "$J{r}")) + ')',
          '=IF($J{r}="",0,IF(' + count_where(same(f"$J${FIRST}:$J{{r}}", "$J{r}"))
-         + '=1,IF($F{r}="Index",EQIndexRate,EQSpecificRate)*ABS($K{r}),0))',
+         + '=1,IF($F{r}="Index",IF(UPPER(TRIM(Regime))="CRR",EQIndexRateCRR,EQIndexRate),EQSpecificRate)*ABS($K{r}),0))',
          '=IF($D{r}<>"OK","",IF(' + FIRST_OK_ROW_OF_KEY + '=1,MAX($M$4:$M{p})+1,""))',
          '=IF(LEFT($D{r},7)="INVALID",COUNTIF($D$5:$D{r},"INVALID*"),"")'])
 
 
 def build_co_calc(ctx: Context) -> None:
     co_currency = text("COPositions!J{r}")
+    book, book_close = book_tests("COPositions!L{r}", in_scope=True)
     co_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF($E{r}="","INVALID: Commodity missing",'
         'IF($E{r}=GoldCode,"INVALID: gold is FX risk; enter it on FXPositions",'
         'IF(' + neither("COPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
@@ -818,7 +1045,7 @@ def build_co_calc(ctx: Context) -> None:
         'IF(COPositions!G{r}<0,"INVALID: Quantity must be >= 0 (Direction gives the sign)",'
         'IF(NOT(ISNUMBER(COPositions!I{r})),"INVALID: Spot price must be a number",'
         'IF(OR(' + no_currency(co_currency) + ',UPPER(' + co_currency + ')=GoldCode),"INVALID: currency not in FX_Table",'
-        '"OK")))))))))')
+        '"OK")))))))))' + book_close)
     calc_sheet(
         ctx.wb, "COCalc", "Commodity position calculation",
         "Per COPositions row: value at spot in reporting currency. Aggregation per commodity (net and gross) is on Buckets.",
@@ -837,14 +1064,15 @@ def build_co_calc(ctx: Context) -> None:
 
 
 def build_fx_calc(ctx: Context) -> None:
+    book, book_close = book_tests("FXPositions!H{r}", in_scope=True)
     fx_status = (
-        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",'
+        '=IF($C{r}="","",IF(' + DUP + ',"INVALID: duplicate PositionID",' + book +
         'IF(' + no_currency("$E{r}") + ',"INVALID: currency not in FX_Table",'
         'IF(' + neither("FXPositions!F{r}", "Long", "Short") + ',"INVALID: Direction must be Long or Short",'
         'IF(NOT(ISNUMBER(FXPositions!G{r})),"INVALID: Amount must be a number",'
         'IF(FXPositions!G{r}<0,"INVALID: Amount must be >= 0 (Direction gives the sign)",'
         'IF($E{r}=ReportingCcy,"EXCLUDED: reporting currency carries no FX risk",'
-        '"OK")))))))')
+        '"OK")))))))' + book_close)
     calc_sheet(
         ctx.wb, "FXCalc", "FX position calculation",
         "Per FXPositions row: signed amount in currency and in reporting currency. The net open position is built on Buckets.",
@@ -904,7 +1132,8 @@ def build_ir_ladder(ctx: Context) -> None:
 def build_ir_zones(ctx: Context) -> None:
     ws = new_sheet(ctx.wb, "IR_Zones", "Interest rate zones and charges",
                    "Per currency (MAR40.28): net band positions offset within each zone, then between zones 1-2, 2-3 and 1-3 "
-                   "in that order; the residual net position is charged at 100%. No offsetting across currencies.",
+                   "in that order; the residual net position is charged at 100%. Under the CRR regime the zone 1-3 offset "
+                   "is charged at 150% (Article 339(9)(f)). No offsetting across currencies.",
                    "AF", "output",
                    {**{COL(c): 12.6 for c in range(4, 33)}, "C": 8.6, "D": 9.6})
     labels = ["Ccy", "Positions used", "Vertical disallowance",
@@ -955,7 +1184,7 @@ def zone_formulas(ccy: int, rr: int) -> dict[str, str]:
         "X": f"=IF($W{rr}*$T{rr}<0,MIN(ABS($W{rr}),ABS($T{rr})),0)",
         "Y": f"=$W{rr}-SIGN($W{rr})*$X{rr}", "Z": f"=$T{rr}-SIGN($T{rr})*$X{rr}",
         "AA": f"=IF($V{rr}*$Z{rr}<0,MIN(ABS($V{rr}),ABS($Z{rr})),0)",
-        "AB": f"=HorizontalAdjacent*($U{rr}+$X{rr})+HorizontalZone13*$AA{rr}",
+        "AB": f'=HorizontalAdjacent*($U{rr}+$X{rr})+IF(UPPER(TRIM(Regime))="CRR",HorizontalZone13CRR,HorizontalZone13)*$AA{rr}',
         "AC": f"=ABS($J{rr}+$O{rr}+$T{rr})",
         "AD": f"=$E{rr}+$I{rr}+$N{rr}+$S{rr}+$AB{rr}+$AC{rr}",
         "AE": f'=IF($C{rr}="",0,{sum_where(IC("V"), same(IC("E"), currency))})',
@@ -981,7 +1210,7 @@ def build_buckets(ctx: Context) -> None:
 def buckets_equity(wb: Book, ws: Sheet) -> Block:
     section(ws, 5, "Equity by market", "C", "L")
     header(ws, 6, "C", ["#", "Market", "Positions", "Long (rep ccy)", "Short (rep ccy)", "Net position",
-                        "General market risk (8% of |net|)", "Specific risk, single names (8%)", "Index charge (2%)", "Total"],
+                        "General market risk (8% of |net|)", "Specific risk, single names (8%)", "Index charge (2%; 0 under the CRR)", "Total"],
            "output", 11, 42, 2)
     EQ_F, EQ_L = 7, 7 + NBKT - 1
     name(wb, "Buckets_EQ_Header", "Buckets!$C$6")
@@ -1080,7 +1309,9 @@ def buckets_fx(wb: Book, ws: Sheet, FS: int) -> Block:
     for cl in "IJK":
         put(ws, f"{cl}{FX_T}", f"=SUM({cl}{FX_F}:{cl}{FX_L})", NF_AMT, "total")
     summary = [("Overall net open position: max(net long, net short) + |gold|", f"=MAX(I{FX_T},J{FX_T})+K{FX_T}", "FX_ONOP"),
-               ("FX requirement: 8% x overall net open position", f"=FXChargeRate*I{FX_T + 2}", "FX_Charge")]
+               ("FX requirement: 8% x overall net open position; under the CRR none up to 2% of the total own funds",
+                f'=IF(AND(UPPER(TRIM(Regime))="CRR",I{FX_T + 2}<=FXDeMinimisRate*TotalOwnFunds),0,FXChargeRate*I{FX_T + 2})',
+                "FX_Charge")]
     for k, (lab, fm, nm) in enumerate(summary):
         rr = FX_T + 2 + k
         put(ws, f"D{rr}", lab, None, None, b=True)
@@ -1110,20 +1341,24 @@ def build_results(ctx: Context) -> None:
     put(ws, "M11", "=SUM(M7:M10)", "0.0%", "total", align="center")
     put(ws, "P11", "MAR40.1-40.2", None, "total", color=GREY_TXT)
     ws.row_dimensions[11].height = 24
-    name(wb, "SSA_Requirement", "Results!$K$11")
+    results_transition(ws)
+    name(wb, "SSA_RequirementBeforeTransition", "Results!$K$11")
+    name(wb, "SSA_Requirement", "Results!$K$12")
     name(wb, "Results_Header", "Results!$C$6")
     name(wb, "Results_Status", "Results!$C$4")
-    name(wb, "SSA_RWA", "Results!$L$11")
+    name(wb, "SSA_RWA", "Results!$L$12")
     ws["C4"].value = ('=IF(Checks!$D$4>0,"INCOMPLETE: "&Checks!$D$4&" error(s) on Checks; rejected rows are excluded '
                       'from the totals.","OK: "&$N$11&" positions used, no errors. Every figure is a live formula.")')
     ws["C4"].font = font(10, i=True, color=NOTE_TXT)
     ws.row_dimensions[4].height = 20
     ws.conditional_formatting.add("C4", FormulaRule(formula=[not_to_rely_on("$C$4")], **RED))
     section(ws, 13, "Headline", "C", "P")
-    heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges"),
+    heads = [("Own funds requirement", "=SSA_Requirement", "1.30 IR + 3.50 EQ + 1.90 CO + 1.20 FX, each including non-delta option charges; x the transitional multiplier under the CRR"),
              ("Risk-weighted assets", "=SSA_RWA", "Requirement x 12.5"),
              ("Reporting currency", "=ReportingCcy", "All amounts in this currency, unscaled units"),
-             ("Reporting date", "=AsOfDate", "")]
+             ("Reporting date", "=AsOfDate", ""),
+             ("Regime", '=IF(UPPER(TRIM(Regime))="CRR","CRR",IF(UPPER(TRIM(Regime))="BASEL","Basel",Regime))',
+              "Basel (MAR40) or CRR (Regulation (EU) No 575/2013), as set on Params")]
     for k, (lab, fm, note) in enumerate(heads):
         rr = 14 + k
         put(ws, f"C{rr}", lab, None, None, b=True, sz=10)
@@ -1131,20 +1366,39 @@ def build_results(ctx: Context) -> None:
         put(ws, f"F{rr}", note, None, None, color=GREY_TXT)
         ws.row_dimensions[rr].height = 22
     # Written by the run, as a value, and read by CheckStatus.
-    put(ws, "C18", "Input fingerprint", None, None, b=True, sz=10)
-    put(ws, "E18", None, "@", "total", align="center", sz=11)
-    put(ws, "F18", "Of the inputs of the last run; CheckStatus compares it with the sheets" if ctx.template
+    put(ws, "C19", "Input fingerprint", None, None, b=True, sz=10)
+    put(ws, "E19", None, "@", "total", align="center", sz=11)
+    put(ws, "F19", "Of the inputs of the last run; CheckStatus compares it with the sheets" if ctx.template
         else "Not used: every output is a live formula", None, None, color=GREY_TXT)
-    ws.row_dimensions[18].height = 22
-    name(wb, "Results_Fingerprint", "Results!$E$18")
-    section(ws, 19, "Where the numbers come from", "C", "P")
+    ws.row_dimensions[19].height = 22
+    name(wb, "Results_Fingerprint", "Results!$E$19")
+    section(ws, 20, "Where the numbers come from", "C", "P")
     for k, (sh, txt) in enumerate([("IR_Zones", "Interest rate charges per currency, with every offset"),
                                    ("IR_Ladder", "Weighted positions per currency and time band"),
                                    ("Buckets", "Equity by market, commodities by commodity, FX net open position"),
                                    ("Checks", "Rejected rows and parameter findings")]):
-        link(ws, f"C{20 + k}", sh)
-        put(ws, f"D{20 + k}", txt, None, None)
+        link(ws, f"C{21 + k}", sh)
+        put(ws, f"D{21 + k}", txt, None, None)
     ws.freeze_panes = "D7"
+
+
+def results_transition(ws: Sheet) -> None:
+    """Row 12 of Results: the transitional multiplier of the CRR and the requirement after it.
+
+    Under the Basel regime, and after the last date of the multiplier, the factor is 1."""
+    put(ws, "C12", "After the transitional multiplier", None, "calc", b=True, sz=10)
+    put(ws, "D12", "CRR Art. 495s(2): factor 1 under the Basel regime and after the last date", None, "calc")
+    ws["D12"].alignment = Alignment(vertical="center", wrap_text=True)
+    for cl in "EFGHI":
+        put(ws, f"{cl}12", None, NF_AMT, "calc")
+    put(ws, "J12", '=IF(AND(UPPER(TRIM(Regime))="CRR",AsOfDate<=TransitionalEndDate),TransitionalMultiplier,1)',
+        "0.00", "calc", align="center")
+    put(ws, "K12", "=K11*J12", NF_AMT, "calc", b=True)
+    put(ws, "L12", "=K12*RWAMultiplier", NF_AMT, "calc")
+    for cl in "MNO":
+        put(ws, f"{cl}12", None, "0", "calc", align="center")
+    put(ws, "P12", "CRR Art. 325(2), 495s(2)", None, "calc", color=GREY_TXT)
+    ws.row_dimensions[12].height = 24
 
 
 def results_classes(ws: Sheet) -> None:
@@ -1224,7 +1478,7 @@ def build_checks(ctx: Context) -> None:
 
 
 def check_rules(ctx: Context) -> list[Rule]:
-    """The rules of the Checks sheet, in row order; the template has its own messages and rule C14."""
+    """The rules of the Checks sheet, in row order; the template has its own messages."""
     PARAM_LAST = ctx.param_last
     rules: list[Rule] = [
         ("C01", "ERROR", "IRPositions", SUMR("IRCalc"), "IRCalc Status", "Interest rate rows rejected; reason per row below and in IRCalc."),
@@ -1251,11 +1505,23 @@ def check_rules(ctx: Context) -> list[Rule]:
          "FX rows in the reporting currency, excluded (no FX risk)."),
         ("C13", "INFO", "OptionCharges", '=COUNTIF(OptionCharges!$F$5:$F$8,"<>0")', "MAR40.74-40.84",
          "Risk classes with a non-delta option charge entered by hand."),
+        ("C14", "ERROR", "Params", "=0", "MAR40",
+         "Unusable Params values and position rows beyond the sheets' capacity: counted by the VBA engine, "
+         "which stops the run on them; always 0 in the formula workbook."),
+        ("C15", "ERROR", "Eligibility", f'=COUNTIF(Eligibility!$I${FIRST}:$I${ELIGIBILITY_LAST},"INVALID*")', "CRR Art. 325a, 94",
+         "Eligibility rows rejected under the CRR regime; the reason is in the Month status of the row."),
+        ("C16", "WARNING", "Eligibility",
+         f'=COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"NOT MET")'
+         f'+COUNTIF(Eligibility!$D${ELIGIBILITY_RESULT + 1}:$D${ELIGIBILITY_RESULT + 2},"CEASE")', "CRR Art. 325a(5), 94(7)",
+         "Approaches whose conditions are not met in the last month entered, or that must cease; the requirement does not change."),
+        ("C17", "WARNING", "IR, EQ positions",
+         f'=COUNTIF(IRCalc!$D${FIRST}:$D${LAST},"EXCLUDED*")+COUNTIF(EQCalc!$D${FIRST}:$D${LAST},"EXCLUDED*")',
+         "CRR Art. 325(1)",
+         "Non-trading book interest rate and equity rows, excluded: outside the market risk scope, they fall under credit risk."),
     ]
     if ctx.template:
-        rules.append(("C14", "ERROR", "Params", "=0", "MAR40",
-                      "Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
-                      f"position sheets with more than {CAP} rows: the run stops and lists them below."))
+        rules[13] = rules[13][:5] + ("Unusable Params values (parameter, ladder, specific-risk table, option charge) and "
+                                     f"position sheets with more than {CAP} rows: the run stops and lists them below.",)
         rules[4] = rules[4][:5] + ("The reporting currency must be listed in FX_Table with rate 1 (the run stops).",)
         rules[5] = rules[5][:5] + ("Currency codes listed more than once in FX_Table (the run stops).",)
         rules[6] = rules[6][:5] + ("Listed currencies whose rate is missing, not a number or not positive (the run stops).",)
@@ -1321,7 +1587,7 @@ def build_test_catalogue(ctx: Context) -> None:
         ("Invariant", "Ladder weighted positions equal IRCalc weighted positions (difference = 0)", "Workbook", "Invariant",
          "IR_Ladder", f'=SUM(IR_Ladder!K{LAD_F}:K{LAD_L})-SUM(IR_Ladder!L{LAD_F}:L{LAD_L})-SUM({IC("N")})', 0),
         ("Invariant", "Results total equals the MAR40.2 formula (difference = 0)", "MAR40.2", "Invariant", "Results",
-         "=SSA_Requirement-(ScalingIR*Results!I7+ScalingEQ*Results!I8+ScalingCO*Results!I9+ScalingFX*Results!I10)", 0),
+         "=SSA_RequirementBeforeTransition-(ScalingIR*Results!I7+ScalingEQ*Results!I8+ScalingCO*Results!I9+ScalingFX*Results!I10)", 0),
     ]
     for k, (area, desc, src, sst, sh, fm, exp) in enumerate(tests):
         rr = 7 + k
@@ -1362,7 +1628,8 @@ def build_readme(ctx: Context) -> None:
         ("2. Positions", "IRPositions, EQPositions, COPositions and FXPositions: one row per position, up to 500 per sheet. "
          "Values are positive; Direction gives the sign. Derivatives enter as their delta-equivalent legs."),
         ("3. Options", "OptionCharges: non-delta (gamma, vega or simplified-approach) charges per risk class, calculated outside "
-         "the workbook."),
+         "the workbook. Eligibility: under the CRR regime, the size of the business at each month end, for the finding on "
+         "the simplified standardised approach and the small trading book derogation."),
         ("4. Run" if TEMPLATE else "4. Read",
          ("Import the modules of src/ (README), save as .xlsm, then Alt+F8 > RunSSA. The outputs are values written by the "
           "engine; rerun after any change (CheckStatus tells whether an input changed after the run). A Params value the "
@@ -1385,7 +1652,7 @@ def build_readme(ctx: Context) -> None:
          "by residual maturity, floating-rate positions by next repricing date; coupons below 3% use the low-coupon bands. "
          "Weighted position = value x risk weight. Charge = 10% of the matched weighted position in each band + 40% / 30% / 30% "
          "of the matched band positions within zones 1 / 2 / 3 + 40% of the zone 1-2 and zone 2-3 offsets + 100% of the zone "
-         "1-3 offset + 100% of the residual net position. No offsetting across currencies."),
+         "1-3 offset (150% under the CRR regime) + 100% of the residual net position. No offsetting across currencies."),
         ("Equity (MAR40.41-40.50)", "Positions in the same stock (or index) in a market net. Specific risk = 8% x |net| per "
          "single name; index contracts carry a further 2% x |net| per index; general market risk = 8% x |net| per market, "
          "single names and indices together."),
@@ -1402,7 +1669,7 @@ def build_readme(ctx: Context) -> None:
         ("Amounts", "Reporting currency, unscaled units. FX rates are units of reporting currency per unit of currency."),
         ("Dates", "Residual maturity = (date - AsOfDate) / DaysPerYear. Time-band upper bounds are inclusive."),
         ("Row status", "OK = used; INVALID: reason = rejected, contributes nothing, listed on Checks; EXCLUDED = deliberately "
-         "out of scope (FX in reporting currency)."),
+         "out of scope (FX in reporting currency; a Non-trading Book row of IR or EQ, C17). A blank Book is Trading."),
         ("Names", "Every parameter and table is a workbook name (Formulas > Name Manager)."),
     ], True)
     r += 1
@@ -1411,12 +1678,16 @@ def build_readme(ctx: Context) -> None:
         ("Not implemented", "Duration method for IR general market risk; commodity maturity-ladder approach; delta-plus and "
          "scenario option methods (enter their non-delta charges on OptionCharges); securitisation and nth-to-default "
          "specific risk; index-arbitrage carve-outs (MAR40.48-40.50); the 4% specific-risk option for liquid diversified "
-         "portfolios; the FX de minimis exemption (MAR40.62); structural FX position exclusions."),
+         "portfolios; the FX de minimis exemption under the Basel regime (MAR40.62; the CRR regime applies Article 351); "
+         "structural FX position exclusions. Under the CRR regime also: the cap of Article 335, the duration method, "
+         "the reversal of the first two zone offsets, collective investment undertakings, the commodity maturity "
+         "ladders, ancillary agricultural business, closely correlated currencies and the exclusions of Article 104c."),
         ("Simplifications", "Positions are entered already decomposed into legs. Specific-risk hedges other than identical "
          "issues are not recognised. Immaterial-currency aggregation (MAR40.24) is not offered."),
-        ("Regime", "Basel MAR40 only. EU CRR3 provisions on the simplified standardised approach, and their application date, "
-         "are not modelled and should be checked against the Official Journal before use."),
-        ("Status", "Prototype: not validated for regulatory reporting. Sample data are illustrative."),
+        ("Regime", "Basel MAR40 by default, or CRR (Article 325(2) of Regulation (EU) No 575/2013), set on Params; the "
+         "headline of Results shows which one produced the figures. The CRR regime is not validated: every value is "
+         "illustrative, no Excel evidence exists for it, and a result is not a statement of compliance with the CRR."),
+        ("Status", "Prototype: not validated for regulatory reporting, under either regime. Sample data are illustrative."),
     ], True)
     r += 1
     section(ws, r, "References", "C", "D")
@@ -1458,7 +1729,7 @@ def fill_home(ctx: Context) -> None:
     r = text_block(home, r + 1, [
         ("1. Check Params", "Set the reporting date, the reporting currency and the FX rates."),
         ("2. Enter the positions", "One row per position on IRPositions, EQPositions, COPositions and FXPositions; non-delta "
-         "option charges on OptionCharges."),
+         "option charges on OptionCharges; under the CRR regime, the size of the business at each month end on Eligibility."),
         ("3. Run" if TEMPLATE else "3. Read the results",
          "Alt+F8 > RunSSA calculates and writes every output sheet (ClearOutputs empties them). If the status line says "
          "INCOMPLETE or STOPPED, Checks lists every rejected row and unusable parameter. FAILED: the run raised an error "
@@ -1477,6 +1748,7 @@ def fill_home(ctx: Context) -> None:
         ("COPositions", "Inputs. Commodity positions."),
         ("FXPositions", "Inputs. Net currency and gold positions."),
         ("OptionCharges", "Inputs. Non-delta option charges per risk class."),
+        ("Eligibility", "Inputs. Size of the business at each month end, for the eligibility of Articles 325a and 94 of the CRR."),
         ("Results", "Outputs. Requirement per risk class, scaling, total and RWA."),
         ("IR_Zones", "Outputs. Interest rate charges per currency, every offset shown."),
         ("IR_Ladder", "Outputs. Weighted positions per currency and time band."),
@@ -1606,8 +1878,11 @@ def blank_outputs(ctx: Context) -> None:
     blank(buckets, range(ctx.co.first, ctx.co.total + 1), range(3, 13), keep=(f"D{ctx.co.total}",))
     blank(buckets, range(ctx.fx.first, ctx.fx.total + 1), range(3, 12), keep=(f"D{ctx.fx.total}",))
     blank(buckets, range(ctx.fx.total + 2, ctx.fx.total + 4), [9])
+    eligibility = wb["Eligibility"]
+    blank(eligibility, range(FIRST, ELIGIBILITY_LAST + 1), range(CI("I"), CI("U") + 1))
+    blank(eligibility, range(ELIGIBILITY_RESULT + 1, ELIGIBILITY_RESULT + 3), range(CI("D"), CI("J") + 1))
     results = wb["Results"]
-    blank(results, range(7, 12), range(5, 16))
+    blank(results, range(7, 13), range(5, 16))
     results["C4"].value = "Not calculated: run RunSSA."
     checks = wb["Checks"]
     blank(checks, range(7, ctx.rule_last + 1), [6, 7])
@@ -1669,6 +1944,7 @@ def assemble(template: bool) -> Book:
     build_co_positions(ctx)
     build_fx_positions(ctx)
     build_option_charges(ctx)
+    build_eligibility(ctx)
     build_ir_calc(ctx)
     build_eq_calc(ctx)
     build_co_calc(ctx)

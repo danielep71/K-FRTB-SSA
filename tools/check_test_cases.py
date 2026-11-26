@@ -98,6 +98,8 @@ SUFFIXES = ("_amount", "_weight", "_factor", "_years", "_count", "_rate", "_date
 HARNESS_KEYS = frozenset({"schema_version", "kind", "id", "synthetic", "description",
                           "category", "reporting_date"})
 FIXTURE_KEYS = HARNESS_KEYS | {"calculation", "reporting_currency_code", "datasets"}
+# Calculation inputs a fixture may leave out: the parameters it sets.
+OPTIONAL_KEYS = frozenset({"parameters"})
 RECORD_KEYS = frozenset({"id", "inputs"})
 EXPECTED_KEYS = frozenset({"schema_version", "kind", "fixture", "outputs"})
 EXPECTED_FILE_KEYS = frozenset({"schema_version", "kind", "fixture", "variants"})
@@ -398,6 +400,18 @@ def check_inputs(inputs: object, where: str, report: Report) -> None:
         report.add(where, "inputs hold an amount but no currency_code")
 
 
+def check_parameters(parameters: object, where: str, report: Report) -> None:
+    """The parameters a fixture sets: keys as those of inputs, amounts in the reporting currency."""
+    if not isinstance(parameters, dict) or not parameters:
+        report.add(where, "parameters is not a non-empty object")
+        return
+    for key, value in parameters.items():
+        if not SNAKE.fullmatch(key):
+            report.add(where, f"parameter {key!r} is not lower snake case")
+        elif problem := input_value_problem(key, value):
+            report.add(where, problem.replace("input", "parameter", 1))
+
+
 def check_records(records: object, where: str, seen: set[str], report: Report) -> set[str]:
     """Check one dataset's records; return the IDs of the valid ones."""
     if not isinstance(records, list) or not records:
@@ -469,6 +483,8 @@ def check_calculation_inputs(data: dict[str, Any], case_id: str, method: Methodo
                              where: str, report: Report) -> Case:
     """Check the calculation, the currency and the datasets with their records."""
     check_calculation(data, case_id, method, where, report)
+    if "parameters" in data:
+        check_parameters(data["parameters"], where, report)
     records: dict[str, set[str]] = {}
     datasets = data["datasets"]
     if not isinstance(datasets, dict) or not datasets:
@@ -496,7 +512,8 @@ def check_fixture(path: Path, root: Path, method: Methodology, report: Report) -
     # An invalid case may miss a calculation input, but holds no key outside the
     # fixture keys.
     shown = {key: value for key, value in data.items()
-             if key not in FIXTURE_KEYS - HARNESS_KEYS} if invalid else data
+             if key not in FIXTURE_KEYS - HARNESS_KEYS | OPTIONAL_KEYS} if invalid else \
+        {key: value for key, value in data.items() if key not in OPTIONAL_KEYS}
     if problem := keys_problem(shown, HARNESS_KEYS if invalid else FIXTURE_KEYS):
         report.add(where, problem)
         return None

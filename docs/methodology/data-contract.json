@@ -206,7 +206,7 @@
             "min": 0,
             "max": 1
           },
-          "notes": "Name HorizontalZone13. Between zones 1 and 3"
+          "notes": "Name HorizontalZone13. Between zones 1 and 3 under the Basel regime"
         },
         {
           "name": "eq_specific_rate",
@@ -228,7 +228,7 @@
             "min": 0,
             "max": 1
           },
-          "notes": "Name EQIndexRate"
+          "notes": "Name EQIndexRate. Further charge on an index under the Basel regime"
         },
         {
           "name": "eq_general_rate",
@@ -281,6 +281,122 @@
             "max": 1
           },
           "notes": "Name COMGrossRate"
+        },
+        {
+          "name": "regime",
+          "type": "text",
+          "unit": null,
+          "required": true,
+          "allowed": {
+            "values": [
+              "Basel",
+              "CRR"
+            ]
+          },
+          "notes": "Name Regime. Basel is MAR40, CRR is Article 325(2) of Regulation (EU) No 575/2013; read without regard to case. Reference value Basel"
+        },
+        {
+          "name": "transitional_multiplier",
+          "type": "decimal",
+          "unit": "Factor",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name TransitionalMultiplier. Multiplies the requirement under the CRR, on a reporting date up to TransitionalEndDate. Reference value 0.9"
+        },
+        {
+          "name": "transitional_end_date",
+          "type": "date",
+          "unit": null,
+          "required": false,
+          "allowed": null,
+          "notes": "Name TransitionalEndDate. Must be a date under the CRR; a value other than the reference is counted by rule C08. Reference value 2029-12-31"
+        },
+        {
+          "name": "total_own_funds",
+          "type": "decimal",
+          "unit": "Reporting currency",
+          "required": false,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name TotalOwnFunds. Must be a number greater than 0 under the CRR, where the FX requirement is waived while the overall net open position does not exceed FXDeMinimisRate of it"
+        },
+        {
+          "name": "fx_de_minimis_rate",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name FXDeMinimisRate. Reference value 0.02"
+        },
+        {
+          "name": "horizontal_zone_1_3_crr",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name HorizontalZone13CRR. Between zones 1 and 3 under the CRR, Article 339(9)(f), in place of HorizontalZone13. Reference value 1.5"
+        },
+        {
+          "name": "eq_index_rate_crr",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EQIndexRateCRR. Charge on the net position per index under the CRR, Article 344, in place of EQIndexRate. Reference value 0"
+        },
+        {
+          "name": "eligibility_share_325a",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EligibilityShare325a. Share of the total assets that the size of the business may not exceed for the simplified standardised approach, Article 325a(1) of the CRR; a rate, 0 to 1. Reference value 0.1"
+        },
+        {
+          "name": "eligibility_cap_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name EligibilityCap325a. Amount that the size of the business may not exceed for the simplified standardised approach, Article 325a(1); a number greater than 0. Reference value 500000000"
+        },
+        {
+          "name": "eligibility_share_94",
+          "type": "decimal",
+          "unit": "Decimal fraction",
+          "required": true,
+          "allowed": {
+            "min": 0,
+            "max": 1
+          },
+          "notes": "Name EligibilityShare94. Share of the total assets that the size of the business may not exceed for the small trading book derogation, Article 94(1); a rate, 0 to 1. Reference value 0.05"
+        },
+        {
+          "name": "eligibility_cap_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Name EligibilityCap94. Amount that the size of the business may not exceed for the small trading book derogation, Article 94(1); a number greater than 0. Reference value 50000000"
         }
       ]
     },
@@ -289,8 +405,8 @@
       "illustrative": false,
       "description": "Specific-risk charges",
       "provider": "Typed by the user",
-      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them",
-      "granularity": "One row per category, rating grade and range of residual maturity; 18 rows",
+      "frequency": "Fixed: the reference values of SRC-02 unless a what-if changes them; the rows of the category CRR are those of SRC-04",
+      "granularity": "One row per category, rating grade and range of residual maturity; 31 rows",
       "source": "Params",
       "encoding": null,
       "delimiter": null,
@@ -313,7 +429,8 @@
             "values": [
               "GOV",
               "QUAL",
-              "OTHER"
+              "OTHER",
+              "CRR"
             ]
           },
           "notes": "Column Category. Repeats the first part of the key; not read"
@@ -330,10 +447,17 @@
               "BB+ to BB-",
               "B+ to B-",
               "Below B-",
-              "Unrated"
+              "Unrated",
+              "RW 0%",
+              "RW 10%",
+              "RW 20%",
+              "RW 50%",
+              "RW 75%",
+              "RW 100%",
+              "RW 150%"
             ]
           },
-          "notes": "Column Rating grade. Repeats the second part of the key; not read"
+          "notes": "Column Rating grade. Repeats the second part of the key; not read. Under the category CRR, the risk weight of the credit risk standardised approach"
         },
         {
           "name": "residual_maturity",
@@ -627,10 +751,11 @@
               "GOV",
               "QUAL",
               "OTHER",
+              "CRR",
               "NONE"
             ]
           },
-          "notes": "Column SR category. NONE: no specific risk"
+          "notes": "Column SR category. NONE: no specific risk. CRR: the category of the CRR regime, the only one of the two (with NONE) that regime accepts; GOV, QUAL and OTHER are those of the Basel regime"
         },
         {
           "name": "rating_grade",
@@ -644,10 +769,17 @@
               "BB+ to BB-",
               "B+ to B-",
               "Below B-",
-              "Unrated"
+              "Unrated",
+              "RW 0%",
+              "RW 10%",
+              "RW 20%",
+              "RW 50%",
+              "RW 75%",
+              "RW 100%",
+              "RW 150%"
             ]
           },
-          "notes": "Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03"
+          "notes": "Column Rating grade. Required unless the category is NONE. With the category, a key of DS-03. Under the category CRR, the risk weight of the credit risk standardised approach that the issuer or the security would receive, as RW 20%; a security that would receive 75% is charged as one at 100%, and a covered bond at 10% as half the category of 20% and 50%"
         },
         {
           "name": "issue_id",
@@ -656,6 +788,19 @@
           "required": false,
           "allowed": null,
           "notes": "Column Issue ID (specific-risk netting). Rows with the same value are one issue; empty: an issue of its own"
+        },
+        {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement"
         },
         {
           "name": "comment",
@@ -756,6 +901,19 @@
             "min": 0
           },
           "notes": "Column Market value (ccy). Direction gives the sign"
+        },
+        {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is excluded before any other test of the row and counted by C17: the interest rate and equity risk of the non-trading book is outside the scope of the market risk requirement"
         },
         {
           "name": "comment",
@@ -861,6 +1019,19 @@
           "notes": "Column Maturity date. For the maturity ladder approach, which is not supported; not read"
         },
         {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement"
+        },
+        {
           "name": "comment",
           "type": "text",
           "unit": null,
@@ -932,6 +1103,19 @@
           "notes": "Column Amount (ccy). The net open position in the currency; for gold, in the unit its rate is quoted for. Direction gives the sign"
         },
         {
+          "name": "book",
+          "type": "text",
+          "unit": null,
+          "required": false,
+          "allowed": {
+            "values": [
+              "Trading",
+              "Non-trading"
+            ]
+          },
+          "notes": "Column Book. Blank reads as Trading. A Non-trading row is calculated as a trading book row: Article 325(1) of the CRR and MAR12.6 put the foreign exchange and commodity risk of the non-trading book in the scope of the market risk requirement"
+        },
+        {
           "name": "comment",
           "type": "text",
           "unit": null,
@@ -1001,6 +1185,70 @@
           "required": false,
           "allowed": null,
           "notes": "Column Comment. Not read"
+        }
+      ]
+    },
+    {
+      "id": "DS-11",
+      "illustrative": false,
+      "description": "Monthly size of the business",
+      "provider": "Typed by the user",
+      "frequency": "Per reporting date",
+      "granularity": "One row per month end; up to 24 rows",
+      "source": "Eligibility",
+      "encoding": null,
+      "delimiter": null,
+      "decimal_separator": null,
+      "fields": [
+        {
+          "name": "month_end",
+          "type": "date",
+          "unit": null,
+          "required": true,
+          "allowed": null,
+          "notes": "Column Month end. The last day of a calendar month, one month after the row entered before it. A row without it is skipped. Read under the CRR regime only"
+        },
+        {
+          "name": "total_assets",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": {
+            "min": 0
+          },
+          "notes": "Column Total assets (EUR). Of the institution at the month end. Must be a number greater than 0"
+        },
+        {
+          "name": "long_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Long 325a (EUR). The aggregated long positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "short_325a",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Short 325a (EUR). The aggregated short positions of Article 325a(2); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "long_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Long 94 (EUR). The aggregated long positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none"
+        },
+        {
+          "name": "short_94",
+          "type": "decimal",
+          "unit": "Euro",
+          "required": true,
+          "allowed": null,
+          "notes": "Column Short 94 (EUR). The aggregated short positions of Article 94(3); any sign, the absolute value is taken. Must be a number: 0 where there is none"
         }
       ]
     }

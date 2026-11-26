@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-invalid-eligibility-months",
+  "outputs": [
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_size_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.1", "value": 100000000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_share_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "value": 0.0125, "unit": "1", "tolerance": {"absolute": 1e-09, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_325a", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_size_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.1", "value": 10000000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_share_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "value": 0.00125, "unit": "1", "tolerance": {"absolute": 1e-09, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_run_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.3", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_count_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.4", "value": 0.0, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_result_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.2", "text": "MET",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_event_94", "scope": {"dataset": "DS-11", "record": "2025-10"}, "rule": "CALC-09.5", "text": "NO",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "text-month-end"}, "rule": null, "text": "INVALID: MonthEnd must be a date",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "number-month-end"}, "rule": null, "text": "INVALID: MonthEnd must be a date",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "mid-month"}, "rule": null, "text": "INVALID: MonthEnd must be the last day of a month",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "gap-of-a-month"}, "rule": null, "text": "INVALID: MonthEnd must be one month after the previous row",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "zero-total-assets"}, "rule": null, "text": "INVALID: TotalAssets must be a number greater than 0",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "text-short-total"}, "rule": null, "text": "INVALID: a long or short total must be a number",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_month_status", "scope": {"dataset": "DS-11", "record": "missing-short-total"}, "rule": null, "text": "INVALID: a long or short total must be a number",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_status_325a", "scope": null, "rule": null, "text": "NOT ASSESSED: a row is invalid",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract gives an approach that is not assessed. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "eligibility_status_94", "scope": null, "rule": null, "text": "NOT ASSESSED: a row is invalid",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract gives an approach that is not assessed. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

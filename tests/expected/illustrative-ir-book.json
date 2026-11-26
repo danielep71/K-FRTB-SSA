@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "test-expected",
+  "fixture": "illustrative-ir-book",
+  "outputs": [
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "B-1"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "B-1"}, "rule": "CALC-03.3", "value": 6, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "B-1"}, "rule": "CALC-03.4", "value": 105000.00000000001, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "B-2"}, "rule": null, "text": "OK",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_time_band", "scope": {"dataset": "DS-06", "record": "B-2"}, "rule": "CALC-03.3", "value": 6, "unit": "1", "tolerance": {"absolute": 0, "relative": 0},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_weighted_position", "scope": {"dataset": "DS-06", "record": "B-2"}, "rule": "CALC-03.4", "value": 70000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "B-3"}, "rule": null, "text": "EXCLUDED: non-trading book position outside the market risk scope",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_position_status", "scope": {"dataset": "DS-06", "record": "B-4"}, "rule": null, "text": "EXCLUDED: non-trading book position outside the market risk scope",
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "The status the contract's Failure behaviour gives the row: OK, or the text of the first test the row fails, in the order of the contract's list. Derived by tests/derivations/ssa.py from the contract; it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_vertical_disallowance", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-03.5", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_within_zones", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-03.6", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_horizontal_disallowance_between_zones", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-03.7", "value": 0.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_net_position_charge", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-03.8", "value": 175000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": {"dataset": "DS-05", "record": "EUR"}, "rule": "CALC-03.9", "value": 175000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    },
+    {
+      "quantity": "ir_general_market_risk_charge", "scope": null, "rule": "CALC-03.9", "value": 175000.0, "unit": "EUR", "tolerance": {"absolute": 1e-06, "relative": 1e-09},
+      "reference": {"class": "illustrative", "source": null, "locator": null, "derivation": "Calculated by tests/derivations/ssa.py from the rules of the calculation contract, with the reference values of the parameters. Derived within the project, so it validates nothing", "script": "tests/derivations/ssa.py", "derived_by": "Daniele Penza", "reviewed_by": null, "date": "2026-11-21"}
+    }
+  ]
+}

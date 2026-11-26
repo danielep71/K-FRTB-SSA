@@ -106,6 +106,30 @@ class Reference(unittest.TestCase):
             # 8% of each position, not of a net of zero.
             self.assertAlmostEqual(ssa_reference.calc_ir()["EUR"]["sr"], 160_000.0, places=6)
 
+    def test_the_published_example_under_the_crr(self) -> None:
+        # The worked example C.2 of SRC-03: 1,000,000 of the zone 1 position is matched against zone 3,
+        # so the CRR's 150% (Article 339(9)(f)) adds 50% of it to the published charge of 4,580,000.
+        weighted = {2: [150_000.0, 0.0], 3: [0.0, 200_000.0], 4: [1_050_000.0, 0.0],
+                    7: [1_125_000.0, 0.0], 10: [500_000.0, 5_625_000.0]}
+        zone = {band: z for band, z, _, _, _ in ssa_reference.LADDER}
+        basel = ssa_reference.ladder_charges(weighted, zone)
+        crr = ssa_reference.ladder_charges(weighted, zone, 1.50)
+        self.assertEqual((basel["between"], basel["gmr"]), (1_450_000.0, 4_580_000.0))
+        self.assertEqual((crr["between"], crr["gmr"]), (1_950_000.0, 5_080_000.0))
+        self.assertEqual((crr["vd"], crr["within"], crr["net"]),
+                         (basel["vd"], basel["within"], basel["net"]))
+
+    def test_the_index_charge_of_the_crr_is_nil(self) -> None:
+        # Article 344: the specific risk of an index future that is exchange traded and diversified is
+        # ignored, and its general risk stays in the net position of its market.
+        basel, crr = ssa_reference.calc_eq(), ssa_reference.calc_eq(0.0)
+        self.assertGreater(basel["index"], 0.0)
+        self.assertEqual(crr["index"], 0.0)
+        self.assertEqual((crr["specific"], crr["general"]), (basel["specific"], basel["general"]))
+        self.assertAlmostEqual(
+            ssa_reference.calc_all()["total"] - ssa_reference.calc_all(1.0, 0.0)["total"],
+            ssa_reference.SCALING["EQ"] * basel["index"], places=6)
+
     def test_offsets_between_zones(self) -> None:
         self.assertEqual(ssa_reference.offset(100.0, -30.0), (30.0, 70.0, 0.0))
         self.assertEqual(ssa_reference.offset(-100.0, 30.0), (30.0, -70.0, 0.0))
@@ -175,7 +199,7 @@ class Generator(NeedsOpenpyxl):
             with zipfile.ZipFile(path) as package:
                 sheets = [name for name in package.namelist()
                           if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name)]
-                self.assertEqual(len(sheets), 18)
+                self.assertEqual(len(sheets), 19)
                 for name in sheets:
                     with self.subTest(path=path.name, sheet=name):
                         element = re.search(rb"<sheetProtection[^>]*>",
@@ -207,7 +231,7 @@ class Generator(NeedsOpenpyxl):
         # MAR40 constant that a what-if may change; elsewhere grey is an expected value.
         book = openpyxl.load_workbook(self.template)
         self.assertTrue(book["Params"]["E6"].protection.locked is False)
-        self.assertTrue(book["Params"]["G31"].protection.locked is False)
+        self.assertTrue(book["Params"]["G42"].protection.locked is False)
         self.assertTrue(book["TestCatalogue"]["J7"].protection.locked)
         self.assertTrue(book["Results"]["C6"].protection.locked)
         self.assertTrue(book["IRPositions"]["C4"].protection.locked)
@@ -232,8 +256,8 @@ class Generator(NeedsOpenpyxl):
                  "deleteColumns": "AllowDeletingColumns", "deleteRows": "AllowDeletingRows",
                  "sort": "AllowSorting", "autoFilter": "AllowFiltering",
                  "pivotTables": "AllowUsingPivotTables"}
-        for sheet in ("shResults", "shIRZones", "shIRLadder", "shBuckets", "shIRCalc", "shEQCalc",
-                      "shCOCalc", "shFXCalc", "shChecks"):
+        for sheet in ("shEligibility", "shResults", "shIRZones", "shIRLadder", "shBuckets", "shIRCalc",
+                      "shEQCalc", "shCOCalc", "shFXCalc", "shChecks"):
             options = matrix["sheets"][sheet]["protection"]
             with self.subTest(sheet=sheet):
                 self.assertTrue(options["sheet"])
@@ -256,8 +280,9 @@ class Generator(NeedsOpenpyxl):
         table = contract.split("## Sheets\n", 1)[1].split("\n\n- **Code name:**", 1)[0]
         rows = [[cell.strip() for cell in line.strip("|").split("|")]
                 for line in table.splitlines() if re.match(r"\| +\d+ +\|", line)]
-        self.assertEqual(len(rows), 18)
-        written = {row[1].strip("`") for row in rows if row[4] == "Yes"}
+        self.assertEqual(len(rows), 19)
+        # Code writes a sheet whose cells it replaces, and the calculated columns of Eligibility.
+        written = {row[1].strip("`") for row in rows if row[4] in ("Yes", "In its calculated columns")}
         source = (ROOT / "src" / "workbook" / "M_Main.bas").read_bytes().decode(
             "cp1252").replace("\r\n", "\n")
         listed = re.search(r"SheetNames = Array\(([^)]*)\)", source.replace("_\n", " "))
@@ -398,7 +423,7 @@ class Generator(NeedsOpenpyxl):
     def test_the_engine_limit_is_the_number_of_rows_the_template_is_built_for(self) -> None:
         generator = tool("build_prototype")
         config = (ROOT / "src" / "core" / "CORE_Config.bas").read_text(encoding="cp1252")
-        match = re.search(r"Public Const MAX_POSITION_ROWS As Long = (\d+)", config)
+        match = re.search(r"Public Const MAX_POSITION_ROWS\s+As Long = (\d+)", config)
         assert match is not None
         self.assertEqual(int(match.group(1)), generator.CAP)
         self.assertEqual(int(match.group(1)), 500)
@@ -425,16 +450,35 @@ class Generator(NeedsOpenpyxl):
                 for word in ('"INCOMPLETE"', '"FAILED"', '"OUTDATED"'):
                     self.assertIn(word, rules[0])
 
+    def test_the_headline_of_results_shows_the_regime_next_to_the_currency_and_the_date(
+            self) -> None:
+        assert openpyxl is not None
+        for form in (self.template, self.formula):
+            book = openpyxl.load_workbook(form)
+            sheet = book["Results"]
+            with self.subTest(form=form.name):
+                self.assertEqual([sheet[f"C{row}"].value for row in range(14, 19)],
+                                 ["Own funds requirement", "Risk-weighted assets",
+                                  "Reporting currency", "Reporting date", "Regime"])
+                self.assertEqual(sheet["E16"].value, "=ReportingCcy")
+                self.assertEqual(sheet["E17"].value, "=AsOfDate")
+                self.assertIn("Regime", sheet["E18"].value)
+                self.assertEqual(sheet["C20"].value, "Where the numbers come from")
+        # The run compares the regime with the formula workbook, with the currency and the date.
+        compare = tool("compare_outputs")
+        self.assertTrue(any(area.sheet == "Results" and 18 in area.rows
+                            for area in compare.FIXED_AREAS))
+
     def test_the_fingerprint_of_the_inputs_has_a_named_cell_that_the_template_leaves_empty(
             self) -> None:
         assert openpyxl is not None
         book = openpyxl.load_workbook(self.template)
-        self.assertEqual(book.defined_names["Results_Fingerprint"].attr_text, "Results!$E$18")
-        self.assertIsNone(book["Results"]["E18"].value)
-        self.assertEqual(book["Results"]["C18"].value, "Input fingerprint")
+        self.assertEqual(book.defined_names["Results_Fingerprint"].attr_text, "Results!$E$19")
+        self.assertIsNone(book["Results"]["E19"].value)
+        self.assertEqual(book["Results"]["C19"].value, "Input fingerprint")
         # It is outside the areas that a run clears and the comparison reads.
         compare = tool("compare_outputs")
-        self.assertFalse(any(area.sheet == "Results" and 18 in area.rows
+        self.assertFalse(any(area.sheet == "Results" and 19 in area.rows
                              for area in compare.FIXED_AREAS))
 
     def test_no_other_repository_is_named_in_the_workbook(self) -> None:
@@ -465,7 +509,7 @@ class Comparison(NeedsOpenpyxl):
         book = openpyxl.Workbook()
         book.remove(book.active)
         for title in ("IRCalc", "EQCalc", "COCalc", "FXCalc", "IR_Ladder", "IR_Zones", "Buckets",
-                      "Results", "Checks", "TestCatalogue"):
+                      "Results", "Checks", "Eligibility", "TestCatalogue"):
             book.create_sheet(title)
         book["IRCalc"]["C5"] = "IR-001"
         book["IRCalc"]["D5"] = "OK"
@@ -556,11 +600,15 @@ class Verification(NeedsOpenpyxl):
         positions = book["IRPositions"]
         first = verify.FIRST_ROW + len(ssa_reference.IR)
         self.assertEqual(positions.cell(first - 1, 3).value, ssa_reference.IR[-1][0])
-        added = [positions.cell(row, 3).value for row in range(first, first + 24)]
+        added = [positions.cell(row, 3).value for row in range(first, first + 28)]
         self.assertEqual(added, ["IR-INST1", "IR-INST2", "IR-INST3", "IR-INST4", "IR-BAD1", "IR-BAD2", "ir-001", "IR-MIX", "IR-FRN", "IR-OTH",
                                  "IR-DATE", "R1", "IR-R1", "IR-*", "IR-W1", "IR-W2", "IR-W3",
-                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2"])
-        self.assertIsNone(positions.cell(first + 24, 3).value)
+                                 "IR-W4", "IR-P1", "IR-C1", "IR-C2", "IR-C3", "IR-E1", "IR-E2",
+                                 "IR-NT1", "IR-NT2", "IR-TR", "IR-BK"])
+        self.assertIsNone(positions.cell(first + 28, 3).value)
+        # The books, in the column before the Comment.
+        self.assertEqual([positions.cell(first + offset, 16).value for offset in range(24, 28)],
+                         ["Non-trading", " non-TRADING ", "trading", "Banking"])
         # An instrument outside the list, none at all, and one typed in another case with blanks.
         self.assertEqual([positions.cell(first + offset, 5).value for offset in range(4)],
                          ["Securitisation", None, " swap LEG ", "Swap  leg"])

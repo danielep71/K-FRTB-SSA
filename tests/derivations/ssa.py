@@ -3,12 +3,26 @@
 Usage: python -I tests/derivations/ssa.py tests/fixtures/<case-id>.json
 
 It reads one fixture and prints, in the derivation output format, the outputs
-of the fixture's calculation, CALC-02 to CALC-08, as
+of the fixture's calculation, CALC-02 to CALC-09, as
 docs/methodology/CALCULATION_CONTRACTS.md states them: the status of each
 position row, and the quantities of the rows that are used. A fixture gives
 the reporting date and currency, the FX rates (DS-05), the positions (DS-06
-to DS-09) and the option charges (DS-10). Every parameter has its reference
-value, which the Parameters table of the contracts traces to SRC-02.
+to DS-09), the option charges (DS-10) and the months of the size of the
+business (DS-11). Every parameter has its reference value, which the
+Parameters table of the contracts traces to SRC-02, or to SRC-04 and SRC-06
+for those of the CRR regime, but those a fixture sets under "parameters": the
+regime and the total own funds. Under the CRR regime it applies the rules of
+the contracts that name it: the categories of Article 336 (CALC-02), 150%
+between zones 1 and 3 (CALC-03), no charge on an index (CALC-04), the de
+minimis of Article 351 (CALC-06) and the transitional multiplier of Article
+495s(2) (CALC-08). A regime that is neither Basel nor CRR, or total own funds
+that are not a number greater than 0 under the CRR, stops the run: derive()
+then gives the status line of the run only, as the contracts' Failure
+behaviour states it.
+
+eligibility() derives CALC-09, the eligibility under the CRR, from the rows of
+the Eligibility sheet and the regime; derive() calls it for a fixture of
+CALC-09, and a test may call it with rows that no fixture can hold.
 
 It is written from the contracts and shares no code with the VBA engine. Its
 values are illustrative all the same, because the project derived them.
@@ -16,9 +30,11 @@ values are illustrative all the same, because the project derived them.
 
 from __future__ import annotations
 
+import calendar
 import datetime
 import json
 import sys
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 # ------------------------------------------------------------- parameters
@@ -34,6 +50,16 @@ EQ_SPECIFIC, EQ_INDEX, EQ_GENERAL = 0.08, 0.02, 0.08
 FX_RATE = 0.08
 CO_DIRECTIONAL, CO_GROSS = 0.15, 0.03
 GOLD = "XAU"
+# The parameters of the CRR regime: SRC-04, Articles 339(9)(f), 344 and 351, and SRC-06,
+# Article 495s(2), whose multiplier applies on and before its last date.
+ZONES_1_AND_3_CRR = 1.50
+EQ_INDEX_CRR = 0.0
+FX_DE_MINIMIS = 0.02
+TRANSITIONAL_MULTIPLIER, TRANSITIONAL_END = 0.9, "2029-12-31"
+# The regimes the Regime parameter accepts, as codes, and the status line of a run that an
+# unusable parameter stops, without the time of the run that follows it on Results.
+REGIMES = frozenset(("BASEL", "CRR"))
+STOPPED = "STOPPED: {} unusable input(s); see Checks. No results were calculated."
 # The instruments of an interest rate row that DS-06 allows, as codes.
 INSTRUMENTS = frozenset(("BOND", "FRN", "SWAP LEG", "FUTURE LEG", "FRA LEG", "FORWARD LEG", "OTHER"))
 # Table 4 of MAR40.26: zone, upper limit in years for a coupon of 3% or more,
@@ -58,12 +84,35 @@ SPECIFIC: dict[tuple[str, str, str], float] = {
     **{("QUAL", "A+ TO BBB-", band): rate for band, rate in BY_MATURITY.items()},
     ("OTHER", "BB+ TO BB-", ANY): 0.08, ("OTHER", "B+ TO B-", ANY): 0.12,
     ("OTHER", "BELOW B-", ANY): 0.12, ("OTHER", "UNRATED", ANY): 0.08,
+    # Table 1 of Article 336(1) of the CRR, by the risk weight of the standardised approach
+    # for credit risk, and half of the 20% and 50% rates for the covered bonds of Article 336(3).
+    ("CRR", "RW 0%", ANY): 0.0,
+    **{("CRR", "RW 10%", band): rate / 2 for band, rate in BY_MATURITY.items()},
+    **{("CRR", "RW 20%", band): rate for band, rate in BY_MATURITY.items()},
+    **{("CRR", "RW 50%", band): rate for band, rate in BY_MATURITY.items()},
+    ("CRR", "RW 75%", ANY): 0.08, ("CRR", "RW 100%", ANY): 0.08, ("CRR", "RW 150%", ANY): 0.12,
 }
 # The serials Excel holds as dates: 1 January 1900 to 31 December 9999.
 SERIAL_EPOCH = datetime.date(1899, 12, 30)
 SERIAL_MIN, SERIAL_MAX = 1, 2958465
 OK, INVALID, EXCLUDED = "OK", "INVALID: ", "EXCLUDED: "
+NOT_ASSESSED = "NOT ASSESSED"
 RISK_CLASSES = ("IR", "EQ", "CO", "FX")
+
+# Articles 325a(1) and 94(1) of the CRR: the share of the total assets and the amount in
+# euro that the size of the business may not exceed, by approach, under the names of
+# the parameters, which eligibility() takes from its params or, missing there, here.
+ELIGIBILITY_REFERENCE = {"EligibilityShare325a": 0.10, "EligibilityCap325a": 500_000_000.0,
+                         "EligibilityShare94": 0.05, "EligibilityCap94": 50_000_000.0}
+APPROACHES = ("325a", "94")
+# The months of the run and of the count of an approach's conditions that are not met:
+# a run of this many months, or a count over the limit among the last WINDOW months, is an event.
+EVENT_RUN, EVENT_COUNT, WINDOW = 3, 6, 12
+MONTH_REASONS = ("INVALID: MonthEnd must be a date",
+                 "INVALID: MonthEnd must be the last day of a month",
+                 "INVALID: MonthEnd must be one month after the previous row",
+                 "INVALID: TotalAssets must be a number greater than 0",
+                 "INVALID: a long or short total must be a number")
 
 Record = dict[str, Any]
 Output = dict[str, Any]
@@ -105,6 +154,20 @@ def sign(direction: object) -> float:
     return {"LONG": 1.0, "SHORT": -1.0}.get(code(direction), 0.0)
 
 
+def book_status(inputs: Record, in_scope: bool) -> str | None:
+    """The status the book of a position gives it, or None when the other tests decide.
+
+    A blank book is the trading book. A non-trading book position is calculated as a
+    trading book one where its class is in the scope (foreign exchange, commodities),
+    and excluded where it is not (interest rate, equity)."""
+    book = code(inputs.get("book_code"))
+    if book not in ("", "TRADING", "NON-TRADING"):
+        return INVALID + "Book must be Trading or Non-trading"
+    if book == "NON-TRADING" and not in_scope:
+        return EXCLUDED + "non-trading book position outside the market risk scope"
+    return None
+
+
 def duplicates(records: list[Record]) -> set[str]:
     """The identifiers that more than one record holds, without regard to case."""
     seen: dict[str, int] = {}
@@ -123,6 +186,10 @@ class Case:
         assert as_of is not None
         self.as_of = as_of
         self.datasets: dict[str, list[Record]] = fixture["datasets"]
+        parameters = fixture.get("parameters", {})
+        self.regime = parameters.get("regime_code", "Basel")
+        self.crr = code(self.regime) == "CRR"
+        self.own_funds = parameters.get("total_own_funds_amount")
         self.rates = {code(record["id"]): record["inputs"].get("fx_rate")
                       for record in self.records("DS-05")}
 
@@ -203,17 +270,23 @@ def ir_date_reason(case: Case, inputs: Record) -> str | None:
 
 
 def ir_category_reason(case: Case, inputs: Record) -> str | None:
-    """Why the category or the rating grade of a row rejects it."""
+    """Why the category or the rating grade of a row rejects it: under the CRR regime the
+    category is CRR or NONE, under the Basel regime one of MAR40.6."""
     category = code(inputs.get("sr_category_code"))
-    if category not in ("GOV", "QUAL", "OTHER", "NONE"):
+    if case.crr and category not in ("CRR", "NONE"):
+        return "SR category must be CRR or NONE under the CRR"
+    if not case.crr and category not in ("GOV", "QUAL", "OTHER", "NONE"):
         return "SR category must be GOV, QUAL, OTHER or NONE"
     if category != "NONE" and specific_key(case, inputs) is None:
-        return "no MAR40.6 charge for this category and rating grade"
+        return ("no Article 336 charge for this risk weight" if case.crr
+                else "no MAR40.6 charge for this category and rating grade")
     return None
 
 
 def ir_status(case: Case, record: Record, repeated: set[str]) -> str:
     """OK, or the first test of the contract's list that the row fails."""
+    if code(record["id"]) not in repeated and (book := book_status(record["inputs"], False)) is not None:
+        return book
     reason = (ir_value_reason(case, record, repeated) or ir_date_reason(case, record["inputs"])
               or ir_category_reason(case, record["inputs"]))
     return OK if reason is None else INVALID + reason
@@ -228,8 +301,9 @@ def offset(first: float, second: float) -> tuple[float, float, float]:
             second - (matched if second > 0 else -matched))
 
 
-def ladder_charges(weighted: dict[int, list[float]]) -> dict[str, float]:
-    """The charges of one currency's ladder, from its weighted longs and shorts per band."""
+def ladder_charges(weighted: dict[int, list[float]], zones_1_and_3: float) -> dict[str, float]:
+    """The charges of one currency's ladder, from its weighted longs and shorts per band, with
+    the disallowance between zones 1 and 3 of the regime."""
     vertical = 0.0
     longs = {1: 0.0, 2: 0.0, 3: 0.0}
     shorts = {1: 0.0, 2: 0.0, 3: 0.0}
@@ -245,7 +319,7 @@ def ladder_charges(weighted: dict[int, list[float]]) -> dict[str, float]:
     matched_12, first, second = offset(first, second)
     matched_23, second, third = offset(second, third)
     matched_13, first, third = offset(first, third)
-    between = ADJACENT_ZONES * (matched_12 + matched_23) + ZONES_1_AND_3 * matched_13
+    between = ADJACENT_ZONES * (matched_12 + matched_23) + zones_1_and_3 * matched_13
     net = abs(first + second + third)
     return {"ir_vertical_disallowance": vertical,
             "ir_horizontal_disallowance_within_zones": within,
@@ -291,7 +365,7 @@ def interest_rate(case: Case, outputs: list[Output]) -> tuple[float, float]:
     for currency in sorted(case.rates):
         specific = sum(abs(net) * rate for net, rate, issue_currency in issues.values()
                        if issue_currency == currency)
-        charges = ladder_charges(ladders.get(currency, {}))
+        charges = ladder_charges(ladders.get(currency, {}), ZONES_1_AND_3_CRR if case.crr else ZONES_1_AND_3)
         specific_total += specific
         general_total += charges["ir_general_market_risk_charge"]
         if currency == GOLD:
@@ -309,6 +383,8 @@ def eq_status(case: Case, record: Record, repeated: set[str]) -> str:
     value = inputs.get("market_value_amount")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, False)) is not None:
+        return book
     elif code(inputs.get("market_code")) == "":
         reason = "Market missing"
     elif code(inputs.get("type_code")) not in ("SINGLE NAME", "INDEX"):
@@ -351,7 +427,8 @@ def equity(case: Case, outputs: list[Output]) -> tuple[float, float, float]:
         used.append((record, key))
     outputs.extend(row("eq_net_position", "DS-07", record, value=nets[key]) for record, key in used)
     specific = sum(EQ_SPECIFIC * abs(net) for (_, kind, _), net in nets.items() if kind == "SINGLE NAME")
-    index = sum(EQ_INDEX * abs(net) for (_, kind, _), net in nets.items() if kind == "INDEX")
+    rate = EQ_INDEX_CRR if case.crr else EQ_INDEX
+    index = sum(rate * abs(net) for (_, kind, _), net in nets.items() if kind == "INDEX")
     general = sum(EQ_GENERAL * abs(net) for net in markets.values())
     outputs.append(total("eq_specific_risk_charge", specific))
     outputs.append(total("eq_index_charge", index))
@@ -365,6 +442,8 @@ def co_status(case: Case, record: Record, repeated: set[str]) -> str:
     quantity = inputs.get("quantity_count")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, True)) is not None:
+        return book
     elif code(inputs.get("commodity_code")) == "":
         reason = "Commodity missing"
     elif code(inputs.get("commodity_code")) == GOLD:
@@ -417,6 +496,8 @@ def fx_status(case: Case, record: Record, repeated: set[str]) -> str:
     amount = inputs.get("net_position_amount")
     if code(record["id"]) in repeated:
         reason = "duplicate PositionID"
+    elif (book := book_status(inputs, True)) is not None:
+        return book
     elif case.no_currency(currency, gold_allowed=True):
         reason = "currency not in FX_Table"
     elif sign(inputs.get("direction_code")) == 0:
@@ -453,9 +534,15 @@ def foreign_exchange(case: Case, outputs: list[Output]) -> float:
     longs = sum(value for currency, value in net.items() if currency != GOLD and value > 0)
     shorts = sum(-value for currency, value in net.items() if currency != GOLD and value < 0)
     position = max(longs, shorts) + abs(net.get(GOLD, 0.0))
+    charge = FX_RATE * position
+    if case.crr:
+        # Article 351: no requirement while the position does not exceed 2% of the total own funds.
+        assert is_number(case.own_funds) and case.own_funds > 0, "the CRR regime needs total own funds"
+        if position <= FX_DE_MINIMIS * case.own_funds:
+            charge = 0.0
     outputs.append(total("fx_overall_net_open_position", position))
-    outputs.append(total("fx_charge", FX_RATE * position))
-    return FX_RATE * position
+    outputs.append(total("fx_charge", charge))
+    return charge
 
 
 # ------------------------------------------------- options and requirement
@@ -485,8 +572,176 @@ def requirement(case: Case, outputs: list[Output]) -> None:
         scope = {"dataset": "DS-10", "record": record["id"]}
         outputs.append({"quantity": "requirement_before_scaling", "scope": scope, "value": before[name]})
         outputs.append({"quantity": "requirement_after_scaling", "scope": scope, "value": after[name]})
-    outputs.append(total("own_funds_requirement", sum(after.values())))
-    outputs.append(total("risk_weighted_assets", RWA_MULTIPLIER * sum(after.values())))
+    end = serial(TRANSITIONAL_END)
+    assert end is not None
+    factor = TRANSITIONAL_MULTIPLIER if case.crr and case.as_of <= end else 1.0
+    result = factor * sum(after.values())
+    outputs.append(total("transitional_factor", factor))
+    outputs.append(total("own_funds_requirement", result))
+    outputs.append(total("risk_weighted_assets", RWA_MULTIPLIER * result))
+
+
+# ------------------------------------------------------------ eligibility
+def month_serial(value: object) -> float | None:
+    """A month end as a date serial number; None when the value is neither a date nor a number."""
+    if isinstance(value, datetime.datetime):
+        return (value - datetime.datetime.combine(SERIAL_EPOCH, datetime.time())).total_seconds() / 86400
+    if isinstance(value, datetime.date):
+        return float((value - SERIAL_EPOCH).days)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def month_end_serial(serial_number: float, months: int) -> float | None:
+    """The serial of the last day of the month that lies months after the month of a date serial
+    number; None when it is beyond 31 December 9999."""
+    day = SERIAL_EPOCH + datetime.timedelta(days=int(serial_number))
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    if year > 9999:
+        return None
+    last = datetime.date(year, month + 1, calendar.monthrange(year, month + 1)[1])
+    return float((last - SERIAL_EPOCH).days)
+
+
+def month_status(values: Sequence[Any], previous: float | None) -> str:
+    """OK, or the first test of CALC-09 that a month fails. previous is the serial of the month end
+    of the row entered before it, when that was a date."""
+    serial_number = month_serial(values[0])
+    if serial_number is None or not is_date(serial_number):
+        return MONTH_REASONS[0]
+    if serial_number != month_end_serial(serial_number, 0):
+        return MONTH_REASONS[1]
+    if previous is not None and serial_number != month_end_serial(previous, 1):
+        return MONTH_REASONS[2]
+    if not is_number(values[1]) or values[1] <= 0:
+        return MONTH_REASONS[3]
+    if not all(is_number(value) for value in values[2:6]):
+        return MONTH_REASONS[4]
+    return OK
+
+
+def eligibility_month(values: Sequence[Any], approach: str, params: Mapping[str, float],
+                      missed: list[bool]) -> Record:
+    """The figures of a valid month for one approach; missed holds the months before it that did not
+    meet the conditions, valid months only, and takes this one."""
+    long, short = values[2:4] if approach == "325a" else values[4:6]
+    size = abs(long) + abs(short)
+    share = params.get(f"EligibilityShare{approach}", ELIGIBILITY_REFERENCE[f"EligibilityShare{approach}"])
+    cap = params.get(f"EligibilityCap{approach}", ELIGIBILITY_REFERENCE[f"EligibilityCap{approach}"])
+    missed.append(not (size <= share * values[1] and size <= cap))
+    run = 0
+    for flag in reversed(missed):
+        if not flag:
+            break
+        run += 1
+    count = sum(missed[-WINDOW:])
+    return {"size": size, "share": size / values[1], "result": "NOT MET" if missed[-1] else "MET",
+            "run": run, "count": count, "event": "YES" if run >= EVENT_RUN or count > EVENT_COUNT else "NO"}
+
+
+def eligibility(rows: Sequence[Sequence[Any]], regime: object, params: Mapping[str, float]) -> Record:
+    """CALC-09: the eligibility for the simplified standardised approach (Article 325a) and the
+    small trading book derogation (Article 94) of the CRR, from the rows of the Eligibility sheet.
+
+    rows: one tuple (month end, total assets, long 325a, short 325a, long 94, short 94) per row,
+    as the sheet holds it. A month end that is None, or an empty text, skips the row. regime is the
+    value of the Regime parameter, read without regard to case and blanks: anything but CRR is
+    not assessed. params holds EligibilityShare325a, EligibilityCap325a, EligibilityShare94 and
+    EligibilityCap94; one that is missing takes its reference value.
+
+    Returns the dict "rows", one item per row: None for a skipped row and under the Basel regime;
+    otherwise {"status": OK or an INVALID text, "325a": ..., "94": ...}, where each approach is
+    {"size", "share", "result" (MET or NOT MET), "run", "count", "event" (YES or NO)} for a valid
+    row and None for an invalid one. The run and the count of a row go over the valid rows, in
+    the order of the sheet. Then "status", "restart", "run", "count", "size" and "share", each by
+    approach, and "last_month": the month end of the last row entered. Where the status is NOT
+    ASSESSED, every item but "status" is None."""
+    assessed = code(regime) == "CRR"
+    items: list[Record | None] = [None] * len(rows)
+    missed: dict[str, list[bool]] = {approach: [] for approach in APPROACHES}
+    entered = 0
+    rejected = False
+    previous: float | None = None
+    last: Record = {}
+    last_month: object = None
+    for index, values in enumerate(rows):
+        if not assessed or values[0] is None or text(values[0]) == "":
+            continue
+        entered += 1
+        status = month_status(values, previous)
+        serial_number = month_serial(values[0])
+        previous = serial_number if serial_number is not None and is_date(serial_number) else None
+        items[index] = {"status": status, "325a": None, "94": None}
+        last_month = values[0]
+        if status != OK:
+            rejected = True
+            continue
+        for approach in APPROACHES:
+            figures = eligibility_month(values, approach, params, missed[approach])
+            items[index][approach] = figures  # type: ignore[index]
+            last[approach] = figures
+    result: Record = {"rows": items, "status": {}, "last_month": None}
+    for key in ("restart", "run", "count", "size", "share"):
+        result[key] = dict.fromkeys(APPROACHES)
+    if not assessed or entered == 0 or rejected:
+        reason = "Basel regime" if not assessed else "no month entered" if entered == 0 else "a row is invalid"
+        result["status"] = dict.fromkeys(APPROACHES, f"{NOT_ASSESSED}: {reason}")
+        return result
+    result["last_month"] = last_month
+    for approach in APPROACHES:
+        figures = last[approach]
+        result["status"][approach] = ("CEASE" if figures["event"] == "YES"
+                                      else "NOT MET" if figures["result"] == "NOT MET" else "MET")
+        for key in ("size", "share", "run", "count"):
+            result[key][approach] = figures[key]
+        result["restart"][approach] = "YES" if len(missed[approach]) >= WINDOW and figures["count"] == 0 else "NO"
+    return result
+
+
+# The keys of a record of DS-11, in the order of the columns of the Eligibility sheet.
+MONTH_KEYS = ("month_end_date", "total_assets_amount", "long_325a_amount", "short_325a_amount",
+              "long_94_amount", "short_94_amount")
+
+
+def month_cell(key: str, value: object) -> object:
+    """A value of a record of DS-11 as the sheet holds it: an ISO month end as a date."""
+    if key == "month_end_date" and isinstance(value, str):
+        try:
+            return datetime.date.fromisoformat(value)
+        except ValueError:
+            return value
+    return value
+
+
+def eligibility_outputs(case: Case, outputs: list[Output]) -> None:
+    """The outputs of CALC-09: the status and the figures of each month entered, and the status
+    and the restart condition of each approach."""
+    records = case.records("DS-11")
+    rows = [tuple(month_cell(key, record["inputs"].get(key)) for key in MONTH_KEYS)
+            for record in records]
+    result = eligibility(rows, case.regime, {})
+    for record, item in zip(records, result["rows"], strict=True):
+        if item is None:
+            continue
+        outputs.append(row("eligibility_month_status", "DS-11", record, text=item["status"]))
+        for approach in APPROACHES:
+            figures = item[approach]
+            if figures is None:
+                continue
+            for key in ("size", "share", "run", "count"):
+                outputs.append(row(f"eligibility_{key}_{approach}", "DS-11", record,
+                                   value=float(figures[key])))
+            outputs.append(row(f"eligibility_month_result_{approach}", "DS-11", record,
+                               text=figures["result"]))
+            outputs.append(row(f"eligibility_event_{approach}", "DS-11", record,
+                               text=figures["event"]))
+    for approach in APPROACHES:
+        outputs.append({"quantity": f"eligibility_status_{approach}", "scope": None,
+                        "text": result["status"][approach]})
+        if result["restart"][approach] is not None:
+            outputs.append({"quantity": f"eligibility_restart_{approach}", "scope": None,
+                            "text": result["restart"][approach]})
 
 
 # ---------------------------------------------------------------- outputs
@@ -502,11 +757,39 @@ def total(quantity: str, value: float) -> Output:
     return {"quantity": quantity, "scope": None, "value": value}
 
 
+def fx_table_errors(case: Case) -> int:
+    """The number of unusable values of the FX table, the sum of the counts of rules C05 to C07.
+
+    C07 counts each listed currency whose rate is not a number greater than 0. C06 counts each
+    currency listed again after its first row. C05 is 1 when the reporting currency is not listed
+    or its first row has a rate other than 1. A row without a code is blank and is not read."""
+    rows = [(code(record["id"]), record["inputs"].get("fx_rate")) for record in case.records("DS-05")]
+    listed = [(currency, rate) for currency, rate in rows if currency != ""]
+    rate_errors = sum(1 for _, rate in listed if not (is_number(rate) and rate > 0))
+    repeated = len(listed) - len({currency for currency, _ in listed})
+    first = next((rate for currency, rate in listed if currency == case.reporting != ""), None)
+    return rate_errors + repeated + int(not (is_number(first) and first == 1))
+
+
+def unusable_parameters(case: Case) -> int:
+    """The number of values of the fixture that stop the run: a regime other than Basel and CRR,
+    under the CRR total own funds that are not a number greater than 0, and the unusable values
+    of the FX table. An unusable regime is read as Basel, so the total own funds are not read
+    with it."""
+    errors = fx_table_errors(case)
+    if code(case.regime) not in REGIMES:
+        return errors + 1
+    return errors + int(case.crr and not (is_number(case.own_funds) and case.own_funds > 0))
+
+
 def derive(fixture: dict[str, Any]) -> list[Output]:
-    """The outputs of a fixture's calculation."""
+    """The outputs of a fixture's calculation; the status line of the run alone when a
+    parameter stops it."""
     case = Case(fixture)
     outputs: list[Output] = []
-    if case.calculation in ("CALC-02", "CALC-03"):
+    if errors := unusable_parameters(case):
+        outputs.append({"quantity": "run_status", "scope": None, "text": STOPPED.format(errors)})
+    elif case.calculation in ("CALC-02", "CALC-03"):
         interest_rate(case, outputs)
     elif case.calculation == "CALC-04":
         equity(case, outputs)
@@ -518,6 +801,8 @@ def derive(fixture: dict[str, Any]) -> list[Output]:
         option_charges(case, outputs)
     elif case.calculation == "CALC-08":
         requirement(case, outputs)
+    elif case.calculation == "CALC-09":
+        eligibility_outputs(case, outputs)
     else:
         raise SystemExit(f"ssa.py: no derivation for calculation {case.calculation!r}")
     return outputs

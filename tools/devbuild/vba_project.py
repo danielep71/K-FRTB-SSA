@@ -15,6 +15,7 @@ an independent decoder.
 """
 from __future__ import annotations
 
+import functools
 import random
 import struct
 import uuid
@@ -39,6 +40,9 @@ def _copy_token_params(diff: int) -> tuple[int, int]:
     return bit_count, max_len
 
 
+# A build compresses the same module source each time; bytes are immutable, so the
+# cache cannot be changed through a result.
+@functools.lru_cache(maxsize=512)
 def compress(data: bytes) -> bytes:
     out = bytearray([0x01])
     pos = 0
