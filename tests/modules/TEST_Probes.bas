@@ -28,7 +28,7 @@ Option Private Module
 '   Nothing at module level
 '
 ' BEHAVIOR
-'   Runs the seven cases in a fixed order between BeginRun and EndRun of
+'   Runs the eight cases in a fixed order between BeginRun and EndRun of
 '   TEST_Harness, after it has allowed writing to every sheet:
 '     - CaseErrorValuesInInputs: an error value typed in an input cell reads as
 '       the text #ERROR where an output shows that text, and no output cell
@@ -40,6 +40,8 @@ Option Private Module
 '       a cell formatted as text (HB-09)
 '     - CaseAreasAsTables: the Value and the Formula of a range of more than
 '       one cell are tables with bounds from 1, and those of one cell are not
+'     - CaseDateTypedAsANumber: a number above the last date serial, typed
+'       in a cell formatted as a date, is read by Value2 as that number (HB-17)
 '     - CaseSheetProtection: every sheet is protected, only the input cells are
 '       unlocked, and a write to a locked cell is refused until AllowWriting
 '       has been applied to the sheet (HB-15)
@@ -73,7 +75,7 @@ Option Private Module
 '   Reference: the expected texts and numbers of error-values-in-inputs are
 '   those of error_keys and error_values of tools/prototype/verify.py, which
 '   checks the formula workbook of the same rows; host behaviours HB-08, HB-09,
-'   HB-10, HB-11 and HB-15 of the Host behaviour table of
+'   HB-10, HB-11, HB-15 and HB-17 of the Host behaviour table of
 '   docs/methodology/VALIDATION_PLAN.md
 '
 ' NOTES
@@ -101,7 +103,7 @@ Option Private Module
 '   Author: Daniele Penza
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-26
 '==============================================================================
 
 '------------------------------------------------------------------------------
@@ -109,8 +111,8 @@ Option Private Module
 '------------------------------------------------------------------------------
     'A complete run starts every case and evaluates every assertion once
     Private Const SUITE_NAME          As String = "probes"  'Name of the suite in the logs and the certification
-    Private Const EXPECTED_CASES      As Long = 7           'Cases a complete run starts
-    Private Const EXPECTED_ASSERTIONS As Long = 49          'Assertions a complete run evaluates
+    Private Const EXPECTED_CASES      As Long = 8           'Cases a complete run starts
+    Private Const EXPECTED_ASSERTIONS As Long = 54          'Assertions a complete run evaluates
 
     'The error values a cell holds: the codes of CVErr
     Private Const ERR_NA              As Long = 2042        '#N/A
@@ -147,7 +149,7 @@ Public Sub RunProbeTests()
 '------------------------------------------------------------------------------
 ' PURPOSE
 '   Run the probes suite. A passing run ends with RESULT=PASS; suite=probes;
-'   operation=PASS; completeness=COMPLETE; cases=7; assertions=49; failures=0;
+'   operation=PASS; completeness=COMPLETE; cases=8; assertions=54; failures=0;
 '   cleanup=PASS; recovery=NONE
 '
 ' WHY THIS EXISTS
@@ -176,7 +178,7 @@ Public Sub RunProbeTests()
 '   State ownership: rewrites the output sheets and leaves them cleared
 '
 ' UPDATED
-'   2026-11-18
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -365,7 +367,7 @@ Private Sub RunSuite()
 '   In order:
 '     - begins the run with the suite name and the expected counts
 '     - allows writing to every sheet
-'     - runs the seven cases
+'     - runs the eight cases
 '     - ends the run with the error that escaped a case, if any
 '
 ' ERROR POLICY
@@ -380,7 +382,7 @@ Private Sub RunSuite()
 '   None
 '
 ' UPDATED
-'   2026-11-18
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -408,6 +410,7 @@ Private Sub RunSuite()
         CaseReadingAnErrorValue
         CaseTextWrittenIntoACell
         CaseAreasAsTables
+        CaseDateTypedAsANumber
         CaseSheetProtection
         CaseStatusOnTheOtherSheets
         CaseSaveStateAfterTheCheck
@@ -1006,6 +1009,142 @@ CaseFailed:
 
 End Sub
 
+Private Sub CaseDateTypedAsANumber()
+
+'
+'------------------------------------------------------------------------------
+'                          PROBE DATE TYPED AS A NUMBER
+'------------------------------------------------------------------------------
+' PURPOSE
+'   A number above the last date serial, such as 20311231, typed in a cell
+'   formatted as a date is read by Value2 as that number, in one cell and in a
+'   range of several cells. HB-17
+'
+' WHY THIS EXISTS
+'   M_Main reads every input with Value2, so that a date typed as yyyymmdd
+'   reaches the engine as a number that IsDateSerial rejects; Range.Value would
+'   turn it into a Date, which cannot hold it. This case measures the read the
+'   engine relies on
+'
+' INPUTS
+'   None
+'
+' RETURNS
+'   Nothing
+'
+' BEHAVIOR
+'   In order:
+'     - appends two interest rate rows and takes their final maturity and
+'       repricing dates, two rows and two columns
+'     - asserts that the maturity column is formatted as a date
+'     - writes 20311231 as the first maturity and 20270101 as the second
+'       repricing date, as the cases suite types a number
+'     - asserts that Value2 of the first cell is a Double equal to 20311231, and
+'       that Value2 of the area is a table that holds 20270101
+'     - removes the appended rows and asserts that the table has the rows it
+'       had
+'
+' ERROR POLICY
+'   An error of the case is recorded with RecordCaseError of TEST_Harness and
+'   the case resumes at its cleanup, which runs on the success and the error
+'   path
+'
+'   RemoveAppended contains its own error and returns it as a text, so that the
+'   removal is asserted on both paths
+'
+' DEPENDENCIES
+'   AppendRows, PositionHeader and RemoveAppended; IR_MATURITY (CORE_Config);
+'   TEST_Harness (BeginCase, the assertions and RecordCaseError)
+'
+' NOTES
+'   State ownership: appends rows under the interest rate table and removes
+'   them at the end
+'
+' UPDATED
+'   2026-11-26
+'------------------------------------------------------------------------------
+
+'------------------------------------------------------------------------------
+' DECLARE
+'------------------------------------------------------------------------------
+    Dim Area        As Range    'Maturity and repricing dates of two appended rows
+    Dim One         As Range    'The first maturity date
+    Dim Values      As Variant  'Value2 of the area
+    Dim RestoreDue  As Boolean  'True once rows are appended
+    Dim Detail      As String   'Why the appended rows could not be removed
+
+'------------------------------------------------------------------------------
+' START CASE
+'------------------------------------------------------------------------------
+    'Record an error of the case instead of ending the run, and name the case
+        On Error GoTo CaseFailed
+        TEST_Harness.BeginCase "date-typed-as-a-number"
+    'Remember that the cleanup has rows to remove
+        RestoreDue = True
+
+'------------------------------------------------------------------------------
+' APPEND ROWS
+'------------------------------------------------------------------------------
+    'Make room under the interest rate table
+        AppendRows 1, 2
+
+'------------------------------------------------------------------------------
+' TAKE AREA
+'------------------------------------------------------------------------------
+    'Take the maturity and repricing dates of the appended rows, and the first maturity
+        Set Area = PositionHeader(1).Offset(mFirst(1), IR_MATURITY - 1).Resize(2, 2)
+        Set One = Area.Cells(1, 1)
+    'Assert that the maturity column is formatted as a date
+        TEST_Harness.AssertEqualText "maturity-is-formatted-as-a-date", "yyyy-mm-dd", _
+            LCase$(One.NumberFormat)
+
+'------------------------------------------------------------------------------
+' TYPE NUMBERS
+'------------------------------------------------------------------------------
+    'Type two dates as numbers in the form yyyymmdd
+        One.Value = 20311231
+        Area.Cells(2, 2).Value = 20270101
+
+'------------------------------------------------------------------------------
+' ASSERT READS
+'------------------------------------------------------------------------------
+    'Assert that Value2 of the cell is the number, as a Double
+        TEST_Harness.AssertTrue "value2-of-one-cell-is-a-number", VarType(One.Value2) = vbDouble, _
+            "Value2 of a cell formatted as a date must be a Double"
+        TEST_Harness.AssertEqualDouble "value2-of-one-cell-is-the-number", 20311231, One.Value2
+    'Assert that Value2 of the area is a table that holds the number
+        Values = Area.Value2
+        TEST_Harness.AssertEqualDouble "value2-of-an-area-holds-the-number", 20270101, Values(2, 2)
+
+'------------------------------------------------------------------------------
+' CLEAN UP
+'------------------------------------------------------------------------------
+    'Restore normal error handling, then remove the appended rows on the success and the error path
+CleanUp:
+        On Error GoTo 0
+    'Remove the rows only when the case appended them
+        If RestoreDue Then
+            Detail = RemoveAppended()
+        End If
+    'Assert that each table has the rows it had
+        TEST_Harness.AssertTrue "appended-rows-removed", Len(Detail) = 0, Detail
+
+'------------------------------------------------------------------------------
+' EXIT PROCEDURE
+'------------------------------------------------------------------------------
+    'Leave before the error handler
+        Exit Sub
+
+'------------------------------------------------------------------------------
+' ERROR HANDLER
+'------------------------------------------------------------------------------
+    'Record the error of the case and continue at the cleanup
+CaseFailed:
+        TEST_Harness.RecordCaseError
+        Resume CleanUp
+
+End Sub
+
 Private Sub CaseSheetProtection()
 
 '
@@ -1035,8 +1174,9 @@ Private Sub CaseSheetProtection()
 '     - asserts that no sheet is unprotected, that AsOfDate and the first cell
 '       under the header of IRPositions are unlocked and that the header of
 '       Results is locked
-'     - protects Results as the template does, without UserInterfaceOnly,
-'       writes the header and asserts that the write raises the error 1004
+'     - unprotects Results and protects it as the template does, without
+'       UserInterfaceOnly, writes the header and asserts that the write raises
+'       the error 1004
 '     - applies AllowWriting, writes again and asserts that the write succeeds
 '       and that the sheet is still protected
 '
@@ -1050,12 +1190,12 @@ Private Sub CaseSheetProtection()
 '   TEST_Harness (BeginCase, the assertions and RecordCaseError)
 '
 ' NOTES
-'   State ownership: protects Results again for one write and applies
-'   UserInterfaceOnly to it again; changes the label of its header for that
-'   write and puts it back
+'   State ownership: unprotects Results and protects it again for one write,
+'   and applies UserInterfaceOnly to it again; changes the label of its header
+'   for that write and puts it back
 '
 ' UPDATED
-'   2026-11-19
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1100,7 +1240,10 @@ Private Sub CaseSheetProtection()
 '------------------------------------------------------------------------------
 ' PROBE REFUSED WRITE
 '------------------------------------------------------------------------------
-    'Protect the sheet as the template protects it, without UserInterfaceOnly
+    'Protect the sheet as the template protects it, without UserInterfaceOnly.
+    'Unprotect it first, so that no UserInterfaceOnly that an earlier
+    'AllowWriting applied is left on the sheet
+        Sheet.Unprotect ""
         Sheet.Protect Contents:=True
     'Remember that the label may no longer be its own
         Written = True

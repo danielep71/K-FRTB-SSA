@@ -567,6 +567,21 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- A date typed as a number, such as `20311231`, in a cell formatted as a
+  date no longer stops the run in Excel with the error 6 (Overflow): `M_Main`
+  reads every input with `Value2`, which gives a date as its serial number, so
+  the engine marks the row `INVALID` as the contract states. The engine already
+  took a date as a number, and the results on valid inputs do not change. A new
+  case of the `probes` suite, `date-typed-as-a-number`, measures that read, and
+  the *Host behaviour* table of the validation plan records it as `HB-17`
+  ([#127](https://github.com/danielep71/K-FRTB-SSA/issues/127)).
+- The case `sheet-protection` of the `probes` suite unprotects `Results` before
+  it protects the sheet without `UserInterfaceOnly`, so that a protection that
+  an earlier suite applied cannot let the write it expects to be refused
+  through. The `probes` suite now has 8 cases and 54 assertions. Both fixes
+  follow the first Excel run, in which the `probes` suite failed that write and
+  the `cases` suite stopped at its 20th case; neither fix was run in Excel
+  ([#126](https://github.com/danielep71/K-FRTB-SSA/issues/126)).
 - The formula workbook that `tools/prototype/build_prototype.py` writes reads
   a currency code of `FX_Table`, a direction and a rate type without the
   blanks at their ends and without regard to case, as the engine does. Before,

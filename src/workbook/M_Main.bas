@@ -1479,10 +1479,14 @@ Private Sub ReadInputs( _
 ' NOTES
 '   The rows of Eligibility are read under the Basel regime too, so that the
 '   fingerprint of the inputs covers them; the engine assesses them under the
-'   CRR only
+'   CRR only. Every cell is read with Value2, which gives a date as its serial
+'   number: Range.Value turns the number of a cell formatted as a date into a
+'   Date, and raises the error 6 in Excel when the number, such as 20311231,
+'   is above the last date serial. The engine takes a date as a number
+'   (CORE_Util.IsDateSerial) and rejects that row instead
 '
 ' UPDATED
-'   2026-11-21
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1508,17 +1512,17 @@ Private Sub ReadInputs( _
 '------------------------------------------------------------------------------
     'Read each numeric parameter by its code
         For i = 1 To PI_COUNT
-            Numeric(i) = NamedRange(ListItem(PRM_NUMERIC_CODES, i)).Value
+            Numeric(i) = NamedRange(ListItem(PRM_NUMERIC_CODES, i)).Value2
         Next i
     'Store the numeric parameters
         Inputs(IN_NUMERIC) = Numeric
     'Read the as-of date, reporting currency, gold code, regime, transition end and own funds
-        Inputs(IN_ASOF) = NamedRange(PRM_ASOF).Value
-        Inputs(IN_REPCCY) = NamedRange(PRM_REPCCY).Value
-        Inputs(IN_GOLD) = NamedRange(PRM_GOLD).Value
-        Inputs(IN_REGIME) = NamedRange(PRM_REGIME).Value
-        Inputs(IN_TRANSITION_END) = NamedRange(PRM_TRANSITION_END).Value
-        Inputs(IN_OWN_FUNDS) = NamedRange(PRM_OWN_FUNDS).Value
+        Inputs(IN_ASOF) = NamedRange(PRM_ASOF).Value2
+        Inputs(IN_REPCCY) = NamedRange(PRM_REPCCY).Value2
+        Inputs(IN_GOLD) = NamedRange(PRM_GOLD).Value2
+        Inputs(IN_REGIME) = NamedRange(PRM_REGIME).Value2
+        Inputs(IN_TRANSITION_END) = NamedRange(PRM_TRANSITION_END).Value2
+        Inputs(IN_OWN_FUNDS) = NamedRange(PRM_OWN_FUNDS).Value2
 
 '------------------------------------------------------------------------------
 ' READ LADDER
@@ -1568,7 +1572,7 @@ Private Sub ReadInputs( _
         Inputs(IN_FX_TABLE) = PairedColumns(NM_FX_CCY, NM_FX_RATE)
     'Read each option charge by its code
         For i = 1 To RC_COUNT
-            Options(i) = NamedRange(NM_OPTIONS_PREFIX & ListItem(RC_CODES, i)).Value
+            Options(i) = NamedRange(NM_OPTIONS_PREFIX & ListItem(RC_CODES, i)).Value2
         Next i
         Inputs(IN_OPTIONS) = Options
 
@@ -1600,7 +1604,7 @@ Private Sub ReadInputs( _
 '------------------------------------------------------------------------------
     'Read every row of Eligibility below its header, input columns only
         Inputs(IN_EL_ROWS) = NamedRange(NM_EL_HEADER).Offset(1, 0).Resize(ELIGIBILITY_ROWS, _
-                                                                          EL_INPUT_WIDTH).Value
+                                                                          EL_INPUT_WIDTH).Value2
 
 End Sub
 
@@ -1638,7 +1642,8 @@ Private Function TableValues( _
 ' BEHAVIOR
 '   Locates the header cell, takes the row below it as the first data row,
 '   finds the last row with a value in the first column of the table (at least
-'   the first data row) and reads the block
+'   the first data row) and reads the block with Value2, a date as its serial
+'   number (see ReadInputs)
 '
 ' ERROR POLICY
 '   Raises ERR_LAYOUT when the name is missing
@@ -1650,7 +1655,7 @@ Private Function TableValues( _
 '   None
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1680,7 +1685,7 @@ Private Function TableValues( _
 '------------------------------------------------------------------------------
     'Read the block of values
         TableValues = Sheet.Range(Sheet.Cells(FirstRow, Header.Column), _
-                                  Sheet.Cells(LastRow, Header.Column + Width - 1)).Value
+                                  Sheet.Cells(LastRow, Header.Column + Width - 1)).Value2
 
 End Function
 
@@ -1711,7 +1716,7 @@ Private Function ColumnValues( _
 '
 ' BEHAVIOR
 '   Locates the named range, checks that it has ExpectedCount rows and one
-'   column, and returns its values
+'   column, and returns its values read with Value2 (see ReadInputs)
 '
 ' ERROR POLICY
 '   Raises ERR_LAYOUT when the name is missing or has another size
@@ -1723,7 +1728,7 @@ Private Function ColumnValues( _
 '   None
 '
 ' UPDATED
-'   2026-11-14
+'   2026-11-26
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1750,7 +1755,7 @@ Private Function ColumnValues( _
 ' RETURN VALUES
 '------------------------------------------------------------------------------
     'Return the values of the range
-        ColumnValues = Target.Value
+        ColumnValues = Target.Value2
 
 End Function
 
