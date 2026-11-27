@@ -563,7 +563,9 @@ is missing or malformed. It reads the harness and every suite at the exact
 paths the policy names, as the policy's Office bitness compiles them, and
 fails when the commit has no file there, or when a suite's counts or entry
 point differ from the policy. Every log of every suite must come from one
-host. A policy of version 1, which older commits hold, has no `suites`. The same policy is read
+host. A policy of version 1, which older commits hold, has no `suites`. A project suite
+may carry `"smoke": false`, which leaves it out of `excel_run.py --smoke`; a suite without
+the key is part of a smoke run, and the check of a full run still needs every suite. The same policy is read
 by `tools/devbuild/excel_run.py`, for the harness, the certification entry
 point of each suite and the name of the host record, by
 `tools/devbuild/export_manifest.py`, for the names of the export folder and

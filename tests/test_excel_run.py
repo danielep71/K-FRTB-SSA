@@ -490,5 +490,120 @@ class CommandTest(unittest.TestCase):
         run.assert_not_called()
 
 
+class SmokeTest(unittest.TestCase):
+    """The smoke run: the suites it leaves out, how its logs are judged and what it reports."""
+
+    def write_logs(self, folder: Path, count_change: int = 0, certified: bool = True) -> None:
+        """The logs a smoke run leaves, which smoke_findings reads."""
+        folder.mkdir(parents=True, exist_ok=True)
+        status = "PASS" if certified else "FAIL"
+        suites = [(POLICY.suite, POLICY.certification, None),
+                  *((item.name, item.certification, item) for item in POLICY.project_suites
+                    if item.smoke)]
+        for name, certification, item in suites:
+            (folder / certification).write_text(
+                f"CERTIFY={name}\nCERTIFICATION={status}; suite={name}; "
+                "completeness=COMPLETE; modes=1; failures=0\n", encoding="utf-8")
+            if item is not None:
+                (folder / item.log).write_text(
+                    f"RESULT=PASS; suite={name}; operation=PASS; completeness=COMPLETE; "
+                    f"cases={item.expected_cases + count_change}; "
+                    f"assertions={item.expected_assertions}; failures=0; cleanup=PASS; "
+                    "recovery=NONE\n", encoding="utf-8")
+
+    def test_a_smoke_run_leaves_out_the_cases_suite_and_a_full_run_leaves_out_none(self) -> None:
+        smoke = excel_run.entry_points(POLICY, smoke=True)
+        full = excel_run.entry_points(POLICY)
+        self.assertEqual([item for item in full if item not in smoke],
+                         ["TEST_Cases.CertifyCases"])
+        self.assertEqual(full, excel_run.entry_points(POLICY, smoke=False))
+        self.assertEqual(smoke[:2], ["TEST_Examples.CertifyExamples", "TEST_Suite.CertifyCore"])
+
+    def test_the_smoke_folder_is_not_the_folder_of_the_release_run(self) -> None:
+        self.assertNotEqual(excel_run.SMOKE_EVIDENCE, excel_run.DEFAULT_EVIDENCE)
+        self.assertEqual(excel_run.SMOKE_EVIDENCE.parts[0], "test-results")
+
+    def test_a_smoke_run_that_passes_has_no_finding(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        try:
+            self.write_logs(folder)
+            self.assertEqual(excel_run.smoke_findings(folder, POLICY), [])
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    def test_each_way_a_smoke_run_fails_is_a_finding(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        try:
+            self.write_logs(folder, certified=False)
+            failed = excel_run.smoke_findings(folder, POLICY)
+            self.assertEqual(len(failed), 1 + len([i for i in POLICY.project_suites if i.smoke]))
+            self.write_logs(folder, count_change=-1)
+            counted = excel_run.smoke_findings(folder, POLICY)
+            self.assertTrue(counted)
+            self.assertTrue(all("cases=" in finding for finding in counted))
+            (folder / POLICY.project_suites[-2].certification).unlink()
+            self.assertTrue(any("not written" in finding
+                                for finding in excel_run.smoke_findings(folder, POLICY)))
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    def test_the_cases_suite_is_not_judged_by_a_smoke_run(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        try:
+            self.write_logs(folder)
+            self.assertFalse((folder / "cases.log").exists())
+            self.assertEqual(excel_run.smoke_findings(folder, POLICY), [])
+            evidence = check_excel_run.Evidence()
+            runs = [(check_excel_run.Suite([], [], [], [], 1, 1), "cases",
+                     {"NORMAL": "cases.log"})]
+            check_excel_run.check_logs(folder, runs, evidence)
+            # The check of the release needs the log of every suite, so this folder fails it.
+            self.assertTrue(evidence.findings)
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+
+    def test_the_report_says_it_is_not_release_evidence(self) -> None:
+        passed = excel_run.smoke_report([], ["cases"], 61.4, "PASS").splitlines()
+        self.assertIn("SMOKE", passed[0])
+        self.assertIn("not release evidence", passed[0])
+        self.assertIn("Suites not run: cases", passed)
+        self.assertTrue(passed[-1].startswith("excel-smoke: PASS"))
+        failed = excel_run.smoke_report(["x: wrong"], [], 5, "FAIL").splitlines()
+        self.assertIn("FAIL: x: wrong", failed)
+        self.assertTrue(failed[-1].startswith("excel-smoke: FAIL"))
+
+    def test_a_smoke_run_records_its_report_and_skips_the_full_check(self) -> None:
+        built = mock.Mock(commit="a" * 40, clean=True)
+        folder = ROOT / "test-results" / "excel-smoke-unit-test"
+        saved = folder.parent / f"{folder.name}-report.txt"
+        calls: list[str] = []
+
+        def run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+            calls.append(" ".join(command))
+            self.write_logs(folder)
+            return subprocess.CompletedProcess(
+                [], 0, EXCEL_OUTPUT + "EXCEL-QUIT=EXITED\nEXCEL-RUN=DONE", "")
+        try:
+            with mock.patch("excel_run.build_workbook.build", return_value=built), \
+                    mock.patch.object(subprocess, "run", run), \
+                    mock.patch.object(excel_run, "windows_version", return_value="Windows 11"), \
+                    mock.patch.object(excel_run, "executable_bitness", return_value="64-bit"), \
+                    mock.patch.object(excel_run, "vba_project_access",
+                                      return_value="NOT_TRUSTED"), \
+                    mock.patch("excel_run.check_excel_run.check") as check, \
+                    redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(excel_run.record(ROOT, folder, 300, 120, "Operator Name",
+                                                  smoke=True), 0)
+            report = saved.read_text(encoding="utf-8")
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
+            saved.unlink(missing_ok=True)
+        check.assert_not_called()
+        self.assertIn("SMOKE RUN: not release evidence", report)
+        self.assertIn(excel_run.quit_line("EXITED"), report)
+        self.assertNotIn("CertifyCases", output.getvalue().splitlines()[1])
+        self.assertTrue(report.rstrip().endswith("not an Excel run of the whole certification)"))
+
+
 if __name__ == "__main__":
     unittest.main()

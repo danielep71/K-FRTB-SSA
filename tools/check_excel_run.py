@@ -236,6 +236,7 @@ class ProjectSuite:
     certification: str
     results: str | None = None
     runner: str = "RunSuite"
+    smoke: bool = True
 
 
 @dataclass(frozen=True)
@@ -281,7 +282,7 @@ def parse_policy(text: str) -> Policy:
                                item["expected_assertions"], str(item["log"]),
                                str(item["certification_log"]),
                                str(item["results"]) if "results" in item else None,
-                               str(item.get("runner", "RunSuite")))
+                               str(item.get("runner", "RunSuite")), item.get("smoke", True))
                   for item in data.get("suites", [])))
     except (ValueError, KeyError, TypeError) as error:
         raise PolicyError(f"{POLICY}: {error!r}") from error
@@ -338,6 +339,8 @@ def suite_problems(policy: Policy) -> list[str]:
     problems = []
     if any(not PROCEDURE_NAME.fullmatch(item.runner) for item in policy.project_suites):
         problems.append("a suite's runner must be the name of a VBA procedure")
+    if any(not isinstance(item.smoke, bool) for item in policy.project_suites):
+        problems.append("a suite's smoke must be true or false")
     for suite in (policy, *policy.project_suites):
         for name in ("expected_cases", "expected_assertions"):
             value = getattr(suite, name)

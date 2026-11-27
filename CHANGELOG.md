@@ -65,6 +65,16 @@ Use only the categories an entry needs.
 
 ### Added
 
+- `python tools/devbuild/excel_run.py --smoke` runs the example suite and every
+  project suite that `.github/excel-evidence-policy.json` does not mark
+  `"smoke": false`, which today leaves out the `cases` suite only. In
+  LibreOffice that suite is 297 s of the 314 s of the whole certification, and the
+  first full run in Excel took 7 min 44 s. The smoke run records into
+  `test-results\excel-smoke\`, checks the logs it has against the counts of the
+  policy and reports itself as `SMOKE RUN: not release evidence`; the full run,
+  without `--smoke`, stays what a release needs, and `check_excel_run.py` fails on
+  a smoke folder. Nothing was run in Excel
+  ([#132](https://github.com/danielep71/K-FRTB-SSA/issues/132)).
 - A step in the host checks by hand of `INSTALLATION.md` that compares the
   engine's run in Excel on the sample data with the formula workbook that Excel
   calculates, area by area, with `tools/prototype/compare_outputs.py`, so that a
