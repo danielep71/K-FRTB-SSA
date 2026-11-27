@@ -14,6 +14,7 @@ import base64
 import contextlib
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -571,6 +572,26 @@ class SmokeTest(unittest.TestCase):
         failed = excel_run.smoke_report(["x: wrong"], [], 5, "FAIL").splitlines()
         self.assertIn("FAIL: x: wrong", failed)
         self.assertTrue(failed[-1].startswith("excel-smoke: FAIL"))
+
+    def test_the_defaults_of_a_smoke_run_and_of_a_full_run_pass_the_argument_check(self) -> None:
+        for arguments, expected in ((["--smoke"], (300, 120, True)), ([], (600, 300, False)),
+                                    (["--smoke", "--timeout", "200"], (200, 120, True))):
+            with self.subTest(arguments=arguments), \
+                    mock.patch.object(os, "name", "nt"), \
+                    mock.patch.object(excel_run, "record", return_value=0) as record:
+                self.assertEqual(excel_run.main(arguments), 0)
+            _, _, timeout, enable_timeout, _, smoke = record.call_args.args
+            self.assertEqual((timeout, enable_timeout, smoke), expected)
+
+    def test_an_enable_timeout_that_is_not_shorter_than_the_run_is_refused(self) -> None:
+        for arguments in (["--smoke", "--enable-timeout", "300"],
+                          ["--enable-timeout", "600"]):
+            with self.subTest(arguments=arguments), \
+                    mock.patch.object(os, "name", "nt"), \
+                    redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), \
+                    self.assertRaises(SystemExit) as raised:
+                excel_run.main(arguments)
+            self.assertEqual(raised.exception.code, 2)
 
     def test_a_smoke_run_records_its_report_and_skips_the_full_check(self) -> None:
         built = mock.Mock(commit="a" * 40, clean=True)

@@ -612,14 +612,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--timeout", type=int, default=None,
                         help="seconds to wait for Excel in all (default: 600, 300 with "
                              "--smoke)")
-    parser.add_argument("--enable-timeout", type=int, default=300,
-                        help="seconds to wait for Enable Content (default: 300)")
+    parser.add_argument("--enable-timeout", type=int, default=None,
+                        help="seconds to wait for Enable Content (default: 300, 120 with "
+                             "--smoke)")
     parser.add_argument("--operator", default=None,
                         help="who runs it, for the host record (default: the Windows user)")
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args(argv)
     timeout = args.timeout if args.timeout is not None else (300 if args.smoke else 600)
-    if args.enable_timeout >= timeout:
+    enable_timeout = (args.enable_timeout if args.enable_timeout is not None
+                      else (120 if args.smoke else 300))
+    if enable_timeout >= timeout:
         parser.error("--enable-timeout must be shorter than --timeout")
     if os.name != "nt":
         print("excel-run: SKIP (needs Windows with Excel; this records no evidence)")
@@ -628,7 +631,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     default = SMOKE_EVIDENCE if args.smoke else DEFAULT_EVIDENCE
     folder = args.evidence if args.evidence is not None else root / default
     try:
-        return record(root, folder, timeout, args.enable_timeout, args.operator, args.smoke)
+        return record(root, folder, timeout, enable_timeout, args.operator, args.smoke)
     except (RunError, build_workbook.BuildError, check_excel_run.PolicyError, OSError) as error:
         print(f"FAIL: {error}")
         return 1

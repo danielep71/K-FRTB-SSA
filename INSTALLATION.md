@@ -454,7 +454,7 @@ run (`smoke: false`, today the `cases` suite only), and records its evidence in
 `test-results\excel-smoke\`. It checks the logs of those suites against the
 counts of the policy, prints a report that starts with `SMOKE RUN: not release
 evidence` and saves it as `test-results\excel-smoke-report.txt`; `--timeout`
-defaults to 300 seconds. The `workbook` and `probes` suites, where the host
+defaults to 300 seconds and `--enable-timeout` to 120. The `workbook` and `probes` suites, where the host
 behaviours (`HB-xx`) are measured, are part of it; the 47 cases of the `cases`
 suite are not.
 
