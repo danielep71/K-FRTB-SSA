@@ -1174,9 +1174,9 @@ Private Sub CaseSheetProtection()
 '     - asserts that no sheet is unprotected, that AsOfDate and the first cell
 '       under the header of IRPositions are unlocked and that the header of
 '       Results is locked
-'     - unprotects Results and protects it as the template does, without
-'       UserInterfaceOnly, writes the header and asserts that the write raises
-'       the error 1004
+'     - unprotects Results and protects it as the template does, with
+'       UserInterfaceOnly:=False stated, writes the header and asserts that the
+'       write raises the error 1004
 '     - applies AllowWriting, writes again and asserts that the write succeeds
 '       and that the sheet is still protected
 '
@@ -1195,7 +1195,7 @@ Private Sub CaseSheetProtection()
 '   for that write and puts it back
 '
 ' UPDATED
-'   2026-11-26
+'   2026-11-27
 '------------------------------------------------------------------------------
 
 '------------------------------------------------------------------------------
@@ -1240,11 +1240,12 @@ Private Sub CaseSheetProtection()
 '------------------------------------------------------------------------------
 ' PROBE REFUSED WRITE
 '------------------------------------------------------------------------------
-    'Protect the sheet as the template protects it, without UserInterfaceOnly.
-    'Unprotect it first, so that no UserInterfaceOnly that an earlier
-    'AllowWriting applied is left on the sheet
+    'Protect the sheet as the template protects it, but with UserInterfaceOnly
+    'off. Excel keeps UserInterfaceOnly through Unprotect, and a Protect that
+    'omits the argument keeps what an earlier AllowWriting applied, so only an
+    'explicit False takes it off the sheet
         Sheet.Unprotect ""
-        Sheet.Protect Contents:=True
+        Sheet.Protect Contents:=True, UserInterfaceOnly:=False
     'Remember that the label may no longer be its own
         Written = True
     'Write the label and capture the error number without ending the case

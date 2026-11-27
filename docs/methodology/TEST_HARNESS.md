@@ -245,7 +245,7 @@ is a finding about Excel or about the code, never a test to loosen.
   cells are tables from 1, and those of one cell are not.
 - `sheet-protection` (`HB-15`): every sheet is protected, the input cells
   are unlocked and a label is locked; a write by code to a locked cell is
-  refused on a protected sheet, with error 1004; after `AllowWriting` it is
+  refused on a sheet protected with `UserInterfaceOnly:=False`, with error 1004; after `AllowWriting` it is
   accepted, and the sheet stays protected.
 - `status-on-the-other-sheets` (`HB-10`): after a run, `E1` of each
   calculation sheet and of `Checks` shows the status line of `Results`.
