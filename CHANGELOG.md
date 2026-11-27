@@ -575,12 +575,14 @@ Use only the categories an entry needs.
   case of the `probes` suite, `date-typed-as-a-number`, measures that read, and
   the *Host behaviour* table of the validation plan records it as `HB-17`
   ([#127](https://github.com/danielep71/K-FRTB-SSA/issues/127)).
-- The case `sheet-protection` of the `probes` suite unprotects `Results` before
-  it protects the sheet without `UserInterfaceOnly`, so that a protection that
-  an earlier suite applied cannot let the write it expects to be refused
-  through. The `probes` suite now has 8 cases and 54 assertions. Both fixes
-  follow the first Excel run, in which the `probes` suite failed that write and
-  the `cases` suite stopped at its 20th case; neither fix was run in Excel
+- The case `sheet-protection` of the `probes` suite protects `Results` with
+  `UserInterfaceOnly:=False` stated, which is what the write it expects to be
+  refused needs: measured by hand in Excel 16.0 build 20527, `Unprotect` does
+  not take `UserInterfaceOnly` off a sheet and a `Protect` that omits the
+  argument keeps what an earlier `AllowWriting` applied, so the first Excel
+  run saw the write accepted. The `probes` suite now has 8 cases and 54
+  assertions. The `cases` suite stopped at its 20th case in that run; the fix
+  for it was not run in Excel
   ([#126](https://github.com/danielep71/K-FRTB-SSA/issues/126)).
 - The formula workbook that `tools/prototype/build_prototype.py` writes reads
   a currency code of `FX_Table`, a direction and a rate type without the
