@@ -441,8 +441,9 @@ Use only the categories an entry needs.
   no registry value or Trust Center setting. The host record keeps
   `automation_security` as found and adds `automation_security_run`, the value
   of the run; the wait for **Enable Content** remains for a host where the
-  macros are still disabled. `HB-18` records the behaviour, `assumed` until
-  the next run in Excel measures it
+  macros are still disabled. `HB-18` records the behaviour, measured in Excel
+  16.0 build 20527: a smoke run passed in 20 s with nobody touching Excel, and
+  a new Excel kept `AutomationSecurity` as before
   ([#137](https://github.com/danielep71/K-FRTB-SSA/issues/137)).
 - CodeQL now also analyzes every push to a branch other than Dependabot's, so the head of each pull request carries the CodeQL check that OpenSSF Scorecard counts for its SAST check. Before, only commits that a push to `main` or a release branch had analyzed carried it: 4 of the last 30 commits, although every pull request was analyzed ([#68](https://github.com/danielep71/K-FRTB-SSA/issues/68)). Pull requests are still analyzed without write permission. The Scorecard score changes only once this reaches `main`.
 - The documents describe the two regimes. `README.md` is rewritten: what the
