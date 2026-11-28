@@ -383,14 +383,18 @@ It builds the development workbook, and stops if the build is not
 evidence-grade. Then it:
 
 1. empties `test-results\excel-run\`;
-2. opens the workbook read-only in Excel. If Excel shows the yellow bar
-   *SECURITY WARNING Macros have been disabled*, click **Enable Content**
-   (or **File → Info → Enable Content**). This happens where a policy makes
-   programs follow your macro setting
-   ([HB-02](docs/methodology/VALIDATION_PLAN.md#host-behaviour)). The command
-   changes no macro setting, and waits up to `--enable-timeout` seconds (300
-   by default) for that click, which enables the macros without reopening
-   the workbook ([HB-04](docs/methodology/VALIDATION_PLAN.md#host-behaviour));
+2. opens the workbook read-only in Excel, unattended. Before it opens it,
+   the command sets `AutomationSecurity` to `msoAutomationSecurityLow` in
+   the Excel instance it started, so the macros run without **Enable
+   Content** even where a policy makes programs follow your macro setting
+   ([HB-02](docs/methodology/VALIDATION_PLAN.md#host-behaviour),
+   [HB-18](docs/methodology/VALIDATION_PLAN.md#host-behaviour)). Excel does
+   not save that property, so your setting is unchanged for the next Excel.
+   Only if Excel still shows the yellow bar *SECURITY WARNING Macros have
+   been disabled*, click **Enable Content** (or **File → Info → Enable
+   Content**): the command waits up to `--enable-timeout` seconds (300 by
+   default) for that click, which enables the macros without reopening the
+   workbook ([HB-04](docs/methodology/VALIDATION_PLAN.md#host-behaviour));
 3. runs the certification of step 5 below, with that folder and
    `tests\fixtures`;
 4. closes the workbook without saving, and quits Excel. If the Excel
@@ -401,8 +405,8 @@ evidence-grade. Then it:
    [host record](docs/methodology/TEST_HARNESS.md#host-record): you as the
    operator (your Windows user name, or `--operator "<name>"`), the start and
    finish times, Windows from the registry, the Excel build and bitness, the
-   `AutomationSecurity` and the Trust access it found, which it reads and
-   never changes, the four references the build gives the project,
+   `AutomationSecurity` it found and the one the run had, the Trust access
+   it found, which it reads and never changes, the four references the build gives the project,
    `compile=ON_DEMAND` and the outcome;
 6. runs the check of step 9 with `--workbook` and `--require-binding`.
 
@@ -430,10 +434,10 @@ then compiles only the modules the run calls, each when it is first used, and
 hand compiles with **Debug → Compile VBAProject**, which needs no Trust
 access, and records `compile=PASS`.
 
-Excel opens visibly while the run lasts. Apart from **Enable Content**, leave
-it alone: a dialog it shows stops the run until you close it, and the command
-gives up after `--timeout` seconds (600 by default). A run that stops early
-still writes `host.txt`, with the outcome `NOT_ENABLED` when the macros were
+Excel opens visibly while the run lasts. Leave it alone: a dialog it shows
+stops the run until you close it, and the command gives up after
+`--timeout` seconds (600 by default). A run that stops early still writes
+`host.txt`, with the outcome `NOT_ENABLED` when the macros were
 not enabled in time, `EXECUTION_TIMEOUT` after `--timeout`, `UNAVAILABLE`
 when Excel could not be started or `INCOMPLETE` when the run stopped before
 its end. That record is evidence of how the run stopped, never of a pass;

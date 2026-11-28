@@ -511,7 +511,8 @@ by one suite.
 | `windows` | The Windows version, as `winver` shows it |
 | `excel` | `Application.Version` and `Application.Build`, such as `16.0 build 17928` |
 | `bitness` | `64-bit` or `32-bit`: the bitness of Excel |
-| `automation_security` | `Application.AutomationSecurity` as found: `Low`, `ByUI` or `ForceDisable` (1, 2 or 3). It is read, never set |
+| `automation_security` | `Application.AutomationSecurity` as found: `Low`, `ByUI` or `ForceDisable` (1, 2 or 3) |
+| `automation_security_run` | Only in a record of `tools/devbuild/excel_run.py`: the `AutomationSecurity` its Excel instance had when it opened the workbook, after the command set it to `Low` for the run, with the same values. A record written by hand has no such line |
 | `vba_project_access` | *Trust access to the VBA project object model* as found: `TRUSTED` or `NOT_TRUSTED` |
 | `references` | The ticked references, separated by `; `. A run of `tools/devbuild/excel_run.py` records the references the build gives the project instead, which it does not read back in Excel |
 | `compile` | `PASS` when **Debug → Compile VBAProject** completed, or what the compile reported. `ON_DEMAND` when VBA compiled only the modules the run called, as `tools/devbuild/excel_run.py` records it: no automated run can compile the whole project without Trust access. The check accepts `ON_DEMAND` only with identity by rebuild (`--workbook` and no `exported/` folder). A person compiles with **Debug → Compile VBAProject**, which needs no Trust access, and writes `PASS` |

@@ -37,7 +37,7 @@ POLICY = check_excel_run.working_policy(ROOT)
 # What the PowerShell script prints once Excel has started.
 EXCEL_OUTPUT = ("EXCEL-VERSION=16.0\nEXCEL-BUILD=17928\n"
                 "EXCEL-PATH=C:\\Program Files\\Microsoft Office\\root\\Office16\n"
-                "EXCEL-AUTOMATION-SECURITY=2\n")
+                "EXCEL-AUTOMATION-SECURITY=2\nEXCEL-AUTOMATION-SECURITY-RUN=1\n")
 TIME = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d$")
 
 
@@ -79,12 +79,13 @@ class HostRecordTest(unittest.TestCase):
             "finished": "2026-11-03T14:07:41+01:00",
             "windows": "Windows 11 Pro, version 24H2, OS build 26100.4061",
             "excel": "16.0 build 17928", "bitness": "64-bit", "automation_security": "ByUI",
-            "vba_project_access": "NOT_TRUSTED",
+            "automation_security_run": "Low", "vba_project_access": "NOT_TRUSTED",
             "references": "; ".join(excel_run.built_references()),
             "compile": check_excel_run.COMPILE_ON_DEMAND, "outcome": "PASS"})
         self.assertIn("compile=ON_DEMAND", record)
+        self.assertIn("automation_security=ByUI\nautomation_security_run=Low\n", record)
         self.assertEqual([line.split("=")[0] for line in record.splitlines()],
-                         list(check_excel_run.HOST_FIELDS))
+                         list(excel_run.RECORD_FIELDS))
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary)
             (folder / POLICY.host).write_text(record, encoding="utf-8")
@@ -167,10 +168,12 @@ class HostRecordTest(unittest.TestCase):
             fields = excel_run.excel_host("noise\n" + EXCEL_OUTPUT)
         self.assertEqual(fields, {"excel": "16.0 build 17928", "bitness": "64-bit",
                                   "automation_security": "ByUI",
+                                  "automation_security_run": "Low",
                                   "vba_project_access": "NOT_TRUSTED"})
         self.assertEqual(bits.call_args.args[0].name, "EXCEL.EXE")
         self.assertEqual(excel_run.excel_host("EXCEL-AUTOMATION-SECURITY=9"),
-                         {"excel": "", "bitness": "", "automation_security": ""})
+                         {"excel": "", "bitness": "", "automation_security": "",
+                          "automation_security_run": ""})
 
     def test_how_excel_ended_comes_from_what_the_script_prints(self) -> None:
         for result in excel_run.QUIT_RESULTS:
@@ -185,7 +188,8 @@ class HostRecordTest(unittest.TestCase):
         self.assertIn("close it yourself", excel_run.quit_line("SURVIVED"))
         # The line is not a field of the host record.
         self.assertEqual(excel_run.excel_host("EXCEL-QUIT=STOPPED"),
-                         {"excel": "", "bitness": "", "automation_security": ""})
+                         {"excel": "", "bitness": "", "automation_security": "",
+                          "automation_security_run": ""})
 
     def test_the_report_holds_how_excel_ended_after_the_outcome(self) -> None:
         report = "Candidate commit: abc\nOutcome: PASS\nBinding: VERIFIED\nexcel-run: PASS"
@@ -238,12 +242,27 @@ class PowerShellTest(unittest.TestCase):
         # Nothing reaches the VBA project, so no Trust access is needed.
         self.assertNotIn("VBProject", self.script)
 
-    def test_no_macro_setting_changes_and_a_person_enables_the_macros(self) -> None:
-        # A policy may open the workbook with macros disabled (HB-02); the script never
-        # overrides it, and waits for Enable Content instead. It only reads the setting.
-        self.assertIsNone(re.search(r"AutomationSecurity\s*=", self.script, re.I))
-        self.assertIn('Write-Output ("EXCEL-AUTOMATION-SECURITY=" + [int]$excel.'
-                      'AutomationSecurity)', self.script)
+    def test_macros_are_enabled_in_its_own_instance_only(self) -> None:
+        # A policy may open the workbook with macros disabled (HB-02). The script reads
+        # AutomationSecurity for the host record, then sets it to Low in the instance it
+        # started, before it opens the workbook, so nobody clicks Enable Content (HB-18).
+        # That is its only assignment: it writes no registry value or other setting.
+        found = self.script.index('Write-Output ("EXCEL-AUTOMATION-SECURITY=" + [int]$excel.'
+                                  'AutomationSecurity)')
+        assignments = re.findall(r"^\s*(\S*AutomationSecurity)\s*=\s*(\S+)\s*$", self.script,
+                                 re.I | re.M)
+        self.assertEqual(assignments, [("$excel.AutomationSecurity", "1")])
+        assigned = self.script.index("$excel.AutomationSecurity = 1")
+        printed = self.script.index('Write-Output ("EXCEL-AUTOMATION-SECURITY-RUN=" + '
+                                    '[int]$excel.AutomationSecurity)')
+        self.assertLess(found, assigned)
+        self.assertLess(assigned, printed)
+        self.assertLess(printed, self.script.index("$excel.Workbooks.Open("))
+        for name in ("Set-ItemProperty", "New-ItemProperty", "HKCU:", "HKLM:", "reg add"):
+            self.assertNotIn(name, self.script)
+
+    def test_a_person_can_still_enable_the_macros(self) -> None:
+        # Where the macros are still disabled, the script waits for Enable Content.
         self.assertNotIn("AccessVBOM", self.script)
         probe = self.script.index("[void]$excel.Run($prefix + 'TEST_Harness.LastResult')")
         opened = self.script.index("$excel.Workbooks.Open(")
@@ -407,7 +426,7 @@ class CommandTest(unittest.TestCase):
             check_excel_run.check_host(folder, evidence, POLICY, rebuilt=True)
         finally:
             shutil.rmtree(folder, ignore_errors=True)
-        self.assertEqual(list(host), list(check_excel_run.HOST_FIELDS))
+        self.assertEqual(list(host), list(excel_run.RECORD_FIELDS))
         self.assertEqual((host["outcome"], host["operator"]), (outcome, "Operator Name"))
         self.assertRegex(host["started"], TIME)
         self.assertRegex(host["finished"], TIME)
