@@ -191,6 +191,9 @@ python tools/check_excel_run.py test-results/excel-run --commit CANDIDATE_SHA \
   --workbook test-results/build/Workbook-development.xlsm --require-binding
 ```
 
+The run of the candidate is the full one. A smoke run (`excel_run.py --smoke`)
+is for development, leaves out the `cases` suite and is never release evidence.
+
 It must end with `Binding: VERIFIED` and `excel-run: PASS`: the workbook, or
 the export, came from a clean build of the candidate, and the run is
 consistent with it. This check is a release gate, not a

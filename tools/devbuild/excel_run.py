@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Record an Excel run of the harness certification with one command, on Windows.
 
-Usage: python tools/devbuild/excel_run.py [--evidence FOLDER] [--timeout SECONDS]
+Usage: python tools/devbuild/excel_run.py [--smoke] [--evidence FOLDER] [--timeout SECONDS]
                                          [--enable-timeout SECONDS] [--operator NAME]
 
 Run it in a clean checkout of the candidate commit, on Windows with Excel
@@ -46,6 +46,14 @@ Excel run, and never needs Trust access to the VBA project object model:
    comparing the workbook's parts. It prints the report, and saves it
    beside the evidence folder as <folder>-report.txt, with how Excel ended.
 
+With --smoke it runs only the suites that the policy does not exclude from a
+smoke run (the cases suite, which is nearly all of the time), into
+test-results/excel-smoke, and checks the logs of those suites against the
+counts of the policy. A smoke run is a check during development and is never
+release evidence: it prints and saves a report that says SMOKE, and its folder
+cannot pass tools/check_excel_run.py, which needs the logs of every suite. The
+release needs the full run, without --smoke.
+
 It exits 0 when the check passes, 1 when it fails or the run could not
 complete, and 2 for an invalid option, or when it is not run on Windows.
 Standard library only.
@@ -61,6 +69,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -74,6 +83,7 @@ import check_excel_run  # noqa: E402
 import vba_project  # noqa: E402
 
 DEFAULT_EVIDENCE = Path("test-results") / "excel-run"
+SMOKE_EVIDENCE = Path("test-results") / "excel-smoke"
 WORKBOOK = Path("test-results") / "build" / "Workbook-development.xlsm"
 FIXTURES = Path("tests") / "fixtures"
 # References every VBA project in Excel has, besides those the build writes.
@@ -439,11 +449,59 @@ Write-Output "EXCEL-RUN=DONE"
 """
 
 
-def entry_points(policy: check_excel_run.Policy) -> list[str]:
+def entry_points(policy: check_excel_run.Policy, smoke: bool = False) -> list[str]:
     """The certification entry point of the example suite, then of each project suite,
-    as ``Module.Procedure``."""
+    as ``Module.Procedure``. A smoke run leaves out the suites the policy excludes."""
     return [f"{Path(policy.suite_source).stem}.{policy.entry_point}",
-            *(f"{Path(item.source).stem}.{item.entry_point}" for item in policy.project_suites)]
+            *(f"{Path(item.source).stem}.{item.entry_point}" for item in policy.project_suites
+              if item.smoke or not smoke)]
+
+
+def smoke_findings(folder: Path, policy: check_excel_run.Policy) -> list[str]:
+    """What is wrong with the logs of a smoke run: the example suite and each project suite
+    that a smoke run covers must end their certification with PASS and COMPLETE, and each
+    project suite's log must hold the cases and assertions the policy expects."""
+    findings = []
+    suites = [(policy.suite, policy.certification, None),
+              *((item.name, item.certification, item) for item in policy.project_suites
+                if item.smoke)]
+    for name, certification, item in suites:
+        try:
+            lines = (folder / certification).read_text(encoding="utf-8").splitlines()
+        except OSError:
+            findings.append(f"{certification}: not written, so the {name} suite did not run")
+            continue
+        expected = f"CERTIFICATION=PASS; suite={name}; completeness=COMPLETE;"
+        if not any(line.startswith(expected) for line in lines):
+            findings.append(f"{certification}: no line starting {expected!r}")
+        if item is None:
+            continue
+        try:
+            log = (folder / item.log).read_text(encoding="utf-8").splitlines()
+        except OSError:
+            findings.append(f"{item.log}: not written")
+            continue
+        wanted = (f"RESULT=PASS; suite={name}; operation=PASS; completeness=COMPLETE; "
+                  f"cases={item.expected_cases}; assertions={item.expected_assertions}; "
+                  "failures=0;")
+        if not any(line.startswith(wanted) for line in log):
+            findings.append(f"{item.log}: no line starting {wanted!r}")
+    return findings
+
+
+def smoke_report(findings: Sequence[str], skipped: Sequence[str], seconds: float,
+                 outcome: str) -> str:
+    """The report of a smoke run, which says in its first and last lines that it is not
+    release evidence."""
+    status = "FAIL" if findings else "PASS"
+    lines = ["SMOKE RUN: not release evidence. The release needs the full run, without --smoke.",
+             f"Suites not run: {', '.join(skipped) or 'none'}",
+             f"Time: {seconds:.0f} s",
+             f"Outcome: {outcome}"]
+    lines += [f"FAIL: {finding}" for finding in findings]
+    lines.append(f"excel-smoke: {status} (the logs of the suites run, against the counts of "
+                 "the policy; not an Excel run of the whole certification)")
+    return "\n".join(lines)
 
 
 def encoded(script: str) -> str:
@@ -484,8 +542,9 @@ ENABLE_HINT = ("Excel opens the workbook now. If it shows a yellow bar SECURITY 
 
 
 def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
-           operator: str | None = None) -> int:
+           operator: str | None = None, smoke: bool = False) -> int:
     policy = check_excel_run.working_policy(root)
+    started = time.monotonic()
     workbook = root / WORKBOOK
     built = build_workbook.build(root, check_excel_run.REBUILT_CONFIGURATION, workbook)
     print(f"built {workbook}: commit {built.commit}")
@@ -495,8 +554,8 @@ def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
     prepare(folder, root)
     probe = f"{Path(policy.harness).stem}.LastResult"
     script = powershell_script(workbook, folder.resolve(), (root / FIXTURES).resolve(),
-                               entry_points(policy), probe, enable_timeout)
-    print(f"running {', '.join(entry_points(policy))} in Excel ...")
+                               entry_points(policy, smoke), probe, enable_timeout)
+    print(f"running {', '.join(entry_points(policy, smoke))} in Excel ...")
     print(ENABLE_HINT)
     host = {"operator": operator or getpass.getuser(), "started": now(),
             "references": "; ".join(built_references()),
@@ -524,6 +583,15 @@ def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
     if code not in (0, 3):
         raise RunError(f"PowerShell or Excel failed (exit {code}, outcome "
                        f"{host['outcome']}); see the output above")
+    if smoke:
+        skipped = [item.name for item in policy.project_suites if not item.smoke]
+        findings = smoke_findings(folder, policy)
+        report = smoke_report(findings, skipped, time.monotonic() - started, host["outcome"])
+        print(report)
+        saved = folder.parent / f"{folder.name}-report.txt"
+        saved.write_text(with_quit(report, quit_result) + "\n", encoding="utf-8")
+        print(f"report saved to {saved}")
+        return 1 if findings else 0
     evidence = check_excel_run.check(root, built.commit, folder, workbook, require_binding=True)
     report = check_excel_run.report(built.commit, evidence)
     print(report)
@@ -535,25 +603,35 @@ def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser.add_argument("--smoke", action="store_true",
+                        help="run only the suites a smoke run covers, to check a change "
+                             "during development; never release evidence")
     parser.add_argument("--evidence", type=Path, default=None,
-                        help=f"the evidence folder (default: {DEFAULT_EVIDENCE.as_posix()})")
-    parser.add_argument("--timeout", type=int, default=600,
-                        help="seconds to wait for Excel in all (default: 600)")
-    parser.add_argument("--enable-timeout", type=int, default=300,
-                        help="seconds to wait for Enable Content (default: 300)")
+                        help=f"the evidence folder (default: {DEFAULT_EVIDENCE.as_posix()}, "
+                             f"or {SMOKE_EVIDENCE.as_posix()} with --smoke)")
+    parser.add_argument("--timeout", type=int, default=None,
+                        help="seconds to wait for Excel in all (default: 600, 300 with "
+                             "--smoke)")
+    parser.add_argument("--enable-timeout", type=int, default=None,
+                        help="seconds to wait for Enable Content (default: 300, 120 with "
+                             "--smoke)")
     parser.add_argument("--operator", default=None,
                         help="who runs it, for the host record (default: the Windows user)")
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args(argv)
-    if args.enable_timeout >= args.timeout:
+    timeout = args.timeout if args.timeout is not None else (300 if args.smoke else 600)
+    enable_timeout = (args.enable_timeout if args.enable_timeout is not None
+                      else (120 if args.smoke else 300))
+    if enable_timeout >= timeout:
         parser.error("--enable-timeout must be shorter than --timeout")
     if os.name != "nt":
         print("excel-run: SKIP (needs Windows with Excel; this records no evidence)")
         return 2
     root = args.root.resolve()
-    folder = args.evidence if args.evidence is not None else root / DEFAULT_EVIDENCE
+    default = SMOKE_EVIDENCE if args.smoke else DEFAULT_EVIDENCE
+    folder = args.evidence if args.evidence is not None else root / default
     try:
-        return record(root, folder, args.timeout, args.enable_timeout, args.operator)
+        return record(root, folder, timeout, enable_timeout, args.operator, args.smoke)
     except (RunError, build_workbook.BuildError, check_excel_run.PolicyError, OSError) as error:
         print(f"FAIL: {error}")
         return 1

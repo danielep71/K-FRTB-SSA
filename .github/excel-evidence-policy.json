@@ -45,7 +45,8 @@
       "expected_assertions": 874,
       "log": "cases.log",
       "certification_log": "cases-certification.log",
-      "results": "cases-results.json"
+      "results": "cases-results.json",
+      "smoke": false
     }
   ],
   "modes": [

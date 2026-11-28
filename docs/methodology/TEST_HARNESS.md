@@ -245,7 +245,7 @@ is a finding about Excel or about the code, never a test to loosen.
   cells are tables from 1, and those of one cell are not.
 - `sheet-protection` (`HB-15`): every sheet is protected, the input cells
   are unlocked and a label is locked; a write by code to a locked cell is
-  refused on a protected sheet, with error 1004; after `AllowWriting` it is
+  refused on a sheet protected with `UserInterfaceOnly:=False`, with error 1004; after `AllowWriting` it is
   accepted, and the sheet stays protected.
 - `status-on-the-other-sheets` (`HB-10`): after a run, `E1` of each
   calculation sheet and of `Checks` shows the status line of `Results`.
@@ -563,7 +563,9 @@ is missing or malformed. It reads the harness and every suite at the exact
 paths the policy names, as the policy's Office bitness compiles them, and
 fails when the commit has no file there, or when a suite's counts or entry
 point differ from the policy. Every log of every suite must come from one
-host. A policy of version 1, which older commits hold, has no `suites`. The same policy is read
+host. A policy of version 1, which older commits hold, has no `suites`. A project suite
+may carry `"smoke": false`, which leaves it out of `excel_run.py --smoke`; a suite without
+the key is part of a smoke run, and the check of a full run still needs every suite. The same policy is read
 by `tools/devbuild/excel_run.py`, for the harness, the certification entry
 point of each suite and the name of the host record, by
 `tools/devbuild/export_manifest.py`, for the names of the export folder and

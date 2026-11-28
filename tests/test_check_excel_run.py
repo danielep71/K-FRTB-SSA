@@ -1294,6 +1294,8 @@ class PolicyTest(unittest.TestCase):
                 {key: value for key, value in PROJECT_ENTRY.items() if key != "log"}),
             "name of a VBA procedure": lambda data: data["suites"].append(
                 dict(PROJECT_ENTRY, runner="Run Suite")),
+            "smoke must be true or false": lambda data: data["suites"].append(
+                dict(PROJECT_ENTRY, smoke="no")),
         }
         for text, change in cases.items():
             with self.subTest(text=text), self.assertRaises(check_excel_run.PolicyError) as raised:
@@ -1306,6 +1308,10 @@ class PolicyTest(unittest.TestCase):
                          [*(item.name for item in POLICY.project_suites), "project"])
         self.assertIsNone(accepted.project_suites[-1].results)
         self.assertEqual(accepted.project_suites[-1].runner, "RunSuite")
+        # A suite is part of a smoke run unless the policy says it is not.
+        self.assertTrue(accepted.project_suites[-1].smoke)
+        self.assertEqual([item.name for item in POLICY.project_suites if not item.smoke],
+                         ["cases"])
         named = check_excel_run.parse_policy(policy_text(
             lambda data: data["suites"].append(dict(PROJECT_ENTRY, runner="RunRelationTests"))))
         self.assertEqual(named.project_suites[-1].runner, "RunRelationTests")

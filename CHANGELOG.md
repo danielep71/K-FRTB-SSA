@@ -65,6 +65,16 @@ Use only the categories an entry needs.
 
 ### Added
 
+- `python tools/devbuild/excel_run.py --smoke` runs the example suite and every
+  project suite that `.github/excel-evidence-policy.json` does not mark
+  `"smoke": false`, which today leaves out the `cases` suite only. In
+  LibreOffice that suite is 297 s of the 314 s of the whole certification, and the
+  first full run in Excel took 7 min 44 s. The smoke run records into
+  `test-results\excel-smoke\`, checks the logs it has against the counts of the
+  policy and reports itself as `SMOKE RUN: not release evidence`; the full run,
+  without `--smoke`, stays what a release needs, and `check_excel_run.py` fails on
+  a smoke folder. Nothing was run in Excel
+  ([#132](https://github.com/danielep71/K-FRTB-SSA/issues/132)).
 - A step in the host checks by hand of `INSTALLATION.md` that compares the
   engine's run in Excel on the sample data with the formula workbook that Excel
   calculates, area by area, with `tools/prototype/compare_outputs.py`, so that a
@@ -567,6 +577,11 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- `README.md` has *Status* as a second-level heading again, `## 📌 Status`,
+  which the rewrite of the README had made first level: a tool that reads the
+  section whose second-level heading ends with "Status" found none. The text
+  of the section and its anchor `#-status` do not change
+  ([#135](https://github.com/danielep71/K-FRTB-SSA/issues/135)).
 - A date typed as a number, such as `20311231`, in a cell formatted as a
   date no longer stops the run in Excel with the error 6 (Overflow): `M_Main`
   reads every input with `Value2`, which gives a date as its serial number, so
@@ -575,12 +590,14 @@ Use only the categories an entry needs.
   case of the `probes` suite, `date-typed-as-a-number`, measures that read, and
   the *Host behaviour* table of the validation plan records it as `HB-17`
   ([#127](https://github.com/danielep71/K-FRTB-SSA/issues/127)).
-- The case `sheet-protection` of the `probes` suite unprotects `Results` before
-  it protects the sheet without `UserInterfaceOnly`, so that a protection that
-  an earlier suite applied cannot let the write it expects to be refused
-  through. The `probes` suite now has 8 cases and 54 assertions. Both fixes
-  follow the first Excel run, in which the `probes` suite failed that write and
-  the `cases` suite stopped at its 20th case; neither fix was run in Excel
+- The case `sheet-protection` of the `probes` suite protects `Results` with
+  `UserInterfaceOnly:=False` stated, which is what the write it expects to be
+  refused needs: measured by hand in Excel 16.0 build 20527, `Unprotect` does
+  not take `UserInterfaceOnly` off a sheet and a `Protect` that omits the
+  argument keeps what an earlier `AllowWriting` applied, so the first Excel
+  run saw the write accepted. The `probes` suite now has 8 cases and 54
+  assertions. The `cases` suite stopped at its 20th case in that run; the fix
+  for it was not run in Excel
   ([#126](https://github.com/danielep71/K-FRTB-SSA/issues/126)).
 - The formula workbook that `tools/prototype/build_prototype.py` writes reads
   a currency code of `FX_Table`, a direction and a rate type without the

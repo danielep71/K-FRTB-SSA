@@ -439,6 +439,30 @@ when Excel could not be started or `INCOMPLETE` when the run stopped before
 its end. That record is evidence of how the run stopped, never of a pass;
 run the command again.
 
+### Smoke run, while you develop
+
+The full run takes about 8 minutes, and one suite, `cases`, is almost all of it.
+To check a change without that wait, add `--smoke`:
+
+```sh
+python tools/devbuild/excel_run.py --smoke
+```
+
+It builds and opens the workbook as above, runs the example suite and the
+suites that `.github/excel-evidence-policy.json` does not exclude from a smoke
+run (`smoke: false`, today the `cases` suite only), and records its evidence in
+`test-results\excel-smoke\`. It checks the logs of those suites against the
+counts of the policy, prints a report that starts with `SMOKE RUN: not release
+evidence` and saves it as `test-results\excel-smoke-report.txt`; `--timeout`
+defaults to 300 seconds and `--enable-timeout` to 120. The `workbook` and `probes` suites, where the host
+behaviours (`HB-xx`) are measured, are part of it; the 47 cases of the `cases`
+suite are not.
+
+A smoke run is never evidence for a release or for a closing issue that asks for
+the Excel run: `tools/check_excel_run.py` needs the logs of every suite and
+fails on that folder. Run the full command, without `--smoke`, for the release
+candidate.
+
 Use the steps below instead when the project has forms, when the build
 fails, or when you need a full compile. A workbook you import by hand instead
 of building it has no build stamp, so the check fails while the commit holds

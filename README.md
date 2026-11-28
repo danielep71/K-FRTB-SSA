@@ -404,7 +404,7 @@ The full list is in the
 
 <a id="-status"></a>
 
-# 📌 Status
+## 📌 Status
 
 No version has been released. The release state is recorded in one place: the
 [*Current status*](RELEASING.md#current-status) of `RELEASING.md`, which
