@@ -577,6 +577,11 @@ Use only the categories an entry needs.
 
 ### Fixed
 
+- `README.md` has *Status* as a second-level heading again, `## 📌 Status`,
+  which the rewrite of the README had made first level: a tool that reads the
+  section whose second-level heading ends with "Status" found none. The text
+  of the section and its anchor `#-status` do not change
+  ([#135](https://github.com/danielep71/K-FRTB-SSA/issues/135)).
 - A date typed as a number, such as `20311231`, in a cell formatted as a
   date no longer stops the run in Excel with the error 6 (Overflow): `M_Main`
   reads every input with `Value2`, which gives a date as its serial number, so
