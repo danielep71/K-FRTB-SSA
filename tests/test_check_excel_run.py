@@ -737,6 +737,22 @@ class EvidenceTest(unittest.TestCase):
             with self.subTest(new=new):
                 self.assertFinding(edit("host.txt", old, new), text)
 
+    def test_the_automation_security_of_the_run_is_optional_and_checked(self) -> None:
+        # A record of excel_run.py adds the AutomationSecurity of its run; one written by
+        # hand has none. When the line is there, its value is checked as the one found.
+        host = dict(line.split("=", 1) for line in HOST.splitlines())
+        self.assertNotIn(check_excel_run.AUTOMATION_SECURITY_RUN, host)
+        self.assertEqual(check_excel_run.host_findings(host, POLICY, {}), [])
+        run = dict(host, automation_security_run="Low")
+        self.assertEqual(check_excel_run.host_findings(run, POLICY, {}), [])
+        wrong = dict(host, automation_security_run="1")
+        self.assertIn("host.txt: automation_security_run=1, expected one of Low, ByUI, "
+                      "ForceDisable", check_excel_run.host_findings(wrong, POLICY, {}))
+        evidence = check_excel_run.Evidence()
+        evidence.host = run
+        self.assertIn("AutomationSecurity=ByUI (the run: Low); VBA project access",
+                      check_excel_run.report("abc", evidence))
+
     def test_the_host_record_agrees_with_the_logs(self) -> None:
         self.assertFinding(edit("host.txt", "excel=16.0 build 17928", "excel=16.0 build 18000"),
                            "but the logs' ENVIRONMENT is 16.0 build 17928")

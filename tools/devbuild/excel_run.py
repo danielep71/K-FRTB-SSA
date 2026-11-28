@@ -14,12 +14,16 @@ Excel run, and never needs Trust access to the VBA project object model:
    ignores; a folder under test-results/ is emptied, any other must be empty
    or absent);
 3. opens the workbook read-only in a visible Excel through COM, from
-   PowerShell started with -NoProfile and -EncodedCommand. It changes no
-   macro setting: where Excel opens it with macros disabled, as under a
-   policy that makes programs follow the user's macro setting
-   (VALIDATION_PLAN.md, HB-02), you click Enable Content once, which enables
-   them without reopening the workbook (HB-04), and the command waits for
-   that, up to --enable-timeout seconds. Then it runs the certification entry
+   PowerShell started with -NoProfile and -EncodedCommand. Before it opens
+   the workbook it sets AutomationSecurity to msoAutomationSecurityLow in the
+   Excel instance it started, so that the workbook opens with its macros
+   enabled even where a policy makes programs follow the user's macro
+   setting (VALIDATION_PLAN.md, HB-02 and HB-18) and nobody clicks Enable
+   Content. The property belongs to that instance and Excel does not save
+   it: no registry value, Trust Center setting or other Excel changes. Where
+   the macros are still disabled, you click Enable Content once, which
+   enables them without reopening the workbook (HB-04), and the command
+   waits for that, up to --enable-timeout seconds. Then it runs the certification entry
    point of the example suite and of each project suite the policy lists, in
    order, qualified with the workbook's name so that Application.Run reaches
    an Option Private Module module (HB-03), with the evidence folder and
@@ -33,7 +37,7 @@ Excel run, and never needs Trust access to the VBA project object model:
    the operator (--operator, by default the Windows user), when the run
    started and finished, Windows from the registry, the Excel build, its
    bitness (from the EXCEL.EXE header), AutomationSecurity as Excel reports
-   it (read, never set), the Trust access to the VBA project as the registry
+   it before the command sets it, and the value the run had after, the Trust access to the VBA project as the registry
    holds it, the references the build gives the project, compile=ON_DEMAND,
    because no automated run can compile the whole project without Trust
    access, so VBA compiled only the modules the run called (check_excel_run.py
@@ -57,7 +61,8 @@ release needs the full run, without --smoke.
 It exits 0 when the check passes, 1 when it fails or the run could not
 complete, and 2 for an invalid option, or when it is not run on Windows.
 Standard library only.
-It reads the macro setting and the Trust access only; it changes neither.
+It changes no saved setting: it sets AutomationSecurity in its own Excel
+instance only, for the run, and reads the Trust access only.
 """
 
 from __future__ import annotations
@@ -155,11 +160,19 @@ def windows_version() -> str:
     return describe_windows(values)
 
 
+# The fields of the host record this command writes, in order: those of
+# check_excel_run.HOST_FIELDS, with the AutomationSecurity of the run after the
+# one found.
+RECORD_FIELDS = tuple(name for key in check_excel_run.HOST_FIELDS
+                      for name in ((key, check_excel_run.AUTOMATION_SECURITY_RUN)
+                                   if key == "automation_security" else (key,)))
+
+
 def host_record(fields: Mapping[str, str]) -> str:
-    """The host record: one key=value line per field of check_excel_run.HOST_FIELDS,
-    UNKNOWN for a value the run could not read."""
+    """The host record: one key=value line per field of RECORD_FIELDS, UNKNOWN for a
+    value the run could not read."""
     return "".join(f"{key}={fields.get(key) or check_excel_run.UNKNOWN}\n"
-                   for key in check_excel_run.HOST_FIELDS)
+                   for key in RECORD_FIELDS)
 
 
 def now() -> str:
@@ -219,6 +232,13 @@ def vba_project_access(version: str,
     return "NOT_TRUSTED"
 
 
+def security_name(value: str) -> str:
+    """The name of an AutomationSecurity value the script printed; empty when it is
+    none of them."""
+    names = check_excel_run.AUTOMATION_SECURITY
+    return names[int(value) - 1] if value.isdigit() and 1 <= int(value) <= len(names) else ""
+
+
 def excel_host(output: str) -> dict[str, str]:
     """The Excel fields of the host record, from the EXCEL-<NAME>= lines the
     script prints once Excel has started."""
@@ -228,12 +248,11 @@ def excel_host(output: str) -> dict[str, str]:
         if separator and name.startswith("EXCEL-"):
             found[name.removeprefix("EXCEL-")] = value.strip()
     version, build, path = (found.get(name, "") for name in ("VERSION", "BUILD", "PATH"))
-    security = found.get("AUTOMATION-SECURITY", "")
-    names = check_excel_run.AUTOMATION_SECURITY
     fields = {"excel": f"{version} build {build}" if version and build else "",
               "bitness": executable_bitness(Path(path) / "EXCEL.EXE") if path else "",
-              "automation_security": names[int(security) - 1]
-              if security.isdigit() and 1 <= int(security) <= len(names) else ""}
+              "automation_security": security_name(found.get("AUTOMATION-SECURITY", "")),
+              check_excel_run.AUTOMATION_SECURITY_RUN:
+              security_name(found.get("AUTOMATION-SECURITY-RUN", ""))}
     if version:
         try:
             fields["vba_project_access"] = vba_project_access(version)
@@ -298,11 +317,12 @@ def powershell_script(workbook: Path, folder: Path, fixtures: Path,
     entry point (``Module.Procedure``) in order, close without saving, quit. Every
     entry point runs even when an earlier one fails, so each suite leaves its logs; the
     first failure is reported. Each name is qualified with the workbook's name (``$prefix``),
-    which lets Application.Run reach an Option Private Module module (HB-03). It never
-    changes a macro setting: when the workbook opens with macros disabled (HB-02), a
-    person enables them with Enable Content, without reopening it (HB-04). Once Excel
-    has started it prints its version, build, folder and AutomationSecurity, which it
-    only reads, for the host record. It records the process id of that instance, from
+    which lets Application.Run reach an Option Private Module module (HB-03). Once Excel
+    has started it prints its version, build, folder and AutomationSecurity as found, for
+    the host record. Then it sets AutomationSecurity to Low in that instance, which Excel
+    does not save, so that the workbook opens with its macros enabled (HB-18), and prints
+    the value the run has. Where they are still disabled (HB-02), a person enables them
+    with Enable Content, without reopening the workbook (HB-04). It records the process id of that instance, from
     its window, and the process start time. After Quit it waits up to ``quit_wait``
     seconds for that process to exit, then ends it, but only while its name is EXCEL
     and its start time is the one recorded, so that a process that reuses the id is
@@ -352,19 +372,28 @@ public static class ExcelRunWindow {{
         $excelId = $null
         $excelStart = $null
     }}
-    # Read only, for the host record: the macro policy is recorded, never set.
+    # For the host record: the macro policy as found.
     Write-Output ("EXCEL-VERSION=" + $excel.Version)
     Write-Output ("EXCEL-BUILD=" + $excel.Build)
     Write-Output ("EXCEL-PATH=" + $excel.Path)
     Write-Output ("EXCEL-AUTOMATION-SECURITY=" + [int]$excel.AutomationSecurity)
+    # msoAutomationSecurityLow in this instance only, for this run, so that the
+    # workbook opens with its macros enabled and nobody clicks Enable Content
+    # (HB-18). Excel does not save the property. Where it cannot be set, the
+    # wait below still lets a person enable the macros.
+    try {{
+        $excel.AutomationSecurity = 1
+    }} catch {{
+    }}
+    Write-Output ("EXCEL-AUTOMATION-SECURITY-RUN=" + [int]$excel.AutomationSecurity)
     $excel.Visible = $true
     $excel.DisplayAlerts = $false
     # UpdateLinks 0, ReadOnly: the workbook on disk stays the build.
     $book = $excel.Workbooks.Open($workbookPath, 0, $true)
     [void]$book.Activate()
     $prefix = "'" + $book.Name.Replace("'", "''") + "'!"
-    # Wait until the workbook's macros run: at once where Excel enables them, or
-    # after a person clicks Enable Content. The probe only reads harness state.
+    # Wait until the workbook's macros run: at once where Excel enables them, as
+    # with AutomationSecurity Low, or after a person clicks Enable Content. The probe only reads harness state.
     $deadline = (Get-Date).AddSeconds({enable_timeout})
     $enabled = $false
     while (-not $enabled) {{
@@ -535,10 +564,11 @@ NOT_ENABLED = 4
 # did not start, or the run stopped before its end. Any other code is INCOMPLETE.
 OUTCOME_BY_EXIT = {0: "PASS", 3: "FAIL", NOT_ENABLED: "NOT_ENABLED", 5: "UNAVAILABLE",
                    6: "INCOMPLETE"}
-ENABLE_HINT = ("Excel opens the workbook now. If it shows a yellow bar SECURITY WARNING, "
+ENABLE_HINT = ("Excel opens the workbook now, with AutomationSecurity set to Low in its own "
+               "instance for this run, so its macros run without Enable Content. Leave Excel "
+               "alone until it closes. Only if it still shows a yellow bar SECURITY WARNING, "
                "Macros have been disabled, click Enable Content (or File > Info > Enable "
-               "Content > Enable All Content). Change nothing else, and leave Excel alone "
-               "until it closes.")
+               "Content > Enable All Content).")
 
 
 def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
@@ -579,7 +609,9 @@ def record(root: Path, folder: Path, timeout: int, enable_timeout: int = 300,
         raise stopped
     if code == NOT_ENABLED:
         raise RunError(f"the workbook's macros were not enabled within {enable_timeout} s, so "
-                       "nothing ran: run the command again and click Enable Content in Excel")
+                       "nothing ran, although the command set AutomationSecurity to Low "
+                       "(see EXCEL-AUTOMATION-SECURITY-RUN above): run the command again and "
+                       "click Enable Content in Excel")
     if code not in (0, 3):
         raise RunError(f"PowerShell or Excel failed (exit {code}, outcome "
                        f"{host['outcome']}); see the output above")

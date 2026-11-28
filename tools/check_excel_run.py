@@ -183,6 +183,10 @@ OUTCOMES = ("PASS", "FAIL", "IMPORT_FAILED", "COMPILE_FAILED", "EXECUTION_TIMEOU
 UNKNOWN = "UNKNOWN"
 # Excel's AutomationSecurity, as msoAutomationSecurityLow, ByUI and ForceDisable.
 AUTOMATION_SECURITY = ("Low", "ByUI", "ForceDisable")
+# The field a record of tools/devbuild/excel_run.py adds after automation_security:
+# the AutomationSecurity its Excel instance ran with, which it sets to Low. A record
+# written by hand has no such field.
+AUTOMATION_SECURITY_RUN = "automation_security_run"
 VBA_PROJECT_ACCESS = ("TRUSTED", "NOT_TRUSTED")
 EXCEL_BUILD = re.compile(r"^\d+\.\d+ build \d+$")
 # compile= of a run whose whole project could not be compiled: VBA compiled on
@@ -916,6 +920,7 @@ def host_findings(host: dict[str, str], policy: Policy,
                         "it, also that of a run that stopped early")
     expected = {"outcome": ", ".join(OUTCOMES), "bitness": ", ".join(OFFICE_BITNESS),
                 "automation_security": ", ".join(AUTOMATION_SECURITY),
+                AUTOMATION_SECURITY_RUN: ", ".join(AUTOMATION_SECURITY),
                 "vba_project_access": ", ".join(VBA_PROJECT_ACCESS)}
     stopped = outcome in OUTCOMES and outcome != "PASS"
     for key in ("windows", "excel", *expected):
@@ -1431,6 +1436,8 @@ def check(root: Path, commit: str, folder: Path, workbook: Path | None = None,
 def report(commit: str, evidence: Evidence, equivalent_to: str | None = None) -> str:
     environment = "; ".join(f"{key}={evidence.environment.get(key, '')}"
                             for key in ENVIRONMENT_FIELDS)
+    run_security = (f" (the run: {evidence.host[AUTOMATION_SECURITY_RUN]})"
+                    if evidence.host.get(AUTOMATION_SECURITY_RUN) else "")
     lines = [f"Candidate commit: {equivalent_to or commit}"]
     if equivalent_to:
         lines.append(f"Run commit: {commit} (the workbook was built from it)")
@@ -1440,8 +1447,8 @@ def report(commit: str, evidence: Evidence, equivalent_to: str | None = None) ->
              f"Windows: {evidence.host.get('windows', '')}",
              f"Excel: {evidence.host.get('excel', '')}, {evidence.host.get('bitness', '')}",
              f"Macro policy found: AutomationSecurity="
-             f"{evidence.host.get('automation_security', '')}; VBA project access "
-             f"{evidence.host.get('vba_project_access', '')}",
+             f"{evidence.host.get('automation_security', '')}{run_security}; VBA project "
+             f"access {evidence.host.get('vba_project_access', '')}",
              f"References: {evidence.host.get('references', '')}",
              f"Compile: {evidence.host.get('compile', '')}",
              f"Outcome: {evidence.host.get('outcome', '')}",

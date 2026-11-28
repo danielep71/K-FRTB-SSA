@@ -34,6 +34,7 @@ When a review of this repository finds something to fix, record each finding, or
 - assigned to me;
 - exactly one priority label (`P1` only for a confirmed calculation bug), plus the type labels that fit;
 - the open milestone with the earliest due date;
+- a `- Start date: YYYY-MM-DD (Europe/Rome)` line, the day the issue is opened, before the target end date;
 - a `- Target end date: YYYY-MM-DD (Europe/Rome)` line earlier than that milestone's due date;
 - a dependency section that names prerequisites or says "None".
 
